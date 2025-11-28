@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { Login } from './components/Login';
 import { useRealtime } from './hooks/useRealtime';
@@ -30,35 +30,37 @@ import { ActivityFeed } from './components/ActivityFeed';
 import { ActivityDialog } from './components/ActivityDialog';
 import { TeamChat } from './components/TeamChat';
 import { CreateRoomDialog } from './components/CreateRoomDialog';
-import { VideoConference } from './components/VideoConference';
 import { AddTeamMemberDialog } from './components/AddTeamMemberDialog';
 import { ContactList } from './components/ContactList';
 import { AddContactDialog } from './components/AddContactDialog';
 import { Donations } from './components/Donations';
 import { CalendarView } from './components/CalendarView';
 import { TaskView } from './components/TaskView';
-import { FormGenerator } from './components/FormGenerator';
 import { VolunteerList } from './components/VolunteerList';
 import { AddVolunteerDialog } from './components/AddVolunteerDialog';
-import { CharityTracker } from './components/CharityTracker';
 import { CaseManagement } from './components/CaseManagement';
-import { DocumentLibrary } from './components/DocumentLibrary';
-import { WebManagement } from './components/WebManagement';
-import { GoldPages } from './components/GoldPages';
 import { WebpageStatus } from '../types';
 import { AiChatBot } from './components/AiChatBot';
-import { AiTools } from './components/AiTools';
-import { LiveChat } from './components/LiveChat';
 import { CaseDialog } from './components/CaseDialog';
-import { SearchResultsPage } from './components/SearchResultsPage';
 import { CaseDetail } from './components/CaseDetail';
-import { EventEditor } from './components/EventEditor';
-import { Reports } from './components/Reports';
-import { PortalBuilder } from './components/PortalBuilder';
-import { ClientPortalLogin } from './components/ClientPortalLogin';
-import { ClientPortal } from './components/ClientPortal';
-import { EmailCampaigns } from './components/EmailCampaigns';
-import { GrantAssistant } from './components/GrantAssistant';
+
+// Lazy-loaded components for better initial load performance
+const VideoConference = lazy(() => import('./components/VideoConference'));
+const FormGenerator = lazy(() => import('./components/FormGenerator'));
+const CharityTracker = lazy(() => import('./components/CharityTracker'));
+const DocumentLibrary = lazy(() => import('./components/DocumentLibrary'));
+const WebManagement = lazy(() => import('./components/WebManagement'));
+const GoldPages = lazy(() => import('./components/GoldPages'));
+const AiTools = lazy(() => import('./components/AiTools'));
+const LiveChat = lazy(() => import('./components/LiveChat'));
+const SearchResultsPage = lazy(() => import('./components/SearchResultsPage'));
+const EventEditor = lazy(() => import('./components/EventEditor'));
+const Reports = lazy(() => import('./components/Reports'));
+const PortalBuilder = lazy(() => import('./components/PortalBuilder'));
+const ClientPortalLogin = lazy(() => import('./components/ClientPortalLogin'));
+const ClientPortal = lazy(() => import('./components/ClientPortal'));
+const EmailCampaigns = lazy(() => import('./components/EmailCampaigns'));
+const GrantAssistant = lazy(() => import('./components/GrantAssistant'));
 import { useToast } from './contexts/ToastContext';
 import { useKeyboardShortcuts, type KeyboardShortcut } from './hooks/useKeyboardShortcuts';
 import { GuidedTour, TourStep } from './components/GuidedTour';
@@ -71,6 +73,16 @@ import { CommandPalette } from './components/CommandPalette';
 import { allNavItems } from './components/navigationConfig';
 import { AccordionExample } from './components/AccordionExample';
 import { ProjectsHub } from './components/ProjectsHub';
+
+// Loading fallback for lazy-loaded components
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+      <p className="mt-4 text-slate-600 dark:text-slate-400">Loading...</p>
+    </div>
+  </div>
+);
 
 const App: React.FC = () => {
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
@@ -1512,7 +1524,9 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
                   />
                   
                   <div key={currentPage} className="page-content-wrapper">
-                      {renderContent()}
+                      <Suspense fallback={<LoadingFallback />}>
+                        {renderContent()}
+                      </Suspense>
                   </div>
               </div>
           </main>
@@ -1579,12 +1593,14 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
         />
         {isGoldPagesEditorOpen && editingWebpage && (
           <div className="absolute inset-0 z-50 bg-white/30 dark:bg-slate-900/50 backdrop-blur-xl">
-            <GoldPages
-              webpage={editingWebpage}
-              onClose={handleCloseEditor}
-              onSave={handleSaveWebpage}
-              clients={clients}
-            />
+            <Suspense fallback={<LoadingFallback />}>
+              <GoldPages
+                webpage={editingWebpage}
+                onClose={handleCloseEditor}
+                onSave={handleSaveWebpage}
+                clients={clients}
+              />
+            </Suspense>
           </div>
         )}
         <GuidedTour

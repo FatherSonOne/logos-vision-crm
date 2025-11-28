@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { Project, TeamMember, EnrichedTask } from '../types';
 import { TaskStatus } from '../types';
 import { getDeadlineStatus } from '../utils/dateHelpers';
+import { usePagination, Pagination } from './ui/Pagination';
 
 interface TaskViewProps {
   projects: Project[];
@@ -54,6 +55,22 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
             return statusMatch && assigneeMatch;
         });
     }, [enrichedTasks, statusFilter, assigneeFilter]);
+
+    // Pagination
+    const {
+        paginatedItems: paginatedTasks,
+        currentPage,
+        totalPages,
+        itemsPerPage,
+        handlePageChange,
+        handleItemsPerPageChange,
+        resetPagination,
+    } = usePagination(filteredTasks, 20);
+
+    // Reset pagination when filters change
+    React.useEffect(() => {
+        resetPagination();
+    }, [statusFilter, assigneeFilter, resetPagination]);
 
     const getAssigneeName = (id: string) => teamMembers.find(tm => tm.id === id)?.name || 'Unassigned';
 
@@ -110,7 +127,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/20 dark:divide-white/10">
-                        {filteredTasks.map(task => {
+                        {paginatedTasks.map(task => {
                             const deadline = getDeadlineStatus(task.dueDate, task.status === TaskStatus.Done);
                             const isExpanded = expandedTaskId === task.id;
                             return (
@@ -154,6 +171,21 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
                     </div>
                 )}
             </div>
+
+            {/* Pagination */}
+            {filteredTasks.length > itemsPerPage && (
+                <div className="mt-4">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={filteredTasks.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={handlePageChange}
+                        onItemsPerPageChange={handleItemsPerPageChange}
+                        itemsPerPageOptions={[10, 20, 50, 100]}
+                    />
+                </div>
+            )}
         </div>
     );
 };

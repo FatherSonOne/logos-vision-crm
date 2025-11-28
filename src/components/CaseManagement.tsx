@@ -3,6 +3,7 @@ import type { Case, Client, TeamMember } from '../types';
 import { CaseStatus, CasePriority } from '../types';
 import { ExportButton, type ExportField } from './export/ExportButton';
 import { PlusIcon, PencilIcon, TrashIcon } from './icons';
+import { usePagination, Pagination } from './ui/Pagination';
 
 interface CaseManagementProps {
     cases: Case[];
@@ -146,6 +147,22 @@ export const CaseManagement: React.FC<CaseManagementProps> = ({ cases, clients, 
     const getClientName = (id: string) => clients.find(c => c.id === id)?.name || 'Unknown';
     const getAssigneeName = (id: string) => teamMembers.find(tm => tm.id === id)?.name || 'Unassigned';
 
+    // Pagination for tile view
+    const {
+        paginatedItems: paginatedCases,
+        currentPage,
+        totalPages,
+        itemsPerPage,
+        handlePageChange,
+        handleItemsPerPageChange,
+        resetPagination,
+    } = usePagination(filteredCases, 12);
+
+    // Reset pagination when filters or view change
+    React.useEffect(() => {
+        resetPagination();
+    }, [statusFilter, assigneeFilter, view, resetPagination]);
+
     const handleDragStart = (e: React.DragEvent, caseId: string) => {
         e.dataTransfer.setData('caseId', caseId);
     };
@@ -242,24 +259,41 @@ export const CaseManagement: React.FC<CaseManagementProps> = ({ cases, clients, 
                  </div>
             </div>
             {view === 'tile' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredCases.map(caseItem => (
-                        <CaseTile 
-                            key={caseItem.id} 
-                            caseItem={caseItem}
-                            clientName={getClientName(caseItem.clientId)}
-                            assigneeName={getAssigneeName(caseItem.assignedToId)}
-                            onEdit={() => onEditCase(caseItem)}
-                            onDelete={() => onDeleteCase(caseItem.id)}
-                            onSelect={() => onSelectCase(caseItem.id)}
-                        />
-                    ))}
-                    {filteredCases.length === 0 && (
-                        <div className="col-span-full text-center p-12 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                            No cases match the current filters.
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {paginatedCases.map(caseItem => (
+                            <CaseTile
+                                key={caseItem.id}
+                                caseItem={caseItem}
+                                clientName={getClientName(caseItem.clientId)}
+                                assigneeName={getAssigneeName(caseItem.assignedToId)}
+                                onEdit={() => onEditCase(caseItem)}
+                                onDelete={() => onDeleteCase(caseItem.id)}
+                                onSelect={() => onSelectCase(caseItem.id)}
+                            />
+                        ))}
+                        {filteredCases.length === 0 && (
+                            <div className="col-span-full text-center p-12 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                                No cases match the current filters.
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Pagination */}
+                    {filteredCases.length > itemsPerPage && (
+                        <div className="mt-6">
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                totalItems={filteredCases.length}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={handlePageChange}
+                                onItemsPerPageChange={handleItemsPerPageChange}
+                                itemsPerPageOptions={[8, 12, 24, 48]}
+                            />
                         </div>
                     )}
-                </div>
+                </>
             ) : (
                 <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 sm:-mx-8 px-6 sm:px-8">
                     {Object.values(CaseStatus).map(status => (
