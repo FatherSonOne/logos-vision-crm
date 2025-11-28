@@ -68,53 +68,147 @@ export const AddVolunteerDialog: React.FC<AddVolunteerDialogProps> = ({ isOpen, 
 
   const handleClose = () => {
     setFormData(initialFormData as any);
+    setErrors({});
     onClose();
   }
 
-  const inputStyles = "w-full p-2 bg-slate-100 border border-slate-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 placeholder-slate-400";
+  const getInputStyles = (fieldName: string) => {
+    const baseStyles = "w-full p-2 bg-slate-100 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 placeholder-slate-400";
+    const errorStyles = errors[fieldName]
+      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+      : "border-slate-300";
+    return `${baseStyles} ${errorStyles}`;
+  };
+
+  const labelStyles = "block text-sm font-medium text-slate-700 mb-1";
   
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Add New Volunteer">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name *</label>
-                <input type="text" name="name" value={formData.name} onChange={handleChange} required className={inputStyles} autoComplete="name" />
+                <label className={labelStyles}>
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={getInputStyles('name')}
+                  autoComplete="name"
+                  placeholder="e.g., John Smith"
+                />
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                )}
             </div>
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
-                <input type="email" name="email" value={formData.email} onChange={handleChange} required className={inputStyles} autoComplete="email" />
+                <label className={labelStyles}>
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={getInputStyles('email')}
+                  autoComplete="email"
+                  placeholder="e.g., john@example.com"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                )}
             </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Phone *</label>
-                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required className={inputStyles} autoComplete="tel" />
+                <label className={labelStyles}>
+                  Phone <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className={getInputStyles('phone')}
+                  autoComplete="tel"
+                  placeholder="e.g., (555) 123-4567"
+                />
+                {errors.phone && (
+                  <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                )}
             </div>
              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Location *</label>
-                <LocationAutocompleteInput name="location" value={formData.location} onChange={handleLocationChange} required className={inputStyles} />
+                <label className={labelStyles}>
+                  Location <span className="text-red-500">*</span>
+                </label>
+                <LocationAutocompleteInput
+                  name="location"
+                  value={formData.location}
+                  onChange={handleLocationChange}
+                  className={getInputStyles('location')}
+                />
+                {errors.location && (
+                  <p className="mt-1 text-sm text-red-600">{errors.location}</p>
+                )}
             </div>
         </div>
         <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Skills (comma-separated)</label>
-            <input type="text" name="skills" value={formData.skills} onChange={handleChange} className={inputStyles} />
+            <label className={labelStyles}>
+              Skills (comma-separated) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="skills"
+              value={formData.skills}
+              onChange={handleChange}
+              className={getInputStyles('skills')}
+              placeholder="e.g., Marketing, Graphic Design, Writing"
+            />
+            {errors.skills && (
+              <p className="mt-1 text-sm text-red-600">{errors.skills}</p>
+            )}
         </div>
          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Availability *</label>
-            <input type="text" name="availability" value={formData.availability} onChange={handleChange} required className={inputStyles} placeholder="e.g., Weekends, Mon/Wed evenings" />
+            <label className={labelStyles}>
+              Availability <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="availability"
+              value={formData.availability}
+              onChange={handleChange}
+              className={getInputStyles('availability')}
+              placeholder="e.g., Weekends, Mon/Wed evenings"
+            />
+            {errors.availability && (
+              <p className="mt-1 text-sm text-red-600">{errors.availability}</p>
+            )}
         </div>
         
          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Assign to Projects</label>
-                <select multiple name="assignedProjectIds" value={formData.assignedProjectIds} onChange={(e) => handleMultiSelectChange(e, 'assignedProjectIds')} className={`${inputStyles} h-24`}>
+                <label className={labelStyles}>Assign to Projects</label>
+                <select
+                  multiple
+                  name="assignedProjectIds"
+                  value={formData.assignedProjectIds}
+                  onChange={(e) => handleMultiSelectChange(e, 'assignedProjectIds')}
+                  className={`${getInputStyles('assignedProjectIds')} h-24`}
+                >
                     {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
             </div>
              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Assign to Clients</label>
-                <select multiple name="assignedClientIds" value={formData.assignedClientIds} onChange={(e) => handleMultiSelectChange(e, 'assignedClientIds')} className={`${inputStyles} h-24`}>
+                <label className={labelStyles}>Assign to Clients</label>
+                <select
+                  multiple
+                  name="assignedClientIds"
+                  value={formData.assignedClientIds}
+                  onChange={(e) => handleMultiSelectChange(e, 'assignedClientIds')}
+                  className={`${getInputStyles('assignedClientIds')} h-24`}
+                >
                     {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
             </div>
