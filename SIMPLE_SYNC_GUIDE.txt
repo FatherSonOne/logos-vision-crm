@@ -1,0 +1,154 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║     🔄 SIMPLE SYNC GUIDE - Keep OneDrive Up to Date         ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  WHERE AM I WORKING?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📍 YOU SEE FILES HERE:
+   C:\Users\Aegis{FM}\Onedrive\Documents\logos-vision-crm
+
+🤖 CLAUDE WORKS HERE:
+   Cloud container (you can't access this directly)
+
+🌐 GITHUB (CENTRAL HUB):
+   https://github.com/FatherSonOne/logos-vision-crm
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  HOW IT WORKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    Claude's Container     →  [PUSH]  →     GitHub
+                                              ↓
+                                          [PULL]
+                                              ↓
+                                      Your OneDrive
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⚡ QUICK START - 3 STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1: Get the Sync Script
+   → Go to GitHub (link above)
+   → Switch to branch: claude/backup-repo-onedrive-0171kP3Mk3qsh9oHbjn4pkzX
+   → Download file: sync-to-onedrive.bat
+   → Save to your Desktop
+
+STEP 2: Run the Script
+   → Double-click sync-to-onedrive.bat
+   → Wait 5-10 seconds
+   → Done! ✅
+
+STEP 3: When to Sync
+   → After Claude says "changes pushed"
+   → Before you start working
+   → Anytime you want latest updates
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🔧 MANUAL SYNC (IF SCRIPT DOESN'T WORK)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FIRST TIME ONLY:
+   cd C:\Users\Aegis{FM}\Onedrive\Documents
+   git clone https://github.com/FatherSonOne/logos-vision-crm.git
+   cd logos-vision-crm
+   git checkout claude/backup-repo-onedrive-0171kP3Mk3qsh9oHbjn4pkzX
+
+EVERY TIME AFTER:
+   cd C:\Users\Aegis{FM}\Onedrive\Documents\logos-vision-crm
+   git pull origin claude/backup-repo-onedrive-0171kP3Mk3qsh9oHbjn4pkzX
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ HOW TO CHECK IF YOU'RE SYNCED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Look for these 3 files in your OneDrive folder:
+
+   [ ] sync-to-onedrive.bat
+   [ ] HOW_TO_SYNC.md
+   [ ] SYNC_STATUS.md
+
+ALL 3 EXIST? → You're synced! ✅
+MISSING FILES? → Run the sync script!
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  💡 TYPICAL WORKFLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Tell Claude: "Let's add feature X"
+
+2. Claude works and says: "Changes pushed to GitHub"
+
+3. Run: sync-to-onedrive.bat
+
+4. Open your OneDrive folder → See the new changes!
+
+5. Test locally → Everything works!
+
+6. Repeat! 🔄
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⚠️ IMPORTANT RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ DO:
+   • Sync regularly (it's fast and safe!)
+   • Run sync before working on files
+   • Tell Claude if you make changes locally
+
+❌ DON'T:
+   • Work in OneDrive without syncing first
+   • Switch branches manually
+   • Delete the .git folder
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🆘 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Problem: "Script doesn't work"
+   → Use the manual commands above
+   → Or tell Claude: "Sync script failed, here's the error: [paste error]"
+
+Problem: "Not sure if I'm synced"
+   → Run: git status
+   → Should say: "Your branch is up to date"
+
+Problem: "Files look different"
+   → Run sync script again
+   → If still wrong, tell Claude
+
+Problem: "Want to edit files myself"
+   → Go ahead! Just commit and push when done
+   → Then tell Claude you made changes
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📞 NEED HELP?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Just tell Claude:
+   • "I'm confused about syncing"
+   • "My OneDrive isn't updating"
+   • "How do I know if I'm up to date?"
+   • "Script shows error: [paste error]"
+
+I'll help you immediately! 🚀
+
+
+╔══════════════════════════════════════════════════════════════╗
+║  REMEMBER: GitHub is the "source of truth"                   ║
+║  Everything flows through there!                             ║
+╚══════════════════════════════════════════════════════════════╝
+
+Last Updated: 2025-11-28
