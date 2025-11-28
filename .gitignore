@@ -31,3 +31,8 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Backup files
+*.tar.gz
+*.zip
+*-backup.*
