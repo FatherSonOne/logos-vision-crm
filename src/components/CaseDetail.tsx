@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import type { Case, Client, TeamMember, Activity, CaseComment } from '../types';
 import { CaseStatus, CasePriority, ActivityType } from '../types';
 import { AiEnhancedTextarea } from './AiEnhancedTextarea';
+import { useEntityPresence } from '../hooks/usePresence';
+import { OnlineUsers } from './OnlineUsers';
 
 // --- Helper Components & Icons ---
 
@@ -60,6 +62,9 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ caseItem, client, assign
     const [activeTab, setActiveTab] = useState<'activities' | 'comments'>('activities');
     const [newComment, setNewComment] = useState('');
 
+    // Real-time presence tracking
+    const { presences } = useEntityPresence('case', caseItem.id);
+
     const getTeamMember = (id: string) => teamMembers.find(tm => tm.id === id);
 
     const handleCommentSubmit = (e: React.FormEvent) => {
@@ -97,6 +102,7 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ caseItem, client, assign
             <header className="mb-6">
                 <div className="flex flex-wrap items-center gap-4 mb-2">
                     <h2 className="text-3xl font-bold text-slate-900">{caseItem.title}</h2>
+                    <OnlineUsers presences={presences} maxAvatars={5} showNames={false} size="sm" />
                     <StatusBadge status={caseItem.status} />
                     <PriorityBadge priority={caseItem.priority} />
                 </div>

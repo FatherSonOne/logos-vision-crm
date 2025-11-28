@@ -4,6 +4,8 @@ import { CaseStatus, CasePriority } from '../types';
 import { ExportButton, type ExportField } from './export/ExportButton';
 import { PlusIcon, PencilIcon, TrashIcon } from './icons';
 import { usePagination, Pagination } from './ui/Pagination';
+import { usePresence } from '../hooks/usePresence';
+import { OnlineUsers } from './OnlineUsers';
 
 interface CaseManagementProps {
     cases: Case[];
@@ -126,6 +128,9 @@ export const CaseManagement: React.FC<CaseManagementProps> = ({ cases, clients, 
     const [assigneeFilter, setAssigneeFilter] = useState<string | 'all'>('all');
     const [draggedOverColumn, setDraggedOverColumn] = useState<CaseStatus | null>(null);
 
+    // Real-time presence tracking for this page
+    const { presences } = usePresence('cases-page', { current_page: '/cases' });
+
     const filteredCases = useMemo(() => {
         return cases.filter(caseItem => {
             const statusMatch = statusFilter === 'all' || caseItem.status === statusFilter;
@@ -218,7 +223,10 @@ export const CaseManagement: React.FC<CaseManagementProps> = ({ cases, clients, 
     return (
         <div>
             <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
-                <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Case Management</h2>
+                <div className="flex items-center gap-3">
+                    <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Case Management</h2>
+                    <OnlineUsers presences={presences} maxAvatars={5} showNames={false} size="sm" />
+                </div>
                  <div className="flex items-center gap-4 flex-wrap">
                     {view === 'tile' && (
                         <>

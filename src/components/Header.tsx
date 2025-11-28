@@ -2,6 +2,7 @@ import React from 'react';
 import { GlobalSearch } from './GlobalSearch';
 import type { Page } from '../types';
 import { MoonIcon, SunIcon, QuestionMarkCircleIcon } from './icons';
+import { NotificationBell } from './NotificationBell';
 
 interface HeaderProps {
     onSearch: (query: string, includeWeb: boolean) => void;
@@ -62,6 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
                             Logout
                         </button>
                     )}
+                    <NotificationBell />
                     <button
                         onClick={onStartTour}
                         id="guided-tour-button"

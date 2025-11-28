@@ -8,6 +8,8 @@ import { decodeAudioData, decode } from '../utils/audio';
 import { getDeadlineStatus } from '../utils/dateHelpers';
 import { AiEnhancedTextarea } from './AiEnhancedTextarea';
 import { ClockIcon, SparklesIcon, ShieldExclamationIcon, ShieldExclamationIconSolid, ShieldCheckIconSolid, NoteIcon, SoundWaveIcon, PlayIcon } from './icons';
+import { useEntityPresence } from '../hooks/usePresence';
+import { OnlineUsers } from './OnlineUsers';
 
 const StatusBadge: React.FC<{ status: ProjectStatus | TaskStatus }> = ({ status }) => {
   const colors = {
@@ -49,6 +51,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, client, p
     const [currentNote, setCurrentNote] = useState('');
     const [riskAnalysisResult, setRiskAnalysisResult] = useState<RiskAnalysisResult | null>(null);
     const [isAnalyzingRisk, setIsAnalyzingRisk] = useState(false);
+
+    // Real-time presence tracking
+    const { presences } = useEntityPresence('project', project.id);
 
     const projectDeadline = getDeadlineStatus(project.endDate, project.status === ProjectStatus.Completed);
 
@@ -147,8 +152,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, client, p
             <div className="bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl p-6 sm:p-8 rounded-lg border border-white/20 shadow-lg text-shadow-strong">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between sm:items-start border-b border-white/20 pb-6 mb-6">
-                    <div>
-                        <h2 className="text-3xl font-bold text-slate-900 mb-2 dark:text-slate-100">{project.name}</h2>
+                    <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{project.name}</h2>
+                            <OnlineUsers presences={presences} maxAvatars={5} showNames={false} size="sm" />
+                        </div>
                         <p className="text-md text-slate-600 dark:text-slate-300">for <span className="font-semibold text-cyan-600 dark:text-cyan-400">{client?.name || 'Unknown Client'}</span></p>
                     </div>
                     <div className="mt-4 sm:mt-0 flex-shrink-0 text-right">
