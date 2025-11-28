@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { Project, Client, TeamMember, Task } from '../types';
-import { ProjectStatus, TaskStatus } from '../types';
+import { ProjectStatus, TaskStatus, Permission } from '../types';
 import { ProjectTimeline } from './ProjectTimeline';
 import { getDeadlineStatus } from '../utils/dateHelpers';
 import { StatusBadge } from './ui/StatusBadge';
@@ -12,6 +12,9 @@ import { ExportButton, ExportDialog, ExportField } from './export/ExportButton';
 import { Skeleton } from './ui/Skeleton';
 import { ContextMenu, ContextMenuItem } from './ui/ContextMenu';
 import { projectNotesService, projectActivitiesService } from '../services/projectNotesService';
+import { usePagination, Pagination } from './ui/Pagination';
+import { ProtectedComponent } from './ProtectedComponent';
+import { usePermissions } from '../contexts/PermissionContext';
 
 // Phase 3 imports
 import { 
@@ -202,6 +205,12 @@ const ProjectCard: React.FC<{
       }
     };
 
+    // Permission checks
+    const { hasPermission } = usePermissions();
+    const canEdit = hasPermission(Permission.ProjectEdit);
+    const canDelete = hasPermission(Permission.ProjectDelete);
+    const canArchive = hasPermission(Permission.ProjectArchive);
+
     // Create context menu items
     const menuItems: ContextMenuItem[] = [
         {
@@ -215,7 +224,7 @@ const ProjectCard: React.FC<{
             label: 'Edit Project',
             icon: <EditIcon />,
             onClick: () => onEditProject?.(project.id),
-            disabled: !onEditProject,
+            disabled: !onEditProject || !canEdit,
             divider: true
         },
         {
@@ -249,6 +258,7 @@ const ProjectCard: React.FC<{
             label: project.archived ? 'Unarchive Project' : 'Archive Project',
             icon: <ArchiveBoxIcon className="h-4 w-4" />,
             onClick: () => onToggleArchive?.(project.id),
+            disabled: !canArchive,
         },
         {
             id: 'export',
@@ -274,7 +284,7 @@ const ProjectCard: React.FC<{
                     onDeleteProject?.(project.id);
                 }
             },
-            disabled: !onDeleteProject,
+            disabled: !onDeleteProject || !canDelete,
             danger: true
         }
     ];
@@ -944,6 +954,22 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     return result;
   }, [localProjects, searchQuery, sortBy, sortOrder, clients, showArchived]);
 
+  // Pagination for projects
+  const {
+    paginatedItems: paginatedProjects,
+    currentPage,
+    totalPages,
+    itemsPerPage,
+    handlePageChange,
+    handleItemsPerPageChange,
+    resetPagination,
+  } = usePagination(searchedAndSortedProjects, 12); // 12 items per page for 3x4 grid
+
+  // Reset pagination when search/filter/sort changes
+  useEffect(() => {
+    resetPagination();
+  }, [searchQuery, sortBy, sortOrder, showArchived, resetPagination]);
+
   // Count archived projects for UI
   const archivedCount = localProjects.filter(p => p.archived).length;
 
@@ -1210,29 +1236,48 @@ export const ProjectList: React.FC<ProjectListProps> = ({
             />
           </div>
         ) : searchedAndSortedProjects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {searchedAndSortedProjects.map((project, index) => (
-              <div key={project.id} className="fade-in h-full" style={{ animationDelay: `${index * 50}ms` }}>
-                <ProjectCard
-                  project={project}
-                  clientName={getClientName(project.clientId)}
-                  onSelectProject={onSelectProject}
-                  onEditProject={onEditProject}
-                  onDeleteProject={onDeleteProject}
-                  onDuplicateProject={onDuplicateProject}
-                  onTogglePin={handleTogglePin}
-                  onToggleStar={handleToggleStar}
-                  onToggleArchive={handleToggleArchive}
-                  onOpenCollaboration={setSelectedProjectForCollab}
-                  onStatusChange={handleQuickStatusChange}
-                  onQuickAddTask={handleQuickAddTask}
-                  isSelected={selectedProjectIds.has(project.id)}
-                  isSelectionMode={isSelectionMode}
-                  onToggleSelect={handleToggleSelect}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedProjects.map((project, index) => (
+                <div key={project.id} className="fade-in h-full" style={{ animationDelay: `${index * 50}ms` }}>
+                  <ProjectCard
+                    project={project}
+                    clientName={getClientName(project.clientId)}
+                    onSelectProject={onSelectProject}
+                    onEditProject={onEditProject}
+                    onDeleteProject={onDeleteProject}
+                    onDuplicateProject={onDuplicateProject}
+                    onTogglePin={handleTogglePin}
+                    onToggleStar={handleToggleStar}
+                    onToggleArchive={handleToggleArchive}
+                    onOpenCollaboration={setSelectedProjectForCollab}
+                    onStatusChange={handleQuickStatusChange}
+                    onQuickAddTask={handleQuickAddTask}
+                    isSelected={selectedProjectIds.has(project.id)}
+                    isSelectionMode={isSelectionMode}
+                    onToggleSelect={handleToggleSelect}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination Component */}
+            {searchedAndSortedProjects.length > itemsPerPage && (
+              <div className="mt-8">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={searchedAndSortedProjects.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={handlePageChange}
+                  onItemsPerPageChange={handleItemsPerPageChange}
+                  itemsPerPageOptions={[6, 12, 24, 48]}
+                  showItemsPerPage={true}
+                  showTotalItems={true}
                 />
               </div>
-            ))}
-          </div>
+            )}
+          </>
         ) : (
           <div className="col-span-full text-center py-16 bg-white/30 dark:bg-black/20 backdrop-blur-xl rounded-lg border border-dashed border-white/20 dark:border-white/10">
             <p className="text-slate-700 dark:text-slate-300 font-semibold">No projects match your search or filters.</p>
