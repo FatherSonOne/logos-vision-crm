@@ -41,6 +41,7 @@ import { FormGenerator } from './components/FormGenerator';
 import { VolunteerList } from './components/VolunteerList';
 import { AddVolunteerDialog } from './components/AddVolunteerDialog';
 import { CharityTracker } from './components/CharityTracker';
+import CharityHub from './components/CharityHub';
 import { CaseManagement } from './components/CaseManagement';
 import { DocumentLibrary } from './components/DocumentLibrary';
 import { WebManagement } from './components/WebManagement';
@@ -1277,8 +1278,17 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
                   teamMembers={teamMembers}
                   onAddVolunteer={() => setIsAddVolunteerDialogOpen(true)} 
                 />;
-      case 'charity': 
-        return <CharityTracker clients={clients} donations={donations} />;
+      case 'charity':
+        return <CharityHub
+                  clients={clients}
+                  donations={donations}
+                  volunteers={volunteers}
+                  onNavigateToView={(view) => {
+                    // Handle navigation to specific charity features
+                    console.log('Navigate to charity view:', view);
+                  }}
+                  onSetPage={(page) => setCurrentPage(page as Page)}
+                />;
       case 'case': 
         return <CaseManagement 
                   cases={cases} 

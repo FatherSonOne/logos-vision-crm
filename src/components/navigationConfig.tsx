@@ -47,7 +47,7 @@ export const navigationSections: NavSectionConfig[] = [
             { pageId: 'events', label: 'Events', icon: <EventsIcon /> },
             { pageId: 'email', label: 'Email Campaigns', icon: <MailCampaignIcon /> },
             { pageId: 'web-management', label: 'Web Management', icon: <GlobeIcon /> },
-            { pageId: 'charity', label: 'Charity Tracker', icon: <HeartIcon /> },
+            { pageId: 'charity', label: 'Charity Hub', icon: <HeartIcon /> },
         ]
     },
     {
