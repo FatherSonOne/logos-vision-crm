@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Volunteer, Client, Project } from '../types';
 import { VolunteersMap } from './VolunteersMap';
 import { MailIcon, LocationMarkerIcon, ClockIcon, PlusIcon, FolderIcon, BuildingIcon } from './icons';
 import { ExportButton, type ExportField } from './export/ExportButton';
+import { usePagination, Pagination } from './ui/Pagination';
 
 interface VolunteerListProps {
   volunteers: Volunteer[];
@@ -69,7 +70,7 @@ const AddVolunteerCard: React.FC<{ onClick: () => void }> = ({ onClick }) => (
 export const VolunteerList: React.FC<VolunteerListProps> = ({ volunteers, clients, projects, onAddVolunteer }) => {
     const [clientFilter, setClientFilter] = useState<string>('all');
     const [projectFilter, setProjectFilter] = useState<string>('all');
-    
+
     const filteredVolunteers = useMemo(() => {
         return volunteers.filter(volunteer => {
             const clientMatch = clientFilter === 'all' || volunteer.assignedClientIds.includes(clientFilter);
@@ -77,7 +78,23 @@ export const VolunteerList: React.FC<VolunteerListProps> = ({ volunteers, client
             return clientMatch && projectMatch;
         });
     }, [volunteers, clientFilter, projectFilter]);
-    
+
+    // Pagination
+    const {
+        paginatedItems: paginatedVolunteers,
+        currentPage,
+        totalPages,
+        itemsPerPage,
+        handlePageChange,
+        handleItemsPerPageChange,
+        resetPagination,
+    } = usePagination(filteredVolunteers, 12);
+
+    // Reset pagination when filters change
+    useEffect(() => {
+        resetPagination();
+    }, [clientFilter, projectFilter, resetPagination]);
+
     const getProjectName = (id: string) => projects.find(p => p.id === id)?.name || 'Unknown Project';
     const getClientName = (id: string) => clients.find(c => c.id === id)?.name || 'Unknown Client';
 
@@ -132,9 +149,9 @@ export const VolunteerList: React.FC<VolunteerListProps> = ({ volunteers, client
                     </div>
                 </div>
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {filteredVolunteers.map((volunteer) => (
-                        <VolunteerCard 
-                            key={volunteer.id} 
+                    {paginatedVolunteers.map((volunteer) => (
+                        <VolunteerCard
+                            key={volunteer.id}
                             volunteer={volunteer}
                             getProjectName={getProjectName}
                             getClientName={getClientName}
@@ -142,6 +159,23 @@ export const VolunteerList: React.FC<VolunteerListProps> = ({ volunteers, client
                     ))}
                     <AddVolunteerCard onClick={onAddVolunteer} />
                  </div>
+
+                 {/* Pagination */}
+                 {filteredVolunteers.length > itemsPerPage && (
+                    <div className="mt-8">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={filteredVolunteers.length}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={handlePageChange}
+                            onItemsPerPageChange={handleItemsPerPageChange}
+                            itemsPerPageOptions={[8, 12, 24, 48]}
+                            showItemsPerPage={true}
+                            showTotalItems={true}
+                        />
+                    </div>
+                 )}
             </div>
         </div>
     );

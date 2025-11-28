@@ -2,6 +2,7 @@ import React from 'react';
 import type { Client } from '../types';
 import { MailIcon, PhoneIcon, LocationMarkerIcon, PlusIcon } from './icons';
 import { ExportButton, type ExportField } from './export/ExportButton';
+import { usePagination, Pagination } from './ui/Pagination';
 
 interface ClientListProps {
   clients: Client[];
@@ -53,12 +54,22 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onAddOrganizati
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
     { key: 'location', label: 'Location' },
-    { 
-      key: 'createdAt', 
+    {
+      key: 'createdAt',
       label: 'Date Added',
       format: (date) => new Date(date).toLocaleDateString()
     },
   ];
+
+  // Pagination
+  const {
+    paginatedItems: paginatedClients,
+    currentPage,
+    totalPages,
+    itemsPerPage,
+    handlePageChange,
+    handleItemsPerPageChange,
+  } = usePagination(clients, 12);
 
   return (
     <div className="text-shadow-strong">
@@ -71,15 +82,32 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onAddOrganizati
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {clients.map((client, index) => (
+        {paginatedClients.map((client, index) => (
           <div key={client.id} className="fade-in h-full" style={{ animationDelay: `${index * 50}ms` }}>
             <OrganizationCard client={client} onSelectOrganization={onSelectOrganization} />
           </div>
         ))}
-        <div className="fade-in h-full" style={{ animationDelay: `${clients.length * 50}ms` }}>
+        <div className="fade-in h-full" style={{ animationDelay: `${paginatedClients.length * 50}ms` }}>
             <AddOrganizationCard onClick={onAddOrganization} />
         </div>
       </div>
+
+      {/* Pagination */}
+      {clients.length > itemsPerPage && (
+        <div className="mt-8">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={clients.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+            itemsPerPageOptions={[8, 12, 24, 48]}
+            showItemsPerPage={true}
+            showTotalItems={true}
+          />
+        </div>
+      )}
     </div>
   );
 };

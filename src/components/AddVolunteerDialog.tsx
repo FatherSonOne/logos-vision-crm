@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import type { Volunteer, Client, Project } from '../types';
 import { LocationAutocompleteInput } from './LocationAutocompleteInput';
+import { volunteerSchema } from '../utils/validations';
+import { z } from 'zod';
 
 interface AddVolunteerDialogProps {
   isOpen: boolean;
@@ -24,18 +26,30 @@ const initialFormData = {
 
 export const AddVolunteerDialog: React.FC<AddVolunteerDialogProps> = ({ isOpen, onClose, onSave, clients, projects }) => {
   const [formData, setFormData] = useState<Omit<Volunteer, 'id' | 'skills'> & { skills: string }>(initialFormData as any);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (Object.values(formData).some(field => typeof field === 'string' && !field.trim())) {
-        alert("Please fill out all required fields.");
-        return;
-    }
-    onSave({
+    setErrors({});
+
+    try {
+      const validData = volunteerSchema.parse({
         ...formData,
         skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean),
-    });
-    handleClose();
+      });
+
+      onSave(validData);
+      handleClose();
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const formattedErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          const path = err.path.join('.');
+          formattedErrors[path] = err.message;
+        });
+        setErrors(formattedErrors);
+      }
+    }
   };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
