@@ -1,6 +1,10 @@
 // Migration Script: Populate Supabase with Sample Projects and Activities
 // Run this with: npx tsx migrateProjectsActivities.ts
 
+// Load environment variables from .env file
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { projectService } from './src/services/projectService';
 import { activityService } from './src/services/activityService';
 import { mockProjects, mockActivities } from './src/data/mockData';
