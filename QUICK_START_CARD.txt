@@ -1,0 +1,190 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║          🎯 QUICK START CARD - KEEP THIS HANDY!             ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📂 YOUR PROJECT LOCATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   C:\Users\Aegis{FM}\Onedrive\Documents\logos-vision-crm
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⚡ THE TWO MAGIC SCRIPTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   sync-to-onedrive.bat        start-dev-server.bat
+   ↓                           ↓
+   Gets latest code            Runs your CRM locally
+   from GitHub                 at localhost:5173
+
+   Use: Often!                 Use: When working
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🚀 FIRST TIME SETUP (Do Once)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   1. Double-click: sync-to-onedrive.bat
+
+   2. Double-click: start-dev-server.bat
+      (First time takes 1-2 min to install)
+
+   3. Open browser: http://localhost:5173/
+
+   4. SEE YOUR CRM! 🎉
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🔄 TYPICAL WORK SESSION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   1. Double-click: sync-to-onedrive.bat
+      (Get latest from GitHub)
+
+   2. Double-click: start-dev-server.bat
+      (Start CRM locally)
+
+   3. Open browser: http://localhost:5173/
+      (View your CRM)
+
+   4. Tell Claude: "Let's add [feature]"
+      (Claude makes changes)
+
+   5. Double-click: sync-to-onedrive.bat
+      (Get Claude's changes)
+
+   6. Browser auto-refreshes!
+      (See changes instantly!)
+
+   7. Test and repeat! 🔄
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📚 HELPFUL FILES (Open These!)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   QUICK_START_CARD.txt ⭐ You're reading it!
+   DEVELOPMENT_WORKFLOW.txt - Visual workflow guide
+   HOW_TO_RUN_LOCALLY.md - Complete dev server guide
+   HOW_TO_SYNC.md - Complete sync guide
+   SYNC_STATUS.md - Check sync status
+   START_HERE_TOMORROW.md - What to work on next
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🌐 IMPORTANT URLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Local CRM:
+   http://localhost:5173/
+
+   GitHub Repo:
+   https://github.com/FatherSonOne/logos-vision-crm
+
+   Branch:
+   claude/backup-repo-onedrive-0171kP3Mk3qsh9oHbjn4pkzX
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⌨️ USEFUL KEYBOARD SHORTCUTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   In Your CRM (browser):
+   Ctrl+K ............... Open Global Search
+   F12 .................. Open Developer Console
+   Ctrl+Shift+R ......... Hard Refresh
+   Ctrl+Shift+N ......... New Incognito Window
+
+   In Terminal:
+   Ctrl+C ............... Stop dev server
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🆘 QUICK TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Problem: npm not found
+   → Install Node.js: https://nodejs.org/
+
+   Problem: Changes not showing
+   → Run sync-to-onedrive.bat again
+   → Hard refresh: Ctrl+Shift+R
+
+   Problem: Blank page
+   → Press F12 → Look for errors
+   → Tell Claude the error
+
+   Problem: Port in use
+   → Check terminal for new port number
+   → Use that instead (e.g., 5174)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ YOU'RE SYNCED IF YOU SEE THESE FILES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   In your OneDrive folder:
+
+   ✓ sync-to-onedrive.bat
+   ✓ start-dev-server.bat
+   ✓ QUICK_START_CARD.txt
+   ✓ DEVELOPMENT_WORKFLOW.txt
+   ✓ HOW_TO_RUN_LOCALLY.md
+   ✓ HOW_TO_SYNC.md
+   ✓ SYNC_STATUS.md
+
+   All there? You're good! ✅
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🎯 REMEMBER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Claude works here:  Cloud container
+                       ↓
+   Code stored here:   GitHub
+                       ↓
+   You work here:      OneDrive folder
+                       ↓
+   You view here:      http://localhost:5173/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  💡 PRO TIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   ✅ Keep dev server running while working
+   ✅ Keep browser tab open at localhost:5173
+   ✅ Sync often - it's quick and safe!
+   ✅ Test features right after Claude adds them
+   ✅ Give Claude feedback on what you see
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📞 NEED HELP?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Tell Claude:
+   - "Sync isn't working"
+   - "Dev server won't start"
+   - "Getting this error: [paste it]"
+   - "Changes not showing up"
+
+   I'll help immediately! 🚀
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║  🎊 YOU'RE ALL SET!                                          ║
+║                                                              ║
+║  Just double-click those two .bat files and you're ready!   ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+Print this card or keep it open! 📌
+Last Updated: 2025-11-28
