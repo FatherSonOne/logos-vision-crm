@@ -59,7 +59,8 @@ import { ClientPortalLogin } from './components/ClientPortalLogin';
 import { ClientPortal } from './components/ClientPortal';
 import { EmailCampaigns } from './components/EmailCampaigns';
 import { GrantAssistant } from './components/GrantAssistant';
-import { useToast } from './components/ui/Toast';
+import { useToast } from './contexts/ToastContext';
+import { useKeyboardShortcuts, type KeyboardShortcut } from './hooks/useKeyboardShortcuts';
 import { GuidedTour, TourStep } from './components/GuidedTour';
 import { QuickAddButton, QuickAction } from './components/quickadd/QuickAddButton';
 import { ProjectPlannerModal } from './components/ProjectPlannerModal';
@@ -471,6 +472,119 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
     return allActions;
   }, [currentPage, currentUserId]);
 
+  // Keyboard Shortcuts Configuration
+  const keyboardShortcuts: KeyboardShortcut[] = useMemo(() => [
+    // Navigation shortcuts
+    {
+      key: 'p',
+      ctrl: true,
+      shift: true,
+      description: 'Go to Projects',
+      action: () => navigateToPage('projects'),
+      category: 'Navigation',
+    },
+    {
+      key: 'c',
+      ctrl: true,
+      shift: true,
+      description: 'Go to Clients',
+      action: () => navigateToPage('organizations'),
+      category: 'Navigation',
+    },
+    {
+      key: 'd',
+      ctrl: true,
+      shift: true,
+      description: 'Go to Dashboard',
+      action: () => navigateToPage('dashboard'),
+      category: 'Navigation',
+    },
+    {
+      key: 't',
+      ctrl: true,
+      shift: true,
+      description: 'Go to Tasks',
+      action: () => navigateToPage('tasks'),
+      category: 'Navigation',
+    },
+    {
+      key: 'a',
+      ctrl: true,
+      shift: true,
+      description: 'Go to Activities',
+      action: () => navigateToPage('activities'),
+      category: 'Navigation',
+    },
+    {
+      key: 'v',
+      ctrl: true,
+      shift: true,
+      description: 'Go to Volunteers',
+      action: () => navigateToPage('volunteers'),
+      category: 'Navigation',
+    },
+    // Action shortcuts
+    {
+      key: 'n',
+      ctrl: true,
+      description: 'New Project',
+      action: () => setIsProjectPlannerOpen(true),
+      category: 'Actions',
+    },
+    {
+      key: 'k',
+      ctrl: true,
+      description: 'Open Command Palette',
+      action: () => setIsCommandPaletteOpen(true),
+      category: 'Actions',
+    },
+    {
+      key: 'l',
+      ctrl: true,
+      description: 'Log Activity',
+      action: () => {
+        setEditingActivity(null);
+        setIsActivityDialogOpen(true);
+      },
+      category: 'Actions',
+    },
+    // UI shortcuts
+    {
+      key: 'd',
+      ctrl: true,
+      alt: true,
+      description: 'Toggle Dark Mode',
+      action: () => toggleTheme(),
+      category: 'UI',
+    },
+    {
+      key: '?',
+      shift: true,
+      description: 'Show Help / Guided Tour',
+      action: () => setIsTourOpen(true),
+      category: 'UI',
+    },
+    {
+      key: 'Escape',
+      description: 'Close Modal/Dialog',
+      action: () => {
+        setIsActivityDialogOpen(false);
+        setIsCaseDialogOpen(false);
+        setIsAddContactDialogOpen(false);
+        setIsAddVolunteerDialogOpen(false);
+        setIsAddTeamMemberDialogOpen(false);
+        setIsCreateRoomDialogOpen(false);
+        setIsProjectPlannerOpen(false);
+        setIsCommandPaletteOpen(false);
+        setIsAiChatOpen(false);
+      },
+      category: 'UI',
+    },
+  ], [navigateToPage, toggleTheme]);
+
+  // Register keyboard shortcuts
+  useKeyboardShortcuts(keyboardShortcuts);
+
   const tourSteps: TourStep[] = [
     {
         selector: '#main-sidebar',
@@ -517,20 +631,6 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
-
-  // Command Palette Keyboard Shortcut (Ctrl/Cmd + K)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Check for Ctrl+K (Windows/Linux) or Cmd+K (Mac)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsCommandPaletteOpen(true);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   // Track recent pages when navigating
   useEffect(() => {

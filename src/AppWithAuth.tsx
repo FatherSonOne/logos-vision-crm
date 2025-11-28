@@ -1,16 +1,19 @@
 import React from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { PermissionProvider } from './contexts/PermissionContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import App from './App';
 
-// Wrapper component that provides auth, permissions, and error handling to App
+// Wrapper component that provides auth, permissions, toast notifications, and error handling to App
 const AppWithAuth: React.FC = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
         <PermissionProvider>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </PermissionProvider>
       </AuthProvider>
     </ErrorBoundary>
