@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   // Load env file from the project root
   const env = loadEnv(mode, process.cwd(), '');
-  
+
   return {
     server: {
       port: 3000,
@@ -21,6 +21,38 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
-    }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Vendor chunks for better caching
+            'vendor-react': ['react', 'react-dom'],
+            'vendor-supabase': ['@supabase/supabase-js'],
+            'vendor-charts': ['recharts'],
+            'vendor-ai': ['@google/genai'],
+            'vendor-icons': ['lucide-react'],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 1000,
+      sourcemap: mode === 'development',
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: mode === 'production',
+        },
+      },
+    },
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        '@supabase/supabase-js',
+        'recharts',
+        'lucide-react',
+        'zod',
+      ],
+    },
   };
 });

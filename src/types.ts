@@ -13,11 +13,172 @@ export enum TaskStatus {
   Done = 'Done',
 }
 
+// Role-based Access Control Types
+export enum UserRole {
+  Admin = 'Admin',
+  Manager = 'Manager',
+  Consultant = 'Consultant',
+  Client = 'Client',
+}
+
+export enum Permission {
+  // Project permissions
+  ProjectView = 'project:view',
+  ProjectCreate = 'project:create',
+  ProjectEdit = 'project:edit',
+  ProjectDelete = 'project:delete',
+  ProjectArchive = 'project:archive',
+
+  // Client permissions
+  ClientView = 'client:view',
+  ClientCreate = 'client:create',
+  ClientEdit = 'client:edit',
+  ClientDelete = 'client:delete',
+
+  // Team permissions
+  TeamView = 'team:view',
+  TeamCreate = 'team:create',
+  TeamEdit = 'team:edit',
+  TeamDelete = 'team:delete',
+  TeamManageRoles = 'team:manage-roles',
+
+  // Task permissions
+  TaskView = 'task:view',
+  TaskCreate = 'task:create',
+  TaskEdit = 'task:edit',
+  TaskDelete = 'task:delete',
+  TaskAssign = 'task:assign',
+
+  // Case permissions
+  CaseView = 'case:view',
+  CaseCreate = 'case:create',
+  CaseEdit = 'case:edit',
+  CaseDelete = 'case:delete',
+  CaseAssign = 'case:assign',
+
+  // Document permissions
+  DocumentView = 'document:view',
+  DocumentUpload = 'document:upload',
+  DocumentEdit = 'document:edit',
+  DocumentDelete = 'document:delete',
+
+  // Activity permissions
+  ActivityView = 'activity:view',
+  ActivityCreate = 'activity:create',
+  ActivityEdit = 'activity:edit',
+  ActivityDelete = 'activity:delete',
+
+  // Report permissions
+  ReportView = 'report:view',
+  ReportExport = 'report:export',
+
+  // Settings permissions
+  SettingsView = 'settings:view',
+  SettingsEdit = 'settings:edit',
+
+  // Volunteer permissions
+  VolunteerView = 'volunteer:view',
+  VolunteerCreate = 'volunteer:create',
+  VolunteerEdit = 'volunteer:edit',
+  VolunteerDelete = 'volunteer:delete',
+
+  // Donation permissions
+  DonationView = 'donation:view',
+  DonationCreate = 'donation:create',
+  DonationEdit = 'donation:edit',
+  DonationDelete = 'donation:delete',
+
+  // Event permissions
+  EventView = 'event:view',
+  EventCreate = 'event:create',
+  EventEdit = 'event:edit',
+  EventDelete = 'event:delete',
+
+  // Email campaign permissions
+  EmailCampaignView = 'email:view',
+  EmailCampaignCreate = 'email:create',
+  EmailCampaignEdit = 'email:edit',
+  EmailCampaignSend = 'email:send',
+
+  // Portal permissions
+  PortalView = 'portal:view',
+  PortalEdit = 'portal:edit',
+
+  // AI Tools permissions
+  AIToolsAccess = 'ai:access',
+}
+
+export interface RolePermissions {
+  role: UserRole;
+  permissions: Permission[];
+}
+
+export const rolePermissionsMap: Record<UserRole, Permission[]> = {
+  [UserRole.Admin]: [
+    // Admin has all permissions
+    Permission.ProjectView, Permission.ProjectCreate, Permission.ProjectEdit, Permission.ProjectDelete, Permission.ProjectArchive,
+    Permission.ClientView, Permission.ClientCreate, Permission.ClientEdit, Permission.ClientDelete,
+    Permission.TeamView, Permission.TeamCreate, Permission.TeamEdit, Permission.TeamDelete, Permission.TeamManageRoles,
+    Permission.TaskView, Permission.TaskCreate, Permission.TaskEdit, Permission.TaskDelete, Permission.TaskAssign,
+    Permission.CaseView, Permission.CaseCreate, Permission.CaseEdit, Permission.CaseDelete, Permission.CaseAssign,
+    Permission.DocumentView, Permission.DocumentUpload, Permission.DocumentEdit, Permission.DocumentDelete,
+    Permission.ActivityView, Permission.ActivityCreate, Permission.ActivityEdit, Permission.ActivityDelete,
+    Permission.ReportView, Permission.ReportExport,
+    Permission.SettingsView, Permission.SettingsEdit,
+    Permission.VolunteerView, Permission.VolunteerCreate, Permission.VolunteerEdit, Permission.VolunteerDelete,
+    Permission.DonationView, Permission.DonationCreate, Permission.DonationEdit, Permission.DonationDelete,
+    Permission.EventView, Permission.EventCreate, Permission.EventEdit, Permission.EventDelete,
+    Permission.EmailCampaignView, Permission.EmailCampaignCreate, Permission.EmailCampaignEdit, Permission.EmailCampaignSend,
+    Permission.PortalView, Permission.PortalEdit,
+    Permission.AIToolsAccess,
+  ],
+  [UserRole.Manager]: [
+    // Manager can do most things except delete critical items and manage roles
+    Permission.ProjectView, Permission.ProjectCreate, Permission.ProjectEdit, Permission.ProjectArchive,
+    Permission.ClientView, Permission.ClientCreate, Permission.ClientEdit,
+    Permission.TeamView,
+    Permission.TaskView, Permission.TaskCreate, Permission.TaskEdit, Permission.TaskAssign,
+    Permission.CaseView, Permission.CaseCreate, Permission.CaseEdit, Permission.CaseAssign,
+    Permission.DocumentView, Permission.DocumentUpload, Permission.DocumentEdit,
+    Permission.ActivityView, Permission.ActivityCreate, Permission.ActivityEdit,
+    Permission.ReportView, Permission.ReportExport,
+    Permission.VolunteerView, Permission.VolunteerCreate, Permission.VolunteerEdit,
+    Permission.DonationView, Permission.DonationCreate, Permission.DonationEdit,
+    Permission.EventView, Permission.EventCreate, Permission.EventEdit,
+    Permission.EmailCampaignView, Permission.EmailCampaignCreate, Permission.EmailCampaignEdit, Permission.EmailCampaignSend,
+    Permission.PortalView, Permission.PortalEdit,
+    Permission.AIToolsAccess,
+  ],
+  [UserRole.Consultant]: [
+    // Consultant has limited access - mainly view and edit assigned items
+    Permission.ProjectView, Permission.ProjectEdit,
+    Permission.ClientView,
+    Permission.TeamView,
+    Permission.TaskView, Permission.TaskCreate, Permission.TaskEdit,
+    Permission.CaseView, Permission.CaseEdit,
+    Permission.DocumentView, Permission.DocumentUpload,
+    Permission.ActivityView, Permission.ActivityCreate, Permission.ActivityEdit,
+    Permission.VolunteerView,
+    Permission.EventView,
+    Permission.AIToolsAccess,
+  ],
+  [UserRole.Client]: [
+    // Client has very limited access - mainly viewing their own data
+    Permission.ProjectView,
+    Permission.TaskView,
+    Permission.DocumentView,
+    Permission.ActivityView,
+    Permission.PortalView,
+  ],
+};
+
 export interface TeamMember {
   id: string;
   name: string;
   email: string;
   role: string;
+  userRole?: UserRole; // For RBAC
+  permissions?: Permission[]; // Custom permissions override
 }
 
 export interface Client {
