@@ -2,6 +2,18 @@
 
 This guide will help you set up your CRM on GitHub with automatic deployment to Vercel.
 
+---
+
+## 🚨 Getting a GitHub Actions Error?
+
+**If you see: `Error: Input required and not supplied: vercel-token`**
+
+👉 **[Go to the Quick Fix Guide →](./GITHUB_ACTIONS_TROUBLESHOOTING.md)**
+
+This means your GitHub secrets aren't set up yet. The troubleshooting guide has step-by-step instructions to fix this in 5 minutes.
+
+---
+
 ## Step 1: Create GitHub Repository
 
 1. Go to [GitHub](https://github.com/new)
