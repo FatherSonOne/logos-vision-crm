@@ -31,3 +31,6 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# GitHub secrets script (contains sensitive data)
+add-github-secrets.sh
