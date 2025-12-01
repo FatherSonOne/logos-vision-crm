@@ -127,11 +127,19 @@ const CharityHub: React.FC<CharityHubProps> = ({
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
+<<<<<<< HEAD
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3 dark:text-white">
             <Heart className="w-8 h-8 text-rose-500" />
             Charity Hub
           </h1>
           <p className="text-gray-600 mt-1 dark:text-gray-400">
+=======
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <Heart className="w-8 h-8 text-rose-500" />
+            Charity Hub
+          </h1>
+          <p className="text-gray-600 mt-1">
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
             Manage donations, volunteers, memberships, and impact
           </p>
         </div>
@@ -145,32 +153,55 @@ const CharityHub: React.FC<CharityHubProps> = ({
       </div>
 
       {/* Search Bar */}
+<<<<<<< HEAD
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 dark:bg-slate-800 dark:border-slate-700">
+=======
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
         <input
           type="text"
           placeholder="Search donations, donors, volunteers, campaigns..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+<<<<<<< HEAD
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+=======
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
         />
       </div>
 
       {/* AI Insights */}
       {insights.length > 0 && (
+<<<<<<< HEAD
         <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-700/30 p-4">
           <div className="flex items-start gap-3">
             <Activity className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 space-y-2">
               <h3 className="font-semibold text-purple-900 dark:text-purple-100">AI Insights</h3>
+=======
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200 p-4">
+          <div className="flex items-start gap-3">
+            <Activity className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <h3 className="font-semibold text-purple-900">AI Insights</h3>
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
               {insights.map((insight, idx) => (
                 <div
                   key={idx}
                   className={`text-sm ${
                     insight.type === 'success'
+<<<<<<< HEAD
                       ? 'text-green-700 dark:text-green-400'
                       : insight.type === 'warning'
                       ? 'text-orange-700 dark:text-orange-400'
                       : 'text-blue-700 dark:text-blue-400'
+=======
+                      ? 'text-green-700'
+                      : insight.type === 'warning'
+                      ? 'text-orange-700'
+                      : 'text-blue-700'
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
                   }`}
                 >
                   • {insight.message}
@@ -235,7 +266,11 @@ const CharityHub: React.FC<CharityHubProps> = ({
 
       {/* Feature Cards - The Main Feature Grid */}
       <div>
+<<<<<<< HEAD
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Charity Management Features</h2>
+=======
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Charity Management Features</h2>
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Row 1 */}
           <FeatureCard
@@ -310,7 +345,11 @@ const CharityHub: React.FC<CharityHubProps> = ({
 
       {/* Quick Actions */}
       <div>
+<<<<<<< HEAD
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
+=======
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <QuickActionCard
             icon={Plus}
@@ -346,9 +385,15 @@ const CharityHub: React.FC<CharityHubProps> = ({
       </div>
 
       {/* Recent Donations */}
+<<<<<<< HEAD
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-800 dark:border-slate-700">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Donations</h2>
+=======
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Recent Donations</h2>
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
           <button
             onClick={() => onSetPage?.('donations')}
             className="text-rose-600 hover:text-rose-700 text-sm font-medium flex items-center gap-1"
@@ -362,6 +407,7 @@ const CharityHub: React.FC<CharityHubProps> = ({
             recentDonations.map((donation) => (
               <div
                 key={donation.id}
+<<<<<<< HEAD
                 className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition"
               >
                 <div className="flex items-center gap-3">
@@ -371,23 +417,46 @@ const CharityHub: React.FC<CharityHubProps> = ({
                   <div>
                     <div className="font-medium text-gray-900 dark:text-white">{donation.donorName}</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
+=======
+                className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
+                    <Heart className="w-5 h-5 text-rose-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">{donation.donorName}</div>
+                    <div className="text-sm text-gray-500">
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
                       {donation.campaign || 'General Fund'}
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
+<<<<<<< HEAD
                   <div className="font-semibold text-green-600 dark:text-green-400">
                     ${donation.amount.toLocaleString()}
                   </div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">
+=======
+                  <div className="font-semibold text-green-600">
+                    ${donation.amount.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-gray-500">
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
                     {new Date(donation.donationDate).toLocaleDateString()}
                   </div>
                 </div>
               </div>
             ))
           ) : (
+<<<<<<< HEAD
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               <Heart className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+=======
+            <div className="text-center py-8 text-gray-500">
+              <Heart className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
               <p>No donations yet. Start your first campaign!</p>
             </div>
           )}
@@ -442,16 +511,26 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
   return (
     <div
       onClick={onClick}
+<<<<<<< HEAD
       className="bg-white dark:bg-slate-800 rounded-lg shadow-md border border-gray-200 dark:border-slate-700 p-6 cursor-pointer hover:shadow-xl transition-all group"
+=======
+      className="bg-white rounded-lg shadow-md border border-gray-200 p-6 cursor-pointer hover:shadow-xl transition-all group"
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
     >
       <div
         className={`w-16 h-16 bg-gradient-to-br ${gradient} rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
       >
         <Icon className="w-8 h-8 text-white" />
       </div>
+<<<<<<< HEAD
       <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
       <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{description}</p>
       <div className="mt-4 flex items-center text-rose-600 dark:text-rose-400 font-medium text-sm group-hover:gap-2 transition-all">
+=======
+      <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
+      <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
+      <div className="mt-4 flex items-center text-rose-600 font-medium text-sm group-hover:gap-2 transition-all">
+>>>>>>> eca099ecd39538c6d60d202c3be4860fc4944314
         Learn More
         <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
       </div>
