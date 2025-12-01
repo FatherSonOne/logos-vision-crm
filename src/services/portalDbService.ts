@@ -1,4 +1,3 @@
-import { mockPortalLayouts } from '../data/mockData';
 import type { PortalLayout } from '../types';
 
 const DB_KEY = 'logos_vision_portal_layouts';
@@ -10,13 +9,12 @@ export const portalDbService = {
       if (storedData) {
         return JSON.parse(storedData);
       } else {
-        // Seed with mock data on first load
-        localStorage.setItem(DB_KEY, JSON.stringify(mockPortalLayouts));
-        return mockPortalLayouts;
+        // Return empty array on first load - users will create their own layouts
+        return [];
       }
     } catch (error) {
       console.error("Error reading portal layouts from localStorage", error);
-      return mockPortalLayouts; // Fallback
+      return []; // Return empty array on error
     }
   },
 

@@ -36,3 +36,4 @@ dist-ssr
 *.tar.gz
 *.zip
 *-backup.*
+.env*.local

@@ -1,0 +1,67 @@
+# Claude Code Ignore File
+# This tells Claude Code which files and folders to skip when indexing your project
+# This speeds up Claude Code and prevents freezing/crashes
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.vercel/
+.output/
+out/
+
+# Git
+.git/
+
+# Environment files (Claude Code can read them when needed, but doesn't need to index)
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Large media files (optional - uncomment if you have these)
+# *.mp4
+# *.mov
+# *.avi
+# *.zip
+# *.tar.gz
+
+# Documentation that doesn't need indexing (optional)
+# docs/archive/
+# old-docs/

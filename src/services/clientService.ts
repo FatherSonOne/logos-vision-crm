@@ -62,18 +62,25 @@ export const clientService = {
   // Create a new client
   async create(client: Partial<Client>): Promise<Client> {
     // Transform camelCase to snake_case for database
+    // Build the insert object - only include id if it's provided (for migration)
+    const insertData: any = {
+      name: client.name,
+      contact_person: client.contactPerson,
+      email: client.email,
+      phone: client.phone,
+      location: client.location,
+      notes: client.notes || '',
+      is_active: true
+    };
+    
+    // Only include id if it exists (for migrating existing data)
+    if (client.id) {
+      insertData.id = client.id;
+    }
+    
     const { data, error } = await supabase
       .from('clients')
-      .insert([{
-        id: client.id, // Keep the mock ID for migration
-        name: client.name,
-        contact_person: client.contactPerson,
-        email: client.email,
-        phone: client.phone,
-        location: client.location,
-        notes: client.notes || '',
-        is_active: true
-      }])
+      .insert([insertData])
       .select()
       .single();
     

@@ -254,18 +254,18 @@ Before deploying, verify:
 
 **Supabase Setup:**
 - [x] Schema SQL script run successfully
-- [ ] Tables visible in Table Editor
-- [ ] Realtime enabled for key tables
-- [ ] At least 1 user account created
-- [ ] User credentials saved securely
-- [ ] RLS policies exist
+- [x] Tables visible in Table Editor
+- [x] Realtime enabled for key tables
+- [x] At least 1 user account created
+- [x] User credentials saved securely
+- [x] RLS policies exist
 
 **Local Testing:**
-- [ ] Dev server runs without errors
-- [ ] Clients load from Supabase
-- [ ] Console shows no errors
-- [ ] Build completes successfully
-- [ ] Preview works
+- [x] Dev server runs without errors
+- [x] Clients load from Supabase
+- [x] Console shows no errors
+- [x] Build completes successfully
+- [x] Preview works
 
 **Ready to Deploy?**
 - [ ] All above checkboxes checked ✅

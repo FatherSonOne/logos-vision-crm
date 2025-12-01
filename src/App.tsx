@@ -1,28 +1,16 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { useAuth } from './contexts/AuthContext';
-import { Login } from './components/Login';
-import { useRealtime } from './hooks/useRealtime';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { ProjectList } from './components/ProjectList';
 import { ProjectDetail } from './components/ProjectDetail';
-import { mockClients, mockTeamMembers, mockProjects, mockActivities, mockChatRooms, mockChatMessages, mockDonations, mockVolunteers, mockCases, mockDocuments, mockWebpages, mockEvents, mockEmailCampaigns } from './data/mockData';
-import { clientService } from './services/clientService';
-import { projectService } from './services/projectService';
-import { activityService } from './services/activityService';
-import { teamMemberService } from './services/teamMemberService';
-import { volunteerService } from './services/volunteerService';
-import { caseService } from './services/caseService';
-import { eventService } from './services/eventService';
-import { emailCampaignService } from './services/emailCampaignService';
 import { portalDbService } from './services/portalDbService';
 import { performAdvancedSearch } from './services/geminiService';
 // FIX: Correctly alias Document as AppDocument on import.
-import type { Client, TeamMember, Project, EnrichedTask, Activity, ChatRoom, ChatMessage, Donation, Volunteer, Case, Document as AppDocument, Webpage, CaseComment, Event, PortalLayout, EmailCampaign, WebSearchResult, SearchResults, AiProjectPlan, Task } from '../types';
-import { ProjectStatus, TaskStatus, ActivityType, ActivityStatus, CaseStatus, DocumentCategory } from '../types';
-import type { Page } from '../types';
+import type { Client, TeamMember, Project, EnrichedTask, Activity, ChatRoom, ChatMessage, Donation, Volunteer, Case, Document as AppDocument, Webpage, CaseComment, Event, PortalLayout, EmailCampaign, WebSearchResult, SearchResults, AiProjectPlan, Task } from './types';
+import { ProjectStatus, TaskStatus, ActivityType, ActivityStatus, CaseStatus, DocumentCategory } from './types';
+import type { Page } from './types';
 import { ClientList } from './components/ClientList';
 import { OrganizationDetail } from './components/OrganizationDetail';
 import { TeamMemberList } from './components/ConsultantList';
@@ -45,7 +33,7 @@ import { CaseManagement } from './components/CaseManagement';
 import { DocumentLibrary } from './components/DocumentLibrary';
 import { WebManagement } from './components/WebManagement';
 import { GoldPages } from './components/GoldPages';
-import { WebpageStatus } from '../types';
+import { WebpageStatus } from './types';
 import { AiChatBot } from './components/AiChatBot';
 import { AiTools } from './components/AiTools';
 import { LiveChat } from './components/LiveChat';
@@ -65,277 +53,160 @@ import { QuickAddButton, QuickAction } from './components/quickadd/QuickAddButto
 import { ProjectPlannerModal } from './components/ProjectPlannerModal';
 import { MeetingAssistantModal } from './components/MeetingAssistantModal';
 import { ClipboardListIcon, CaseIcon, BuildingIcon, SparklesIcon, FolderIcon, CalendarIcon, HandHeartIcon } from './components/icons';
-import { Breadcrumbs, getBreadcrumbsForPage } from './components/ui/Breadcrumbs';
-import { CommandPalette } from './components/CommandPalette';
-import { allNavItems } from './components/navigationConfig';
-import { AccordionExample } from './components/AccordionExample';
-import { ProjectsHub } from './components/ProjectsHub';
+import { activityService } from './services/activityService';
+import { projectService } from './services/projectService';
+import { clientService } from './services/clientService';
+import { teamMemberService } from './services/teamMemberService';
+import { volunteerService } from './services/volunteerService';
+import { caseService } from './services/caseService';
+import { donationService } from './services/donationService';
 
 const App: React.FC = () => {
-  const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
   const { showToast } = useToast();
+  
+  // All state now starts empty and loads from Supabase
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(true);
+  
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoadingTeamMembers, setIsLoadingTeamMembers] = useState(true);
+  
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>(mockChatRooms);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
-  const [donations, setDonations] = useState<Donation[]>(mockDonations);
+  
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [isLoadingDonations, setIsLoadingDonations] = useState(true);
+  
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [isLoadingVolunteers, setIsLoadingVolunteers] = useState(true);
+  
   const [cases, setCases] = useState<Case[]>([]);
   const [isLoadingCases, setIsLoadingCases] = useState(true);
-  const [documents, setDocuments] = useState<AppDocument[]>(mockDocuments);
-  const [webpages, setWebpages] = useState<Webpage[]>(mockWebpages);
+  
+  // These remain as empty arrays for now (can be migrated later if needed)
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [documents, setDocuments] = useState<AppDocument[]>([]);
+  const [webpages, setWebpages] = useState<Webpage[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
-  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>([]);
-  const [isLoadingEmailCampaigns, setIsLoadingEmailCampaigns] = useState(true);
   const [portalLayouts, setPortalLayouts] = useState<PortalLayout[]>([]);
+  
+  const [currentUserId, setCurrentUserId] = useState<string>(''); // Will be set from first team member
 
-  // Use authenticated user ID or fallback to 'c1' for development
-  const currentUserId = user?.id || 'c1';
-
-  // Load data from Supabase on mount
-  useEffect(() => {
-    loadClients();
-    loadTeamMembers();
-    loadProjects();
-    loadActivities();
-    loadVolunteers();
-    loadCases();
-    loadEvents();
-    loadEmailCampaigns();
-  }, []);
-
-  // Real-time subscriptions for Cases
-  useRealtime('cases', (payload) => {
-    if (payload.eventType === 'INSERT') {
-      const newCase = payload.new;
-      setCases(prev => [newCase, ...prev]);
-      showToast(`New case created: ${newCase.title}`, 'info');
-    } else if (payload.eventType === 'UPDATE') {
-      const updatedCase = payload.new;
-      setCases(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c));
-    } else if (payload.eventType === 'DELETE') {
-      const deletedCase = payload.old;
-      setCases(prev => prev.filter(c => c.id !== deletedCase.id));
-    }
-  });
-
-  // Real-time subscriptions for Projects
-  useRealtime('projects', (payload) => {
-    if (payload.eventType === 'INSERT') {
-      const newProject = payload.new;
-      setProjects(prev => [newProject, ...prev]);
-      showToast(`New project created: ${newProject.name}`, 'info');
-    } else if (payload.eventType === 'UPDATE') {
-      const updatedProject = payload.new;
-      setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
-    } else if (payload.eventType === 'DELETE') {
-      const deletedProject = payload.old;
-      setProjects(prev => prev.filter(p => p.id !== deletedProject.id));
-    }
-  });
-
-  // Real-time subscriptions for Activities
-  useRealtime('activities', (payload) => {
-    if (payload.eventType === 'INSERT') {
-      const newActivity = payload.new;
-      setActivities(prev => [newActivity, ...prev]);
-      showToast(`New activity: ${newActivity.title}`, 'info');
-    } else if (payload.eventType === 'UPDATE') {
-      const updatedActivity = payload.new;
-      setActivities(prev => prev.map(a => a.id === updatedActivity.id ? updatedActivity : a));
-    } else if (payload.eventType === 'DELETE') {
-      const deletedActivity = payload.old;
-      setActivities(prev => prev.filter(a => a.id !== deletedActivity.id));
-    }
-  });
-
-  async function loadClients() {
-    try {
-      setIsLoadingClients(true);
-      const data = await clientService.getAll();
-      setClients(data);
-      console.log('✅ Loaded', data.length, 'clients from Supabase');
-    } catch (error) {
-      console.error('❌ Error loading clients:', error);
-      showToast('Failed to load clients', 'error');
-      setClients(mockClients); // Fallback to mock data
-    } finally {
-      setIsLoadingClients(false);
-    }
+// Load all data from Supabase
+async function loadAllData() {
+  // Load clients
+  try {
+    setIsLoadingClients(true);
+    const clientData = await clientService.getAll();
+    setClients(clientData);
+    console.log('✅ Loaded', clientData.length, 'clients from Supabase');
+  } catch (error) {
+    console.error('❌ Error loading clients:', error);
+    showToast('Failed to load clients', 'error');
+  } finally {
+    setIsLoadingClients(false);
   }
 
-  async function loadProjects() {
-    try {
-      setIsLoadingProjects(true);
-      const data = await projectService.getAll();
-      setProjects(data);
-      console.log('✅ Loaded', data.length, 'projects from Supabase');
-    } catch (error) {
-      console.error('❌ Error loading projects:', error);
-      showToast('Failed to load projects', 'error');
-      setProjects(mockProjects); // Fallback to mock data
-    } finally {
-      setIsLoadingProjects(false);
+  // Load team members
+  try {
+    setIsLoadingTeamMembers(true);
+    const teamData = await teamMemberService.getAll();
+    setTeamMembers(teamData);
+    // Set current user to first team member if not set
+    if (teamData.length > 0 && !currentUserId) {
+      setCurrentUserId(teamData[0].id);
     }
+    console.log('✅ Loaded', teamData.length, 'team members from Supabase');
+  } catch (error) {
+    console.error('❌ Error loading team members:', error);
+    showToast('Failed to load team members', 'error');
+  } finally {
+    setIsLoadingTeamMembers(false);
   }
 
-  async function loadActivities() {
-    try {
-      setIsLoadingActivities(true);
-      const data = await activityService.getAll();
-      // Sort by date (newest first)
-      const sorted = data.sort((a, b) => 
-        new Date(b.activityDate).getTime() - new Date(a.activityDate).getTime()
-      );
-      setActivities(sorted);
-      console.log('✅ Loaded', data.length, 'activities from Supabase');
-    } catch (error) {
-      console.error('❌ Error loading activities:', error);
-      showToast('Failed to load activities', 'error');
-      setActivities(mockActivities); // Fallback to mock data
-    } finally {
-      setIsLoadingActivities(false);
-    }
+  // Load projects
+  try {
+    setIsLoadingProjects(true);
+    const projectData = await projectService.getAll();
+    setProjects(projectData);
+    console.log('✅ Loaded', projectData.length, 'projects from Supabase');
+  } catch (error) {
+    console.error('❌ Error loading projects:', error);
+    showToast('Failed to load projects', 'error');
+  } finally {
+    setIsLoadingProjects(false);
   }
 
-  async function loadTeamMembers() {
-    try {
-      setIsLoadingTeamMembers(true);
-      const data = await teamMemberService.getAll();
-      setTeamMembers(data);
-      console.log('✅ Loaded', data.length, 'team members from Supabase');
-    } catch (error) {
-      console.error('❌ Error loading team members:', error);
-      showToast('Failed to load team members', 'error');
-      setTeamMembers(mockTeamMembers); // Fallback to mock data
-    } finally {
-      setIsLoadingTeamMembers(false);
-    }
+  // Load activities
+  try {
+    setIsLoadingActivities(true);
+    const activityData = await activityService.getAll();
+    setActivities(activityData);
+    console.log('✅ Loaded', activityData.length, 'activities from Supabase');
+  } catch (error) {
+    console.error('❌ Error loading activities:', error);
+    showToast('Failed to load activities', 'error');
+  } finally {
+    setIsLoadingActivities(false);
   }
 
-  async function loadVolunteers() {
-    try {
-      setIsLoadingVolunteers(true);
-      const data = await volunteerService.getAll();
-      setVolunteers(data);
-      console.log('✅ Loaded', data.length, 'volunteers from Supabase');
-    } catch (error) {
-      console.error('❌ Error loading volunteers:', error);
-      showToast('Failed to load volunteers', 'error');
-      setVolunteers(mockVolunteers); // Fallback to mock data
-    } finally {
-      setIsLoadingVolunteers(false);
-    }
+  // Load volunteers
+  try {
+    setIsLoadingVolunteers(true);
+    const volunteerData = await volunteerService.getAll();
+    setVolunteers(volunteerData);
+    console.log('✅ Loaded', volunteerData.length, 'volunteers from Supabase');
+  } catch (error) {
+    console.error('❌ Error loading volunteers:', error);
+    showToast('Failed to load volunteers', 'error');
+  } finally {
+    setIsLoadingVolunteers(false);
   }
 
-  async function loadCases() {
-    try {
-      setIsLoadingCases(true);
-      const data = await caseService.getAll();
-      setCases(data);
-      console.log('✅ Loaded', data.length, 'cases from Supabase');
-    } catch (error) {
-      console.error('❌ Error loading cases:', error);
-      showToast('Failed to load cases', 'error');
-      setCases(mockCases); // Fallback to mock data
-    } finally {
-      setIsLoadingCases(false);
-    }
+  // Load cases
+  try {
+    setIsLoadingCases(true);
+    const caseData = await caseService.getAll();
+    setCases(caseData);
+    console.log('✅ Loaded', caseData.length, 'cases from Supabase');
+  } catch (error) {
+    console.error('❌ Error loading cases:', error);
+    showToast('Failed to load cases', 'error');
+  } finally {
+    setIsLoadingCases(false);
   }
 
-  async function loadEvents() {
-    try {
-      setIsLoadingEvents(true);
-      const data = await eventService.getAll();
-      setEvents(data);
-      console.log('✅ Loaded', data.length, 'events from Supabase');
-    } catch (error) {
-      console.error('❌ Error loading events:', error);
-      showToast('Failed to load events', 'error');
-      setEvents(mockEvents); // Fallback to mock data
-    } finally {
-      setIsLoadingEvents(false);
-    }
+  // Load donations
+  try {
+    setIsLoadingDonations(true);
+    const donationData = await donationService.getAll();
+    setDonations(donationData);
+    console.log('✅ Loaded', donationData.length, 'donations from Supabase');
+  } catch (error) {
+    console.error('❌ Error loading donations:', error);
+    showToast('Failed to load donations', 'error');
+  } finally {
+    setIsLoadingDonations(false);
   }
+}
 
-  async function loadEmailCampaigns() {
-    try {
-      setIsLoadingEmailCampaigns(true);
-      const data = await emailCampaignService.getAll();
-      setEmailCampaigns(data);
-      console.log('✅ Loaded', data.length, 'email campaigns from Supabase');
-    } catch (error) {
-      console.error('❌ Error loading email campaigns:', error);
-      showToast('Failed to load email campaigns', 'error');
-      setEmailCampaigns(mockEmailCampaigns); // Fallback to mock data
-    } finally {
-      setIsLoadingEmailCampaigns(false);
-    }
-  }
+// Load data on mount
+useEffect(() => {
+  loadAllData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
-const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 'kanban' | 'gantt' | 'flowchart' | 'resources'>('hub');
   const [openTabs, setOpenTabs] = useState<Page[]>(['dashboard']);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
   const [portalClientId, setPortalClientId] = useState<string | null>(null);
-
-  // Generate breadcrumbs based on current page and context
-  const breadcrumbs = useMemo(() => {
-    let detailContext: any = {};
-    let isDetailView = false;
-    
-    // Detect if we're in a detail view
-    if (selectedProjectId && currentPage === 'projects') {
-      isDetailView = true;
-      const project = projects.find(p => p.id === selectedProjectId);
-      if (project) {
-        detailContext.projectName = project.name;
-        const client = clients.find(c => c.id === project.clientId);
-        if (client) {
-          detailContext.clientName = client.name;
-        }
-      }
-    }
-    
-    if (selectedOrganizationId && currentPage === 'organizations') {
-      isDetailView = true;
-      const client = clients.find(c => c.id === selectedOrganizationId);
-      if (client) {
-        detailContext.clientName = client.name;
-      }
-    }
-    
-    if (selectedCaseId && currentPage === 'case') {
-      isDetailView = true;
-      const caseItem = cases.find(c => c.id === selectedCaseId);
-      if (caseItem) {
-        detailContext.caseTitle = caseItem.title;
-      }
-    }
-    
-    // Generate breadcrumbs
-    const items = getBreadcrumbsForPage(currentPage, detailContext);
-    
-    // If we're in a detail view, make sure the parent page is clickable
-    // by not marking it as the current page
-    if (isDetailView && items.length > 0) {
-      // The last item is the detail (current page)
-      // The second-to-last should be clickable
-      return items;
-    }
-    
-    return items;
-  }, [currentPage, selectedProjectId, selectedOrganizationId, selectedCaseId, projects, clients, cases]);
 
   // State for global search
   const [searchQuery, setSearchQuery] = useState('');
@@ -354,10 +225,6 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [isProjectPlannerOpen, setIsProjectPlannerOpen] = useState(false);
   const [selectedActivityForAssistant, setSelectedActivityForAssistant] = useState<Activity | null>(null);
-
-  // State for Command Palette
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [recentPages, setRecentPages] = useState<Array<{ page: Page; label: string }>>([]);
 
 
   // State for Gold Pages editor
@@ -498,10 +365,11 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
     }
   ];
 
-  useEffect(() => {
-      const layouts = portalDbService.getLayouts();
-      setPortalLayouts(layouts);
-  }, []);
+ useEffect(() => {
+    const layouts = portalDbService.getLayouts();
+    setPortalLayouts(layouts);
+    // Removed loadProjects() - now using loadAllData() which is called in its own useEffect
+}, []);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -518,53 +386,27 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Command Palette Keyboard Shortcut (Ctrl/Cmd + K)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Check for Ctrl+K (Windows/Linux) or Cmd+K (Mac)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsCommandPaletteOpen(true);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Track recent pages when navigating
-  useEffect(() => {
-    const navItem = allNavItems.find(item => item.pageId === currentPage);
-    if (navItem) {
-      setRecentPages(prev => {
-        // Remove if already exists
-        const filtered = prev.filter(p => p.page !== currentPage);
-        // Add to beginning
-        const updated = [{ page: currentPage, label: navItem.label }, ...filtered];
-        // Keep only last 5
-        return updated.slice(0, 5);
-      });
-    }
-  }, [currentPage]);
-
   // Check for new data on initial load to set notifications
   useEffect(() => {
     const now = Date.now();
     const oneDayAgo = now - 24 * 60 * 60 * 1000;
     const newNotifications = new Set<Page>();
 
-    if (mockCases.some(c => new Date(c.createdAt).getTime() > oneDayAgo)) {
+    // Check for new cases
+    if (cases.some(c => new Date(c.created_at || c.createdAt || '').getTime() > oneDayAgo)) {
         newNotifications.add('case');
     }
-    if (mockActivities.some(a => new Date(a.activityDate).getTime() > oneDayAgo)) {
+    // Check for new activities
+    if (activities.some(a => new Date(a.activity_date || a.activityDate || '').getTime() > oneDayAgo)) {
         newNotifications.add('activities');
     }
-    if (mockDonations.some(d => new Date(d.donationDate).getTime() > oneDayAgo)) {
+    // Check for new donations
+    if (donations.some(d => new Date(d.date || '').getTime() > oneDayAgo)) {
         newNotifications.add('donations');
     }
     
     setNotifications(newNotifications);
-  }, []);
+  }, [cases, activities, donations]);
 
   const switchActivePage = useCallback((page: Page) => {
     setCurrentPage(page);
@@ -608,14 +450,8 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
 
   const handleSelectProject = useCallback((id: string) => {
     setSelectedProjectId(id);
-    // Only navigate if not already on projects page (navigateToPage would clear selectedProjectId)
-    if (currentPage !== 'projects') {
-      setCurrentPage('projects');
-      if (!openTabs.includes('projects')) {
-        setOpenTabs(prev => [...prev, 'projects']);
-      }
-    }
-  }, [currentPage, openTabs]);
+    navigateToPage('projects');
+  }, [navigateToPage]);
   
   const handleBackToList = useCallback(() => {
     setSelectedProjectId(null);
@@ -720,21 +556,15 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
     showToast('Team member added.', 'success');
   };
 
-  const handleAddContact = async (newContact: Omit<Client, 'id' | 'createdAt'>) => {
-    try {
-      const contactWithId: Client = {
+  const handleAddContact = (newContact: Omit<Client, 'id' | 'createdAt'>) => {
+    const contactWithId: Client = {
         ...newContact,
         id: `cl-${Date.now()}`,
         createdAt: new Date().toISOString(),
-      };
-      const savedClient = await clientService.create(contactWithId);
-      setClients(prev => [...prev, savedClient]);
-      setIsAddContactDialogOpen(false);
-      showToast('Organization added.', 'success');
-    } catch (error) {
-      console.error('Error adding client:', error);
-      showToast('Failed to add organization', 'error');
-    }
+    };
+    setClients(prev => [...prev, contactWithId]);
+    setIsAddContactDialogOpen(false);
+    showToast('Organization added.', 'success');
   };
 
   const handleAddVolunteer = (newVolunteer: Omit<Volunteer, 'id'>) => {
@@ -797,75 +627,64 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
     setIsCaseDialogOpen(true);
   };
 
-  const handleDeleteCase = async (caseId: string) => {
+  const handleDeleteCase = (caseId: string) => {
     const caseToDelete = cases.find(c => c.id === caseId);
     if (window.confirm(`Are you sure you want to delete this case: "${caseToDelete?.title}"?`)) {
-      try {
-        await caseService.delete(caseId);
-        setCases(prev => prev.filter(c => c.id !== caseId));
-        showToast(`Case "${caseToDelete?.title}" deleted successfully`, 'success');
-      } catch (error) {
-        console.error('Error deleting case:', error);
-        showToast('Failed to delete case', 'error');
-      }
+      setCases(prev => prev.filter(c => c.id !== caseId));
+      showToast(`Case "${caseToDelete?.title}" deleted successfully`, 'success');
     }
   };
 
-  const handleSaveCase = async (caseToSave: Omit<Case, 'createdAt' | 'lastUpdatedAt'> & { id?: string }) => {
-    try {
-      if (caseToSave.id) {
-        // Update existing case
-        const updatedCase = await caseService.update(caseToSave.id, caseToSave);
-        setCases(prev => prev.map(c => c.id === caseToSave.id ? updatedCase : c));
-        showToast(`Case "${caseToSave.title}" updated successfully!`, 'success');
-      } else {
-        // Create new case
-        const newCase = await caseService.create({
-          ...caseToSave,
-          id: `case-${Date.now()}`, // Generate temporary ID
-        });
-        setCases(prev => [newCase, ...prev]);
-        showToast(`Case "${caseToSave.title}" created successfully!`, 'success');
-      }
-      setIsCaseDialogOpen(false);
-      setEditingCase(null);
-    } catch (error) {
-      console.error('Error saving case:', error);
-      showToast('Failed to save case', 'error');
+  const handleSaveCase = (caseToSave: Omit<Case, 'createdAt' | 'lastUpdatedAt'> & { id?: string }) => {
+    const now = new Date().toISOString();
+    if (caseToSave.id) {
+      // Update existing case
+      setCases(prev => prev.map(c =>
+        c.id === caseToSave.id
+          ? { ...c, ...caseToSave, lastUpdatedAt: now }
+          : c
+      ));
+      showToast(`Case "${caseToSave.title}" updated successfully!`, 'success');
+    } else {
+      // Create new case
+      const newCase: Case = {
+        ...(caseToSave as Omit<Case, 'id' | 'createdAt' | 'lastUpdatedAt'>),
+        id: `case-${Date.now()}`,
+        createdAt: now,
+        lastUpdatedAt: now,
+        comments: [],
+      };
+      setCases(prev => [newCase, ...prev]);
+      showToast(`Case "${caseToSave.title}" created successfully!`, 'success');
     }
+    setIsCaseDialogOpen(false);
+    setEditingCase(null);
   };
 
-  const handleUpdateCaseStatus = async (caseId: string, newStatus: CaseStatus) => {
-    try {
-      const updatedCase = await caseService.update(caseId, { status: newStatus });
-      setCases(prevCases => prevCases.map(c => c.id === caseId ? updatedCase : c));
-      showToast(`Case moved to "${newStatus}"`, 'success');
-    } catch (error) {
-      console.error('Error updating case status:', error);
-      showToast('Failed to update case status', 'error');
-    }
+  const handleUpdateCaseStatus = (caseId: string, newStatus: CaseStatus) => {
+    setCases(prevCases => prevCases.map(c => 
+        c.id === caseId ? { ...c, status: newStatus, lastUpdatedAt: new Date().toISOString() } : c
+    ));
+    showToast(`Case moved to "${newStatus}"`, 'success');
   };
 
-  const handleAddCaseComment = async (caseId: string, text: string) => {
-    try {
-      const newComment = await caseService.addComment(caseId, {
+  const handleAddCaseComment = (caseId: string, text: string) => {
+    const newComment: CaseComment = {
+        id: `com-${Date.now()}`,
         authorId: currentUserId,
         text,
-      });
-      setCases(prevCases => prevCases.map(c => {
+        timestamp: new Date().toISOString(),
+    };
+    setCases(prevCases => prevCases.map(c => {
         if (c.id === caseId) {
-          return {
-            ...c,
-            comments: [...(c.comments || []), newComment],
-          };
+            return {
+                ...c,
+                comments: [...(c.comments || []), newComment],
+            };
         }
         return c;
-      }));
-      showToast('Comment added.', 'success');
-    } catch (error) {
-      console.error('Error adding comment:', error);
-      showToast('Failed to add comment', 'error');
-    }
+    }));
+    showToast('Comment added.', 'success');
   };
 
   const handleUpdateTaskNote = (projectId: string, taskId: string, notes: string) => {
@@ -1051,34 +870,6 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
     handleCloseMeetingAssistant();
   };
 
-  // --- Command Palette Quick Action Handler ---
-  const handleCommandPaletteAction = (action: string) => {
-    switch (action) {
-      case 'new-project':
-        setIsProjectPlannerOpen(true);
-        break;
-      case 'new-client':
-        setIsAddContactDialogOpen(true);
-        break;
-      case 'new-volunteer':
-        setIsAddVolunteerDialogOpen(true);
-        break;
-      case 'new-activity':
-        setEditingActivity(null);
-        setIsActivityDialogOpen(true);
-        break;
-      case 'new-case':
-        setEditingCase(null);
-        setIsCaseDialogOpen(true);
-        break;
-      case 'new-team-member':
-        setIsAddTeamMemberDialogOpen(true);
-        break;
-      default:
-        console.warn('Unknown quick action:', action);
-    }
-  };
-
   const renderContent = () => {
     if (currentPage === 'projects' && selectedProjectId) {
         const project = projects.find(p => p.id === selectedProjectId);
@@ -1151,41 +942,8 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
                   setCurrentPage={navigateToPage}
                   onScheduleEvent={() => setIsActivityDialogOpen(true)}
                />;
- case 'projects':
-  if (currentProjectsView === 'hub') {
-    return <ProjectsHub
-      projects={projects}
-      clients={clients}
-      onNavigateToView={(view) => setCurrentProjectsView(view)}
-      onCreateProject={handleAddProject}
-    />;
-  }
-  return <ProjectList 
-    projects={projects} 
-    clients={clients} 
-    onSelectProject={handleSelectProject} 
-    onAddProject={handleAddProject}
-    onEditProject={(id) => {
-      showToast('Edit feature coming soon!', 'info');
-    }}
-    onDeleteProject={(id) => {
-      const project = projects.find(p => p.id === id);
-      if (project && window.confirm(`Are you sure you want to delete "${project.name}"?`)) {
-        setProjects(prev => prev.filter(p => p.id !== id));
-        showToast(`Project "${project.name}" deleted successfully`, 'success');
-      }
-    }}
-    onDuplicateProject={(project) => {
-      const newProject: Project = {
-        ...project,
-        id: `p-${Date.now()}`,
-        name: `${project.name} (Copy)`,
-        startDate: new Date().toISOString().split('T')[0],
-      };
-      setProjects(prev => [newProject, ...prev]);
-      showToast(`Project "${newProject.name}" created successfully`, 'success');
-    }}
-  />;
+      case 'projects':
+        return <ProjectList projects={projects} clients={clients} onSelectProject={handleSelectProject} onAddProject={handleAddProject} />;
       case 'activities':
         return <ActivityFeed 
           activities={activities} 
@@ -1209,10 +967,6 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
                   currentUserId={currentUserId}
                   onSendMessage={handleSendMessage}
                   onCreateRoom={() => setIsCreateRoomDialogOpen(true)}
-                  activities={activities}
-                  clients={clients}
-                  projects={projects}
-                  onLogActivity={() => setIsActivityDialogOpen(true)}
                 />;
       case 'contacts': 
         return <ContactList clients={clients} onAddContact={() => setIsAddContactDialogOpen(true)} />;
@@ -1345,49 +1099,11 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
     }
   };
 
-  const handleLogin = async (email: string, password: string) => {
-    const { error } = await signIn(email, password);
-    if (!error) {
-      showToast('Welcome back!', 'success');
-    }
-    return { error };
-  };
-
-  const handleSignUp = async (email: string, password: string, name: string) => {
-    const { error } = await signUp(email, password, { name, role: 'user' });
-    if (!error) {
-      showToast('Account created! Please sign in.', 'success');
-    }
-    return { error };
-  };
-
-  const handleLogout = async () => {
-    await signOut();
-    showToast('Logged out successfully', 'success');
-  };
-
-  // Show loading state while checking auth
-  if (authLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-violet-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-slate-600 dark:text-slate-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show login page if not authenticated
-  if (!user) {
-    return <Login onLogin={handleLogin} onSignUp={handleSignUp} />;
-  }
-
   return (
       <div className="flex h-screen text-slate-800 dark:text-slate-200">
         <Sidebar currentPage={currentPage} onNavigate={navigateToPage} notifications={notifications} />
         <div className="flex-1 flex flex-col overflow-hidden relative">
-          <Header
+          <Header 
             onSearch={handleSearch}
             isSearching={isSearching}
             theme={theme}
@@ -1397,23 +1113,10 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
             onNavigate={switchActivePage}
             onCloseTab={handleCloseTab}
             onStartTour={() => setIsTourOpen(true)}
-            userEmail={user.email}
-            onLogout={handleLogout}
           />
-          {/* Increased padding from p-6 sm:p-8 to p-8 sm:p-10 lg:p-12 for more breathing room */}
-          {/* Added max-width container for better readability on ultra-wide screens */}
-          <main className="flex-1 p-8 sm:p-10 lg:p-12 overflow-y-auto">
-              <div className="max-w-[1920px] mx-auto">
-                  {/* Breadcrumbs Navigation */}
-                  <Breadcrumbs 
-                    items={breadcrumbs} 
-                    currentPage={currentPage}
-                    onNavigate={navigateToPage}
-                  />
-                  
-                  <div key={currentPage} className="page-content-wrapper">
-                      {renderContent()}
-                  </div>
+          <main className="flex-1 p-6 sm:p-8 overflow-y-auto">
+              <div key={currentPage} className="page-content-wrapper">
+                  {renderContent()}
               </div>
           </main>
           
@@ -1495,15 +1198,6 @@ const [currentProjectsView, setCurrentProjectsView] = useState<'hub' | 'list' | 
          <AiChatBot 
             isOpen={isAiChatOpen}
             onClose={() => setIsAiChatOpen(false)}
-        />
-        
-        {/* Command Palette - Press Ctrl/Cmd+K to open */}
-        <CommandPalette
-          isOpen={isCommandPaletteOpen}
-          onClose={() => setIsCommandPaletteOpen(false)}
-          onNavigate={navigateToPage}
-          onQuickAction={handleCommandPaletteAction}
-          recentPages={recentPages}
         />
       </div>
   );

@@ -32,7 +32,7 @@ export const projectService = {
     const { data: projectsData, error: projectsError } = await supabase
       .from('projects')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false});
     
     if (projectsError) {
       console.error('Error fetching projects:', projectsError);
@@ -110,20 +110,27 @@ export const projectService = {
 
   // Create a new project (with tasks if provided)
   async create(project: Partial<Project>): Promise<Project> {
+    // Build insert data - only include id if provided (for migration)
+    const insertData: any = {
+      name: project.name,
+      description: project.description,
+      client_id: project.clientId,
+      status: project.status || 'Planning',
+      start_date: project.startDate,
+      end_date: project.endDate,
+      budget: project.budget,
+      notes: project.notes
+    };
+    
+    // Only include id if it exists (for migrating existing data)
+    if (project.id) {
+      insertData.id = project.id;
+    }
+    
     // Create the project
     const { data: projectData, error: projectError } = await supabase
       .from('projects')
-      .insert([{
-        id: project.id, // Keep the mock ID for migration
-        name: project.name,
-        description: project.description,
-        client_id: project.clientId,
-        status: project.status || 'Planning',
-        start_date: project.startDate,
-        end_date: project.endDate,
-        budget: project.budget,
-        notes: project.notes
-      }])
+      .insert([insertData])
       .select()
       .single();
     
@@ -134,17 +141,25 @@ export const projectService = {
     
     // Create tasks if provided
     if (project.tasks && project.tasks.length > 0) {
-      const tasksToInsert = project.tasks.map(task => ({
-        id: task.id, // Keep mock ID for migration
-        project_id: projectData.id,
-        description: task.description,
-        team_member_id: task.teamMemberId || null,
-        status: task.status || 'To Do',
-        due_date: task.dueDate,
-        shared_with_client: task.sharedWithClient || false,
-        notes: task.notes,
-        phase: task.phase
-      }));
+      const tasksToInsert = project.tasks.map(task => {
+        const taskData: any = {
+          project_id: projectData.id,
+          description: task.description,
+          team_member_id: task.teamMemberId || null,
+          status: task.status || 'To Do',
+          due_date: task.dueDate,
+          shared_with_client: task.sharedWithClient || false,
+          notes: task.notes,
+          phase: task.phase
+        };
+        
+        // Only include task id if it exists (for migration)
+        if (task.id) {
+          taskData.id = task.id;
+        }
+        
+        return taskData;
+      });
       
       const { error: tasksError } = await supabase
         .from('tasks')

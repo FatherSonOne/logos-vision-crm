@@ -17,6 +17,7 @@ export const SupabaseTest: React.FC = () => {
     setResults([]);
     addResult('Starting Supabase tests...');
     
+    // Test 1: Check environment variables
     addResult('--- Checking Environment Variables ---');
     const url = import.meta.env.VITE_SUPABASE_URL;
     const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -33,6 +34,7 @@ export const SupabaseTest: React.FC = () => {
       return;
     }
 
+    // Test 2: Test basic connection
     addResult('--- Testing Connection ---');
     try {
       const { error } = await supabase.from('clients').select('count');
@@ -44,35 +46,40 @@ export const SupabaseTest: React.FC = () => {
       return;
     }
 
+    // Test 3: Try to read clients
     addResult('--- Testing Read Operation ---');
     try {
       const clients = await clientService.getAll();
-      addResult(`Successfully read ${clients.length} clients`);
+      addResult(`Successfully read ${clients.length} clients from database`);
       if (clients.length > 0) {
-        addResult(`Sample: ${clients[0].name}`);
+        addResult(`Sample client: ${clients[0].name}`);
       }
     } catch (err: any) {
       addResult(`Read failed: ${err.message}`, true);
     }
 
+    // Test 4: Try to create and delete
     addResult('--- Testing Create & Delete ---');
     try {
       const testClient = await clientService.create({
         name: 'TEST-' + Date.now(),
-        contactPerson: 'Test',
+        contactPerson: 'Test Person',
         email: 'test@test.com',
         phone: '555-0000',
-        location: 'Test',
+        location: 'Test City',
         createdAt: new Date().toISOString()
       });
-      addResult('Created test client');
+      addResult('Successfully created test client');
+      
       await clientService.delete(testClient.id);
-      addResult('Deleted test client');
+      addResult('Successfully deleted test client');
+      
     } catch (err: any) {
-      addResult(`CRUD failed: ${err.message}`, true);
+      addResult(`Create/Delete failed: ${err.message}`, true);
     }
 
     addResult('--- ALL TESTS COMPLETE ---');
+    addResult('If all green, your Supabase is working perfectly! 🎉');
     setIsRunning(false);
   };
 
@@ -81,23 +88,19 @@ export const SupabaseTest: React.FC = () => {
       padding: '40px', 
       maxWidth: '900px', 
       margin: '0 auto', 
-      fontFamily: 'Arial, sans-serif',
-      backgroundColor: '#fff',
-      minHeight: '100vh'
+      fontFamily: 'Arial, sans-serif' 
     }}>
-      <h1 style={{ color: '#333', fontSize: '32px' }}>
-        🔍 Supabase Connection Test
-      </h1>
-      <p style={{ color: '#666', marginBottom: '30px', fontSize: '16px' }}>
-        This will verify your Supabase database connection.
+      <h1 style={{ color: '#333' }}>🔍 Supabase Connection Test</h1>
+      <p style={{ color: '#666', marginBottom: '30px' }}>
+        This will verify your Supabase database connection and permissions.
       </p>
       
       <button 
         onClick={runTests} 
         disabled={isRunning}
         style={{ 
-          padding: '20px 50px', 
-          fontSize: '20px', 
+          padding: '15px 40px', 
+          fontSize: '18px', 
           marginBottom: '30px', 
           backgroundColor: isRunning ? '#999' : '#4CAF50', 
           color: 'white', 
@@ -105,12 +108,12 @@ export const SupabaseTest: React.FC = () => {
           borderRadius: '8px', 
           cursor: isRunning ? 'not-allowed' : 'pointer',
           fontWeight: 'bold',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.2)'
+          boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
         }}
       >
         {isRunning ? '⏳ Running Tests...' : '▶️ Run Connection Tests'}
       </button>
-
+      
       <div style={{ 
         backgroundColor: '#f8f9fa', 
         padding: '25px', 
@@ -118,29 +121,23 @@ export const SupabaseTest: React.FC = () => {
         minHeight: '400px',
         border: '2px solid #dee2e6',
         fontFamily: 'Consolas, monospace',
-        fontSize: '15px'
+        fontSize: '14px'
       }}>
         {results.length === 0 ? (
-          <p style={{ 
-            color: '#6c757d', 
-            textAlign: 'center', 
-            paddingTop: '100px',
-            fontSize: '18px'
-          }}>
-            👆 Click the green button above to run tests
+          <p style={{ color: '#6c757d', textAlign: 'center', paddingTop: '50px' }}>
+            👆 Click the button above to run the tests
           </p>
         ) : (
           results.map((result, index) => (
             <div 
               key={index} 
               style={{ 
-                marginBottom: '12px', 
-                padding: '10px',
+                marginBottom: '10px', 
+                padding: '8px',
                 color: result.includes('❌') ? '#dc3545' : '#28a745',
                 fontWeight: result.includes('---') ? 'bold' : 'normal',
                 backgroundColor: result.includes('---') ? '#e9ecef' : 'transparent',
-                borderRadius: '4px',
-                fontSize: '15px'
+                borderRadius: '4px'
               }}
             >
               {result}
@@ -154,19 +151,20 @@ export const SupabaseTest: React.FC = () => {
         padding: '20px', 
         backgroundColor: '#fff3cd', 
         borderRadius: '8px',
-        border: '2px solid #ffc107'
+        border: '1px solid #ffc107'
       }}>
         <h3 style={{ marginTop: 0, color: '#856404' }}>📋 What This Tests:</h3>
         <ul style={{ color: '#856404' }}>
-          <li>Environment variables (URL and API key)</li>
-          <li>Connection to Supabase</li>
-          <li>Reading data</li>
-          <li>Creating records</li>
-          <li>Deleting records</li>
+          <li><strong>Environment Variables:</strong> Checks if VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set</li>
+          <li><strong>Connection:</strong> Verifies it can reach your Supabase database</li>
+          <li><strong>Read:</strong> Tests reading data from the clients table</li>
+          <li><strong>Write:</strong> Tests creating a new record</li>
+          <li><strong>Delete:</strong> Tests deleting a record</li>
         </ul>
-        <p style={{ color: '#856404', marginBottom: 0, fontWeight: 'bold' }}>
-          ✅ All green? Perfect!<br />
-          ❌ Red errors? Share them with me and I'll help fix it!
+        <hr style={{ borderColor: '#ffc107' }} />
+        <p style={{ color: '#856404', marginBottom: 0 }}>
+          <strong>✅ All tests pass?</strong> Your Supabase is working perfectly!<br />
+          <strong>❌ Tests fail?</strong> Screenshot the results and share them with me - I'll help fix it!
         </p>
       </div>
     </div>

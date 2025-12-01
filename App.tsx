@@ -56,16 +56,13 @@ import { MeetingAssistantModal } from '../components/MeetingAssistantModal';
 import { ClipboardListIcon, CaseIcon, BuildingIcon, SparklesIcon, FolderIcon, CalendarIcon, HandHeartIcon } from '../components/icons';
 import { activityService } from './services/activityService';
 import { projectService } from './services/projectService';
-import { taskService } from './services/taskService';
-
 const App: React.FC = () => {
   const { showToast } = useToast();
   const [clients, setClients] = useState<Client[]>(mockClients);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(mockTeamMembers);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
+const [projects, setProjects] = useState<Project[]>([]);
+   const [isLoadingProjects, setIsLoadingProjects] = useState(true);  const [activities, setActivities] = useState<Activity[]>([]);
+const [isLoadingActivities, setIsLoadingActivities] = useState(true);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>(mockChatRooms);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
   const [donations, setDonations] = useState<Donation[]>(mockDonations);
@@ -78,7 +75,21 @@ const App: React.FC = () => {
   const [portalLayouts, setPortalLayouts] = useState<PortalLayout[]>([]);
   
   const [currentUserId, setCurrentUserId] = useState<string>('c1'); // Alice Johnson is logged in user
-
+// Load projects from Supabase
+async function loadProjects() {
+  try {
+    setIsLoadingProjects(true);
+    const data = await projectService.getAll();
+    setProjects(data);
+    console.log('✅ Loaded', data.length, 'projects from Supabase');
+  } catch (error) {
+    console.error('❌ Error loading projects:', error);
+    showToast('Failed to load projects', 'error');
+    setProjects(mockProjects); // Fallback to mock data if database fails
+  } finally {
+    setIsLoadingProjects(false);
+  }
+}
   const [openTabs, setOpenTabs] = useState<Page[]>(['dashboard']);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -243,48 +254,11 @@ const App: React.FC = () => {
     }
   ];
 
-  // Load Projects from Supabase
-  async function loadProjects() {
-    try {
-      setIsLoadingProjects(true);
-      const data = await projectService.getAll();
-      setProjects(data);
-      console.log('✅ Loaded', data.length, 'projects from Supabase');
-    } catch (error) {
-      console.error('❌ Error loading projects:', error);
-      showToast('Failed to load projects', 'error');
-      setProjects(mockProjects); // Fallback to mock data
-    } finally {
-      setIsLoadingProjects(false);
-    }
-  }
-
-  // Load Activities from Supabase
-  async function loadActivities() {
-    try {
-      setIsLoadingActivities(true);
-      const data = await activityService.getAll();
-      setActivities(data);
-      console.log('✅ Loaded', data.length, 'activities from Supabase');
-    } catch (error) {
-      console.error('❌ Error loading activities:', error);
-      showToast('Failed to load activities', 'error');
-      setActivities(mockActivities); // Fallback to mock data
-    } finally {
-      setIsLoadingActivities(false);
-    }
-  }
-
-  // Load data on mount
-  useEffect(() => {
-    loadProjects();
-    loadActivities();
-  }, []);
-
-  useEffect(() => {
-      const layouts = portalDbService.getLayouts();
-      setPortalLayouts(layouts);
-  }, []);
+ useEffect(() => {
+    const layouts = portalDbService.getLayouts();
+    setPortalLayouts(layouts);
+    loadProjects(); // Load projects from database
+}, []);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -389,32 +363,25 @@ const App: React.FC = () => {
   }, []);
 
 
-  const handleSaveActivity = async (activity: Omit<Activity, 'createdById'> & { id?: string }) => {
-    try {
-      if (activity.id) {
-        // Update existing activity
-        const updated = await activityService.update(activity.id, activity as Partial<Activity>);
-        setActivities(prev => prev.map(act =>
-          act.id === activity.id ? updated : act
-        ).sort((a,b) => new Date(b.activityDate).getTime() - new Date(a.activityDate).getTime()));
-        showToast(`Activity "${activity.title}" updated successfully`, 'success');
-      } else {
-        // Create new activity
-        const newActivity: Activity = {
-          ...(activity as Omit<Activity, 'id' | 'createdById'>),
-          id: `act-${Date.now()}`,
-          createdById: currentUserId,
-        };
-        const created = await activityService.create(newActivity);
-        setActivities(prev => [created, ...prev].sort((a,b) => new Date(b.activityDate).getTime() - new Date(a.activityDate).getTime()));
-        showToast(`Activity "${newActivity.title}" created successfully`, 'success');
-      }
-      setIsActivityDialogOpen(false);
-      setEditingActivity(null);
-    } catch (error) {
-      console.error('Error saving activity:', error);
-      showToast('Failed to save activity', 'error');
+  const handleSaveActivity = (activity: Omit<Activity, 'createdById'> & { id?: string }) => {
+    if (activity.id) {
+      setActivities(prev => prev.map(act => 
+        act.id === activity.id 
+          ? { ...act, ...activity } 
+          : act
+      ).sort((a,b) => new Date(b.activityDate).getTime() - new Date(a.activityDate).getTime()));
+      showToast(`Activity "${activity.title}" updated successfully`, 'success');
+    } else {
+      const newActivity: Activity = {
+        ...(activity as Omit<Activity, 'id' | 'createdById'>),
+        id: `act-${Date.now()}`,
+        createdById: currentUserId, 
+      };
+      setActivities(prev => [newActivity, ...prev].sort((a,b) => new Date(b.activityDate).getTime() - new Date(a.activityDate).getTime()));
+      showToast(`Activity "${newActivity.title}" created successfully`, 'success');
     }
+    setIsActivityDialogOpen(false);
+    setEditingActivity(null);
   };
   
   const handleScheduleActivity = (activityData: Partial<Activity>) => {
@@ -437,16 +404,10 @@ const App: React.FC = () => {
     setIsActivityDialogOpen(true);
   };
 
-  const handleDeleteActivity = async (activityId: string) => {
+  const handleDeleteActivity = (activityId: string) => {
     if (window.confirm('Are you sure you want to delete this activity?')) {
-      try {
-        await activityService.delete(activityId);
-        setActivities(prev => prev.filter(a => a.id !== activityId));
-        showToast('Activity deleted successfully', 'success');
-      } catch (error) {
-        console.error('Error deleting activity:', error);
-        showToast('Failed to delete activity', 'error');
-      }
+      setActivities(prev => prev.filter(a => a.id !== activityId));
+      showToast('Activity deleted successfully', 'success');
     }
   };
 
@@ -506,44 +467,38 @@ const App: React.FC = () => {
     setIsProjectPlannerOpen(true);
   };
 
-  const handleSaveProjectPlan = async (plan: AiProjectPlan, clientId: string) => {
-    try {
-      const today = new Date();
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + 3); // Estimate 3 month duration
+  const handleSaveProjectPlan = (plan: AiProjectPlan, clientId: string) => {
+    const today = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 3); // Estimate 3 month duration
 
-      const newTasks = plan.phases.flatMap(phase =>
-          phase.tasks.map(taskDesc => ({
-              id: `task-${Date.now()}-${Math.random()}`,
-              description: taskDesc,
-              teamMemberId: '', // Unassigned initially
-              dueDate: endDate.toISOString().split('T')[0],
-              status: TaskStatus.ToDo,
-              phase: phase.phaseName,
-          }))
-      );
+    const newTasks = plan.phases.flatMap(phase => 
+        phase.tasks.map(taskDesc => ({
+            id: `task-${Date.now()}-${Math.random()}`,
+            description: taskDesc,
+            teamMemberId: '', // Unassigned initially
+            dueDate: endDate.toISOString().split('T')[0],
+            status: TaskStatus.ToDo,
+            phase: phase.phaseName,
+        }))
+    );
 
-      const newProject: Project = {
-          id: `p-${Date.now()}`,
-          name: plan.projectName,
-          description: plan.description,
-          clientId,
-          teamMemberIds: [], // Unassigned initially
-          startDate: today.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0],
-          status: ProjectStatus.Planning,
-          tasks: newTasks,
-      };
+    const newProject: Project = {
+        id: `p-${Date.now()}`,
+        name: plan.projectName,
+        description: plan.description,
+        clientId,
+        teamMemberIds: [], // Unassigned initially
+        startDate: today.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        status: ProjectStatus.Planning,
+        tasks: newTasks,
+    };
 
-      const created = await projectService.create(newProject);
-      setProjects(prev => [created, ...prev]);
-      setIsProjectPlannerOpen(false);
-      showToast(`Project "${newProject.name}" created successfully!`, 'success');
-      handleSelectProject(created.id);
-    } catch (error) {
-      console.error('Error creating project:', error);
-      showToast('Failed to create project', 'error');
-    }
+    setProjects(prev => [newProject, ...prev]);
+    setIsProjectPlannerOpen(false);
+    showToast(`Project "${newProject.name}" created successfully!`, 'success');
+    handleSelectProject(newProject.id);
   };
 
 
@@ -618,30 +573,24 @@ const App: React.FC = () => {
     showToast('Comment added.', 'success');
   };
 
-  const handleUpdateTaskNote = async (projectId: string, taskId: string, notes: string) => {
-    try {
-      await taskService.update(taskId, { notes });
-      setProjects(prevProjects =>
-          prevProjects.map(p => {
-              if (p.id === projectId) {
-                  return {
-                      ...p,
-                      tasks: p.tasks.map(t => {
-                          if (t.id === taskId) {
-                              return { ...t, notes };
-                          }
-                          return t;
-                      })
-                  };
-              }
-              return p;
-          })
-      );
-      showToast('Task note saved.', 'success');
-    } catch (error) {
-      console.error('Error updating task note:', error);
-      showToast('Failed to save task note', 'error');
-    }
+  const handleUpdateTaskNote = (projectId: string, taskId: string, notes: string) => {
+    setProjects(prevProjects => 
+        prevProjects.map(p => {
+            if (p.id === projectId) {
+                return {
+                    ...p,
+                    tasks: p.tasks.map(t => {
+                        if (t.id === taskId) {
+                            return { ...t, notes };
+                        }
+                        return t;
+                    })
+                };
+            }
+            return p;
+        })
+    );
+    showToast('Task note saved.', 'success');
   };
 
 
@@ -782,43 +731,29 @@ const App: React.FC = () => {
     setSelectedActivityForAssistant(null);
   };
 
-  const handleSaveActionItems = async (newTasks: Omit<Task, 'id' | 'status' | 'dueDate'>[], projectId: string) => {
+  const handleSaveActionItems = (newTasks: Omit<Task, 'id' | 'status' | 'dueDate'>[], projectId: string) => {
     if (!projectId) {
       showToast('Could not save tasks: No project selected.', 'error');
       return;
     }
 
-    try {
-      const project = projects.find(p => p.id === projectId);
-      if (!project) {
-        showToast('Project not found', 'error');
-        return;
-      }
-
-      const addedTasks: Task[] = newTasks.map(t => ({
-        ...t,
-        id: `task-${Date.now()}-${Math.random()}`,
-        status: TaskStatus.ToDo,
-        dueDate: project.endDate, // Default to project end date
-      }));
-
-      // Note: Tasks are linked to projects, so they'll be created with the project
-      // For now, just update the local state. In a full migration, we'd create each task via taskService
-      setProjects(prevProjects => {
-        return prevProjects.map(p => {
-          if (p.id === projectId) {
-            return { ...p, tasks: [...p.tasks, ...addedTasks] };
-          }
-          return p;
-        });
+    setProjects(prevProjects => {
+      return prevProjects.map(p => {
+        if (p.id === projectId) {
+          const addedTasks: Task[] = newTasks.map(t => ({
+            ...t,
+            id: `task-${Date.now()}-${Math.random()}`,
+            status: TaskStatus.ToDo,
+            dueDate: p.endDate, // Default to project end date
+          }));
+          return { ...p, tasks: [...p.tasks, ...addedTasks] };
+        }
+        return p;
       });
+    });
 
-      showToast(`${newTasks.length} action item(s) added to project.`, 'success');
-      handleCloseMeetingAssistant();
-    } catch (error) {
-      console.error('Error saving action items:', error);
-      showToast('Failed to save action items', 'error');
-    }
+    showToast(`${newTasks.length} action item(s) added to project.`, 'success');
+    handleCloseMeetingAssistant();
   };
 
   const renderContent = () => {
