@@ -60,6 +60,10 @@ import { teamMemberService } from './services/teamMemberService';
 import { volunteerService } from './services/volunteerService';
 import { caseService } from './services/caseService';
 import { donationService } from './services/donationService';
+import * as mockData from './data/mockData';
+
+// 🔧 DEVELOPMENT MODE: Set to true to use sample data, false to use Supabase
+const USE_SAMPLE_DATA = true;
 
 const App: React.FC = () => {
   const { showToast } = useToast();
@@ -97,14 +101,14 @@ const App: React.FC = () => {
   
   const [currentUserId, setCurrentUserId] = useState<string>(''); // Will be set from first team member
 
-// Load all data from Supabase
+// Load all data from Supabase or mock data
 async function loadAllData() {
   // Load clients
   try {
     setIsLoadingClients(true);
-    const clientData = await clientService.getAll();
+    const clientData = USE_SAMPLE_DATA ? mockData.mockClients : await clientService.getAll();
     setClients(clientData);
-    console.log('✅ Loaded', clientData.length, 'clients from Supabase');
+    console.log('✅ Loaded', clientData.length, 'clients from', USE_SAMPLE_DATA ? 'Sample Data' : 'Supabase');
   } catch (error) {
     console.error('❌ Error loading clients:', error);
     showToast('Failed to load clients', 'error');
@@ -115,13 +119,13 @@ async function loadAllData() {
   // Load team members
   try {
     setIsLoadingTeamMembers(true);
-    const teamData = await teamMemberService.getAll();
+    const teamData = USE_SAMPLE_DATA ? mockData.mockTeamMembers : await teamMemberService.getAll();
     setTeamMembers(teamData);
     // Set current user to first team member if not set
     if (teamData.length > 0 && !currentUserId) {
       setCurrentUserId(teamData[0].id);
     }
-    console.log('✅ Loaded', teamData.length, 'team members from Supabase');
+    console.log('✅ Loaded', teamData.length, 'team members from', USE_SAMPLE_DATA ? 'Sample Data' : 'Supabase');
   } catch (error) {
     console.error('❌ Error loading team members:', error);
     showToast('Failed to load team members', 'error');
@@ -132,9 +136,9 @@ async function loadAllData() {
   // Load projects
   try {
     setIsLoadingProjects(true);
-    const projectData = await projectService.getAll();
+    const projectData = USE_SAMPLE_DATA ? mockData.mockProjects : await projectService.getAll();
     setProjects(projectData);
-    console.log('✅ Loaded', projectData.length, 'projects from Supabase');
+    console.log('✅ Loaded', projectData.length, 'projects from', USE_SAMPLE_DATA ? 'Sample Data' : 'Supabase');
   } catch (error) {
     console.error('❌ Error loading projects:', error);
     showToast('Failed to load projects', 'error');
@@ -145,9 +149,9 @@ async function loadAllData() {
   // Load activities
   try {
     setIsLoadingActivities(true);
-    const activityData = await activityService.getAll();
+    const activityData = USE_SAMPLE_DATA ? mockData.mockActivities : await activityService.getAll();
     setActivities(activityData);
-    console.log('✅ Loaded', activityData.length, 'activities from Supabase');
+    console.log('✅ Loaded', activityData.length, 'activities from', USE_SAMPLE_DATA ? 'Sample Data' : 'Supabase');
   } catch (error) {
     console.error('❌ Error loading activities:', error);
     showToast('Failed to load activities', 'error');
@@ -158,9 +162,9 @@ async function loadAllData() {
   // Load volunteers
   try {
     setIsLoadingVolunteers(true);
-    const volunteerData = await volunteerService.getAll();
+    const volunteerData = USE_SAMPLE_DATA ? mockData.mockVolunteers : await volunteerService.getAll();
     setVolunteers(volunteerData);
-    console.log('✅ Loaded', volunteerData.length, 'volunteers from Supabase');
+    console.log('✅ Loaded', volunteerData.length, 'volunteers from', USE_SAMPLE_DATA ? 'Sample Data' : 'Supabase');
   } catch (error) {
     console.error('❌ Error loading volunteers:', error);
     showToast('Failed to load volunteers', 'error');
@@ -171,9 +175,9 @@ async function loadAllData() {
   // Load cases
   try {
     setIsLoadingCases(true);
-    const caseData = await caseService.getAll();
+    const caseData = USE_SAMPLE_DATA ? mockData.mockCases : await caseService.getAll();
     setCases(caseData);
-    console.log('✅ Loaded', caseData.length, 'cases from Supabase');
+    console.log('✅ Loaded', caseData.length, 'cases from', USE_SAMPLE_DATA ? 'Sample Data' : 'Supabase');
   } catch (error) {
     console.error('❌ Error loading cases:', error);
     showToast('Failed to load cases', 'error');
@@ -184,14 +188,26 @@ async function loadAllData() {
   // Load donations
   try {
     setIsLoadingDonations(true);
-    const donationData = await donationService.getAll();
+    const donationData = USE_SAMPLE_DATA ? mockData.mockDonations : await donationService.getAll();
     setDonations(donationData);
-    console.log('✅ Loaded', donationData.length, 'donations from Supabase');
+    console.log('✅ Loaded', donationData.length, 'donations from', USE_SAMPLE_DATA ? 'Sample Data' : 'Supabase');
   } catch (error) {
     console.error('❌ Error loading donations:', error);
     showToast('Failed to load donations', 'error');
   } finally {
     setIsLoadingDonations(false);
+  }
+  
+  // Load additional mock data (documents, events, webpages, campaigns, chat)
+  if (USE_SAMPLE_DATA) {
+    setDocuments(mockData.mockDocuments || []);
+    setEvents(mockData.mockEvents || []);
+    setWebpages(mockData.mockWebpages || []);
+    setEmailCampaigns(mockData.mockEmailCampaigns || []);
+    setChatRooms(mockData.mockChatRooms || []);
+    setChatMessages(mockData.mockChatMessages || []);
+    setPortalLayouts(mockData.mockPortalLayouts || []);
+    console.log('✅ Loaded additional sample data (documents, events, webpages, campaigns, chat)');
   }
 }
 

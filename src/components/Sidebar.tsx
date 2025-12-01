@@ -25,17 +25,17 @@ const NavItem: React.FC<NavItemProps> = ({ pageId, label, icon, currentPage, onN
                     e.preventDefault();
                     onNavigate(pageId);
                 }}
-                className={`relative flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                className={`relative flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive 
-                    ? 'bg-white/30 dark:bg-white/20 text-slate-900 dark:text-white shadow-sm' 
-                    : 'text-slate-700 hover:bg-white/20 dark:text-slate-200 dark:hover:bg-white/10 hover:shadow-sm'
+                    ? 'bg-slate-200/60 dark:bg-slate-700/60 text-slate-900 dark:text-white backdrop-blur-sm' 
+                    : 'text-slate-700 hover:bg-slate-200/40 dark:text-slate-300 dark:hover:bg-slate-700/40 hover:backdrop-blur-sm'
                 } ${collapsed ? 'justify-center' : ''}`}
                 aria-label={label}
                 title={collapsed ? label : undefined}
             >
                 {/* Active indicator */}
                 {isActive && (
-                    <span className="absolute inset-y-0 left-0 w-1 bg-cyan-500 rounded-r-full transition-all duration-300" aria-hidden="true"></span>
+                    <span className="absolute inset-y-0 left-0 w-1 bg-slate-700 dark:bg-slate-300 rounded-r-full transition-all duration-300" aria-hidden="true"></span>
                 )}
                 
                 {/* Icon */}
@@ -109,7 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, notif
     return (
         <aside 
             id="main-sidebar" 
-            className={`bg-white/25 dark:bg-slate-900/40 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-700/50 flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out shadow-sm ${
+            className={`acrylic-sidebar flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out ${
                 collapsed ? 'w-20' : 'w-64'
             }`}
         >
@@ -123,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, notif
                     )}
                     <button
                         onClick={toggleCollapsed}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/50 dark:bg-slate-800/50 hover:bg-white/70 dark:hover:bg-slate-700/70 text-slate-700 dark:text-slate-300 transition-all duration-200 hover:shadow-md"
+                        className="flex items-center justify-center w-8 h-8 rounded-lg frosted-btn"
                         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                     >
