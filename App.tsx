@@ -1,3 +1,7 @@
+import { testLogosSyncpg } from './services/testLogosSyncpg';
+if (typeof window !== 'undefined') {
+  (window as any).testLogosSyncpg = testLogosSyncpg;
+}
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Header } from '../components/Header';
