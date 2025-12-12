@@ -1,10 +1,12 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { syncProjectToChannel, syncAll } from './services/logosSync';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { ProjectList } from './components/ProjectList';
 import { ProjectDetail } from './components/ProjectDetail';
+import { ProjectHub } from './components/ProjectHub';
 import { portalDbService } from './services/portalDbService';
 import { performAdvancedSearch } from './services/geminiService';
 // FIX: Correctly alias Document as AppDocument on import.
@@ -48,6 +50,7 @@ import { ClientPortalLogin } from './components/ClientPortalLogin';
 import { ClientPortal } from './components/ClientPortal';
 import { EmailCampaigns } from './components/EmailCampaigns';
 import { GrantAssistant } from './components/GrantAssistant';
+import { CalendarIntegration } from './components/CalendarIntegration';
 import { useToast } from './components/ui/Toast';
 import { GuidedTour, TourStep } from './components/GuidedTour';
 import { QuickAddButton, QuickAction } from './components/quickadd/QuickAddButton';
@@ -65,6 +68,21 @@ import * as mockData from './data/mockData';
 
 // 🔧 DEVELOPMENT MODE: Set to true to use sample data, false to use Supabase
 const USE_SAMPLE_DATA = true;
+
+// Temporary global test helper
+// @ts-ignore
+window.testLogosSync = async () => {
+  const result = await syncProjectToChannel({
+    id: 'test-1',
+    name: 'Test Project',
+    description: 'Test',
+    clientId: 'c1',
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
+    status: 'In Progress',
+  });
+  console.log('✅ Success:', result);
+};
 
 const App: React.FC = () => {
   const { showToast } = useToast();
@@ -217,6 +235,21 @@ useEffect(() => {
   loadAllData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
+
+// Run a one-time sync to Supabase when real data is loaded (skip sample data)
+useEffect(() => {
+  if (USE_SAMPLE_DATA) return;
+  if ((!projects || projects.length === 0) && (!clients || clients.length === 0)) return;
+
+  (async () => {
+    try {
+      await syncAll(projects, clients, cases, [], activities);
+      console.log('✅ syncAll completed');
+    } catch (e) {
+      console.error('Sync failed', e);
+    }
+  })();
+}, [projects, clients, cases, activities]);
 
   const [openTabs, setOpenTabs] = useState<Page[]>(['dashboard']);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
@@ -598,6 +631,25 @@ useEffect(() => {
     setIsProjectPlannerOpen(true);
   };
 
+  const handleUpdateProject = (projectId: string, updates: Partial<Project>) => {
+    setProjects(prevProjects =>
+      prevProjects.map(p =>
+        p.id === projectId ? { ...p, ...updates } : p
+      )
+    );
+    
+    // Show toast for certain updates
+    if (updates.pinned !== undefined) {
+      showToast(updates.pinned ? 'Project pinned' : 'Project unpinned', 'success');
+    } else if (updates.starred !== undefined) {
+      showToast(updates.starred ? 'Project starred' : 'Star removed', 'success');
+    } else if (updates.archived !== undefined) {
+      showToast(updates.archived ? 'Project archived' : 'Project restored', 'success');
+    } else if (updates.isTemplate) {
+      showToast('Project saved as template', 'success');
+    }
+  };
+
   const handleSaveProjectPlan = (plan: AiProjectPlan, clientId: string) => {
     const today = new Date();
     const endDate = new Date();
@@ -960,7 +1012,19 @@ useEffect(() => {
                   onScheduleEvent={() => setIsActivityDialogOpen(true)}
                />;
       case 'projects':
-        return <ProjectList projects={projects} clients={clients} onSelectProject={handleSelectProject} onAddProject={handleAddProject} />;
+        return <ProjectHub 
+          projects={projects} 
+          tasks={projects.flatMap(p => p.tasks.map(t => ({...t, projectId: p.id})))} 
+          clients={clients} 
+          activities={activities}
+          onNavigateToProject={handleSelectProject}
+          onNavigateToPage={navigateToPage}
+          onUpdateProject={handleUpdateProject}
+        />;
+      case 'project-hub':
+        // Redirect to projects (they're now merged)
+        navigateToPage('projects');
+        return null;
       case 'activities':
         return <ActivityFeed 
           activities={activities} 
@@ -991,6 +1055,8 @@ useEffect(() => {
         return <Donations donations={donations} clients={clients} />;
       case 'calendar': 
         return <CalendarView teamMembers={teamMembers} projects={projects} activities={activities} />;
+      case 'calendar-settings':
+        return <CalendarIntegration />;
       case 'tasks': 
         return <TaskView projects={projects} teamMembers={teamMembers} onSelectTask={handleSelectProject} />;
       case 'form-generator':
@@ -1126,8 +1192,8 @@ useEffect(() => {
   };
 
   return (
-      <div className="flex h-screen text-slate-800 dark:text-slate-200">
-        <Sidebar currentPage={currentPage} onNavigate={navigateToPage} notifications={notifications} />
+        <div className="flex h-screen bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white">
+          <Sidebar currentPage={currentPage} onNavigate={navigateToPage} notifications={notifications} />
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <Header 
             onSearch={handleSearch}
@@ -1140,7 +1206,7 @@ useEffect(() => {
             onCloseTab={handleCloseTab}
             onStartTour={() => setIsTourOpen(true)}
           />
-          <main className="flex-1 p-6 sm:p-8 overflow-y-auto">
+          <main className="flex-1 p-6 sm:p-8 overflow-y-auto bg-gray-50 dark:bg-slate-900">
               <div key={currentPage} className="page-content-wrapper">
                   {renderContent()}
               </div>
