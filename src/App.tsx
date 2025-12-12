@@ -60,6 +60,7 @@ import { ClipboardListIcon, CaseIcon, BuildingIcon, SparklesIcon, FolderIcon, Ca
 import { activityService } from './services/activityService';
 import { projectService } from './services/projectService';
 import { clientService } from './services/clientService';
+import { taskService } from './services/taskService';
 import { teamMemberService } from './services/teamMemberService';
 import { volunteerService } from './services/volunteerService';
 import { caseService } from './services/caseService';
@@ -96,6 +97,8 @@ const App: React.FC = () => {
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
@@ -216,8 +219,37 @@ async function loadAllData() {
   } finally {
     setIsLoadingDonations(false);
   }
+
+  // Load tasks
+  try {
+    setIsLoadingTasks(true);
+    const taskData = USE_SAMPLE_DATA ? [] : await taskService.getAll();
+    setTasks(taskData);
+    console.log('✅ Loaded', taskData.length, 'tasks from', USE_SAMPLE_DATA ? 'Sample Data' : 'Supabase');
+  } catch (error) {
+    console.error('❌ Error loading tasks:', error);
+    showToast('Failed to load tasks', 'error');
+  } finally {
+    setIsLoadingTasks(false);
+  }
   
   // Load additional mock data (documents, events, webpages, campaigns, chat)
+  // trigger one-time sync when using real data
+  if (!USE_SAMPLE_DATA) {
+    try {
+      await syncAll(
+        projects,
+        clients,
+        cases,
+        tasks,
+        activities
+      );
+      console.log('✅ Logos → Pulse sync complete on app load');
+    } catch (e) {
+      console.error('❌ Logos → Pulse sync failed', e);
+    }
+  }
+
   if (USE_SAMPLE_DATA) {
     setDocuments(mockData.mockDocuments || []);
     setEvents(mockData.mockEvents || []);
