@@ -1,2 +1,338 @@
-/* Main CSS - Most styles are inline in index.html for Tailwind CDN compatibility */
-/* This file exists to prevent 404 errors */
+/* Main CSS - Logos Vision CRM */
+/* Import Design System Tokens */
+@import './src/styles/design-tokens.css';
+
+/* Note: Most styles use Tailwind CSS utilities inline for flexibility */
+
+/* Shimmer animation for progress bars */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Timeline View Animations */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Smooth transitions for timeline items */
+.timeline-item {
+  transition: all 0.2s ease-in-out;
+}
+
+.timeline-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================
+   CALENDAR EVENT ANIMATIONS
+   =========================== */
+
+/* Gentle Pulse - Projects */
+@keyframes pulse-gentle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-gentle {
+  animation: pulse-gentle 3s ease-in-out infinite;
+}
+
+/* Subtle Bounce - Activities */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+/* Scale on Hover - Meetings */
+.animate-scale-hover {
+  transition: transform 0.2s ease-in-out;
+}
+
+.animate-scale-hover:hover {
+  transform: scale(1.1);
+}
+
+/* Ring Animation - Calls */
+@keyframes ring {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  10%, 30% {
+    transform: rotate(-10deg);
+  }
+  20%, 40% {
+    transform: rotate(10deg);
+  }
+}
+
+.animate-ring {
+  animation: ring 2s ease-in-out infinite;
+}
+
+/* Check Draw In - Completed Tasks */
+@keyframes check-draw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-check-draw {
+  animation: check-draw 0.5s ease-in-out;
+}
+
+/* Bounce Pulse - Deadline Tasks */
+@keyframes bounce-pulse {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  25% {
+    transform: translateY(-4px);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-bounce-pulse {
+  animation: bounce-pulse 1s ease-in-out infinite;
+}
+
+/* Flash Vibrate - Urgent Events */
+@keyframes flash-vibrate {
+  0%, 100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    opacity: 0.7;
+    transform: translateX(-2px);
+  }
+  20%, 40%, 60%, 80% {
+    opacity: 1;
+    transform: translateX(2px);
+  }
+}
+
+.animate-flash-vibrate {
+  animation: flash-vibrate 1.5s ease-in-out infinite;
+}
+
+/* Sparkle - Events */
+@keyframes sparkle {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 0.8;
+  }
+}
+
+.animate-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Shine Sweep - Milestones */
+@keyframes shine-sweep {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-shine-sweep {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shine-sweep 3s ease-in-out infinite;
+}
+
+/* Fold Corner - Notes */
+@keyframes fold-corner {
+  0%, 100% {
+    transform: perspective(100px) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(100px) rotateY(10deg);
+  }
+}
+
+.animate-fold-corner {
+  animation: fold-corner 3s ease-in-out infinite;
+}
+
+/* Tick - Deadlines */
+@keyframes tick {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-5deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+}
+
+.animate-tick {
+  animation: tick 1s ease-in-out infinite;
+}
+
+/* ===========================
+   3D TIMELINE ANIMATIONS
+   =========================== */
+
+/* Floating Effect */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Glow Pulse */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(236, 72, 153, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.8);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Pin Drop */
+@keyframes pin-drop {
+  0% {
+    transform: translateY(-100px) scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(10px) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-pin-drop {
+  animation: pin-drop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Marker Pulse */
+@keyframes marker-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.85;
+  }
+}
+
+.animate-marker-pulse {
+  animation: marker-pulse 2s ease-in-out infinite;
+}
+
+/* Depth Lift */
+.depth-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.depth-lift:hover {
+  transform: translateZ(20px) translateY(-5px);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3);
+}
+
+/* 3D Transform Support */
+.preserve-3d {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+/* Calendar Pop-in Animation */
+@keyframes pop-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Event Hover Lift */
+.event-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.event-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.2);
+}

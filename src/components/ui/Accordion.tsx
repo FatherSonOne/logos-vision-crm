@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronRightIcon } from './icons';
+import { ChevronRightIcon } from '../icons';
 
 /**
  * Accordion Component - Expandable/Collapsible Sections

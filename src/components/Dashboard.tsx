@@ -4,6 +4,17 @@ import { ProjectStatus, ActivityType, ActivityStatus, TaskStatus } from '../type
 import { getDeadlineStatus } from '../utils/dateHelpers';
 import { generateDailyBriefing } from '../services/geminiService';
 import { Skeleton, CardSkeleton as StatCardSkeleton, ListSkeleton } from './ui/Skeleton';
+import { useDonationSummary } from '../hooks/useDonationSummary';
+
+// Design System Components
+import { StatCard, Card, CardHeader, CardTitle, CardContent, Badge } from './ui';
+import { IconButton } from './ui/Button';
+
+// Phase 1 Dashboard Widgets
+import { DonorRetentionWidget } from './dashboard/DonorRetentionWidget';
+import { LapsedDonorAlert } from './dashboard/LapsedDonorAlert';
+import { PledgeFulfillmentWidget } from './dashboard/PledgeFulfillmentWidget';
+import { ServiceImpactSummary } from './dashboard/ServiceImpactSummary';
 
 
 interface DashboardProps {
@@ -17,21 +28,6 @@ interface DashboardProps {
   setCurrentPage: (page: Page) => void;
   onScheduleEvent: () => void;
 }
-
-const StatCard: React.FC<{ title: string; value: string | number; subtitle: string; icon: React.ReactNode; color: string; id?: string }> = ({ title, value, subtitle, icon, color, id }) => (
-  <div id={id} className="bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl p-5 rounded-lg border border-white/20 shadow-lg text-shadow-strong">
-    <div className="flex justify-between items-start">
-      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{title}</p>
-      <div className={`${color}`}>
-        {icon}
-      </div>
-    </div>
-    <div>
-      <p className="text-3xl font-bold text-slate-900 mt-2 dark:text-slate-100">{value}</p>
-      <p className="text-xs text-green-800 dark:text-green-400 font-semibold">{subtitle}</p>
-    </div>
-  </div>
-);
 
 const DailyBriefing: React.FC<{
     userName: string;
@@ -143,29 +139,31 @@ const ProjectsNearingDeadline: React.FC<{ projects: Project[], onSelectProject: 
         return projects
             .filter(p => p.status !== ProjectStatus.Completed)
             .map(p => ({ ...p, deadline: getDeadlineStatus(p.endDate) }))
-            .filter(p => p.deadline.status !== 'completed') // Should be redundant but good practice
+            .filter(p => p.deadline.status !== 'completed')
             .sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime())
             .slice(0, 5);
     }, [projects]);
 
     return (
-        <div className="bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl p-6 rounded-lg border border-white/20 shadow-lg text-shadow-strong">
-            <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">Projects Nearing Deadline</h3>
-            <ul className="space-y-4">
-                {nearingDeadline.length > 0 ? nearingDeadline.map(project => (
-                    <li key={project.id}>
-                        <button onClick={() => onSelectProject(project.id)} className="w-full text-left group">
-                            <div className="flex justify-between items-center text-sm mb-1">
-                                <span className="font-semibold text-slate-800 group-hover:text-cyan-600 dark:text-slate-100 dark:group-hover:text-cyan-400 truncate pr-2">{project.name}</span>
-                                <span className={`font-semibold ${project.deadline.color} flex-shrink-0`}>{project.deadline.text}</span>
-                            </div>
-                        </button>
-                    </li>
-                )) : (
-                    <p className="text-sm text-slate-600 dark:text-slate-300 text-center py-8">No upcoming project deadlines.</p>
-                )}
-            </ul>
-        </div>
+        <Card>
+            <CardTitle>Projects Nearing Deadline</CardTitle>
+            <CardContent className="mt-4">
+                <ul className="space-y-4">
+                    {nearingDeadline.length > 0 ? nearingDeadline.map(project => (
+                        <li key={project.id}>
+                            <button onClick={() => onSelectProject(project.id)} className="w-full text-left group">
+                                <div className="flex justify-between items-center text-sm mb-1">
+                                    <span className="font-semibold text-slate-800 group-hover:text-rose-600 dark:text-slate-100 dark:group-hover:text-rose-400 truncate pr-2">{project.name}</span>
+                                    <span className={`font-semibold ${project.deadline.color} flex-shrink-0`}>{project.deadline.text}</span>
+                                </div>
+                            </button>
+                        </li>
+                    )) : (
+                        <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-8">No upcoming project deadlines.</p>
+                    )}
+                </ul>
+            </CardContent>
+        </Card>
     );
 }
 
@@ -203,6 +201,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, 
   const activeProjects = projects.filter(p => p.status === ProjectStatus.InProgress).length;
   const recentActivities = activities.slice(0, 5);
   const currentUser = useMemo(() => teamMembers.find(tm => tm.id === currentUserId), [teamMembers, currentUserId]);
+  const donationSummary = useDonationSummary();
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 1200);
@@ -259,50 +258,152 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, 
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Organizations" value={clients.length} subtitle="0 active" icon={<BuildingIcon />} color="text-cyan-600 dark:text-cyan-400" />
-        <StatCard title="Total Contacts" value={clients.length} subtitle="All contacts" icon={<UsersIcon />} color="text-cyan-600 dark:text-cyan-400"/>
-        <StatCard title="Pipeline Value" value="$0K" subtitle="Total project value" icon={<DollarSignIcon />} color="text-cyan-600 dark:text-cyan-400"/>
-        <StatCard id="stat-card-active-projects" title="Active Projects" value={activeProjects} subtitle="0 total projects" icon={<TrendingUpIcon />} color="text-cyan-600 dark:text-cyan-400"/>
+        <StatCard
+          title="Organizations"
+          value={clients.length}
+          subtitle="0 active"
+          icon={<BuildingIcon />}
+          gradient="from-blue-500 to-cyan-600"
+          onClick={() => setCurrentPage('organizations')}
+        />
+        <StatCard
+          title="Total Contacts"
+          value={clients.length}
+          subtitle="All contacts"
+          icon={<UsersIcon />}
+          gradient="from-green-500 to-emerald-600"
+          onClick={() => setCurrentPage('contacts')}
+        />
+        <StatCard
+          title="Pipeline Value"
+          value="$0K"
+          subtitle="Total project value"
+          icon={<DollarSignIcon />}
+          gradient="from-purple-500 to-pink-600"
+          onClick={() => setCurrentPage('projects')}
+        />
+        <StatCard
+          id="stat-card-active-projects"
+          title="Active Projects"
+          value={activeProjects}
+          subtitle="0 total projects"
+          icon={<TrendingUpIcon />}
+          gradient="from-orange-500 to-red-600"
+          onClick={() => setCurrentPage('projects')}
+        />
+      </div>
+
+      {/* Key Performance Indicators Section */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">Key Performance Indicators</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Donations Summary */}
+          <Card variant="elevated" className="flex flex-col">
+            <CardHeader
+              action={
+                <Badge variant="info" size="sm">
+                  {donationSummary.thisYearCount} gifts
+                </Badge>
+              }
+            >
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                Donations This Year
+              </h3>
+              {donationSummary.loading ? (
+                <div className="mt-2 h-7 w-24 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+              ) : (
+                <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
+                  ${donationSummary.thisYearTotal.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  })}
+                </p>
+              )}
+            </CardHeader>
+
+            <CardContent className="text-sm text-slate-600 dark:text-slate-400">
+              {donationSummary.loading ? (
+                <div className="h-4 w-40 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+              ) : (
+                <>
+                  <p>
+                    Avg gift this year:{' '}
+                    <span className="font-semibold">
+                      ${donationSummary.averageGiftThisYear.toFixed(2)}
+                    </span>
+                  </p>
+                  <p className="mt-1">
+                    Last year total:{' '}
+                    <span className="font-semibold">
+                      ${donationSummary.lastYearTotal.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      })}
+                    </span>
+                  </p>
+                </>
+              )}
+            </CardContent>
+
+            {donationSummary.error && (
+              <p className="mt-3 text-xs text-red-600 dark:text-red-400">
+                {donationSummary.error}
+              </p>
+            )}
+          </Card>
+
+          <DonorRetentionWidget />
+          <LapsedDonorAlert />
+          <PledgeFulfillmentWidget />
+          <ServiceImpactSummary />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <ProjectsNearingDeadline projects={projects} onSelectProject={onSelectProject} />
-          <div className="bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl p-6 rounded-lg border border-white/20 shadow-lg text-shadow-strong">
-            <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">Recent Activities</h3>
-            <ul className="space-y-4">
-              {recentActivities.map(activity => (
+          <Card>
+            <CardTitle>Recent Activities</CardTitle>
+            <CardContent className="mt-4">
+              <ul className="space-y-4">
+                {recentActivities.map(activity => (
                   <li key={activity.id} className="flex items-center gap-4">
-                      <ActivityIcon type={activity.type} />
-                      <div className="flex-1">
-                          <p className="font-semibold text-slate-800 dark:text-slate-200">{activity.title}</p>
-                          <p className="text-sm text-slate-600 dark:text-slate-300">{getClientName(activity.clientId)}</p>
-                      </div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">{formatTimeAgo(activity.activityDate)}</p>
-                  </li>
-              ))}
-              {recentActivities.length === 0 && <p className="text-slate-600 dark:text-slate-400">No recent activities.</p>}
-            </ul>
-          </div>
-        </div>
-        <div className="bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl p-6 rounded-lg border border-white/20 shadow-lg text-shadow-strong flex flex-col">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Upcoming For You</h3>
-            <ul className="space-y-4 flex-grow">
-                {upcomingItems.length > 0 ? upcomingItems.map(item => (
-                    <li key={`${item.type}-${item.id}`} className="flex items-center gap-3 group cursor-pointer" onClick={item.onClick}>
-                        <div className="flex-shrink-0">{item.icon}</div>
-                        <div className="flex-1">
-                            <p className="font-semibold text-sm text-slate-800 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400">{item.title}</p>
-                            <p className="text-xs text-slate-600 dark:text-slate-400">{item.date.toLocaleDateString()} - {item.context}</p>
-                        </div>
-                    </li>
-                )) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">Nothing upcoming on your schedule.</p>
+                    <ActivityIcon type={activity.type} />
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">{activity.title}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{getClientName(activity.clientId)}</p>
                     </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">{formatTimeAgo(activity.activityDate)}</p>
+                  </li>
+                ))}
+                {recentActivities.length === 0 && (
+                  <p className="text-slate-600 dark:text-slate-400">No recent activities.</p>
                 )}
-            </ul>
+              </ul>
+            </CardContent>
+          </Card>
         </div>
+        <Card className="flex flex-col">
+          <CardTitle>Upcoming For You</CardTitle>
+          <CardContent className="mt-4 flex-grow">
+            <ul className="space-y-4">
+              {upcomingItems.length > 0 ? upcomingItems.map(item => (
+                <li key={`${item.type}-${item.id}`} className="flex items-center gap-3 group cursor-pointer" onClick={item.onClick}>
+                  <div className="flex-shrink-0">{item.icon}</div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm text-slate-800 dark:text-slate-200 group-hover:text-rose-600 dark:group-hover:text-rose-400">{item.title}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">{item.date.toLocaleDateString()} - {item.context}</p>
+                  </div>
+                </li>
+              )) : (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Nothing upcoming on your schedule.</p>
+                </div>
+              )}
+            </ul>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
