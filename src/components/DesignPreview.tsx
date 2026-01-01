@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Shield, Cpu, Activity, Layout, HelpCircle, Layers, CheckCircle, Info, Sparkles, Eye } from 'lucide-react';
+import React, { useState, useRef, useCallback } from 'react';
+import { Shield, Cpu, Activity, Layout, HelpCircle, Layers, CheckCircle, Info, Sparkles, Eye, Download } from 'lucide-react';
 import { LogoSelector, LogoPreviewPanel, Logo, LogoVariant, logoVariants, aurora } from './Logo';
 import { useLogo } from '../contexts/LogoContext';
 
@@ -16,6 +16,215 @@ interface DesignOption {
   };
   icon: React.ReactNode;
 }
+
+/**
+ * LogoDownloader - Component to download the logo as PNG
+ */
+const LogoDownloader: React.FC<{ selectedLogo: LogoVariant }> = ({ selectedLogo }) => {
+  const svgRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [selectedSize, setSelectedSize] = useState<number>(512);
+
+  const sizes = [
+    { label: '64px', value: 64 },
+    { label: '128px', value: 128 },
+    { label: '256px', value: 256 },
+    { label: '512px', value: 512 },
+    { label: '1024px', value: 1024 },
+  ];
+
+  const downloadAsPng = useCallback(async () => {
+    const logoOption = logoVariants[selectedLogo];
+    if (!logoOption) return;
+
+    setDownloading(true);
+
+    try {
+      // Create a temporary container for the SVG
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="${selectedSize}" height="${selectedSize}">${
+        // Get the inner content of the logo SVG
+        (logoOption.icon as React.ReactElement).props.children
+      }</svg>`;
+
+      // Get the SVG element from logoVariants
+      const svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svgElement.setAttribute('viewBox', '0 0 64 64');
+      svgElement.setAttribute('width', selectedSize.toString());
+      svgElement.setAttribute('height', selectedSize.toString());
+      svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+      // Clone the icon's SVG content
+      const iconElement = logoOption.icon as React.ReactElement;
+      const iconProps = iconElement.props;
+
+      // Create SVG string from the React element
+      const svgString = `
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="${selectedSize}" height="${selectedSize}">
+          ${renderReactSvgToString(iconProps.children)}
+        </svg>
+      `;
+
+      // Create a blob from the SVG
+      const blob = new Blob([svgString], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+
+      // Create an image to draw on canvas
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = selectedSize;
+        canvas.height = selectedSize;
+        const ctx = canvas.getContext('2d');
+
+        if (ctx) {
+          // Optional: Add background
+          // ctx.fillStyle = '#0f172a';
+          // ctx.fillRect(0, 0, selectedSize, selectedSize);
+
+          ctx.drawImage(img, 0, 0, selectedSize, selectedSize);
+
+          // Convert to PNG and download
+          canvas.toBlob((pngBlob) => {
+            if (pngBlob) {
+              const pngUrl = URL.createObjectURL(pngBlob);
+              const link = document.createElement('a');
+              link.href = pngUrl;
+              link.download = `logos-vision-${selectedLogo}-${selectedSize}px.png`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(pngUrl);
+            }
+            setDownloading(false);
+          }, 'image/png');
+        }
+        URL.revokeObjectURL(url);
+      };
+
+      img.onerror = () => {
+        console.error('Failed to load SVG');
+        setDownloading(false);
+      };
+
+      img.src = url;
+    } catch (error) {
+      console.error('Download failed:', error);
+      setDownloading(false);
+    }
+  }, [selectedLogo, selectedSize]);
+
+  // Helper function to convert React children to SVG string
+  const renderReactSvgToString = (children: React.ReactNode): string => {
+    if (!children) return '';
+
+    const processNode = (node: React.ReactNode): string => {
+      if (!node) return '';
+      if (typeof node === 'string') return node;
+      if (Array.isArray(node)) return node.map(processNode).join('');
+
+      if (React.isValidElement(node)) {
+        const { type, props } = node;
+        const tagName = typeof type === 'string' ? type : 'g';
+
+        // Convert props to attributes
+        const attrs = Object.entries(props || {})
+          .filter(([key]) => key !== 'children')
+          .map(([key, value]) => {
+            // Convert camelCase to kebab-case for SVG attributes
+            const attrName = key
+              .replace(/([A-Z])/g, '-$1')
+              .toLowerCase()
+              .replace(/^-/, '');
+            // Handle className -> class
+            const finalAttrName = attrName === 'class-name' ? 'class' : attrName;
+            return `${finalAttrName}="${value}"`;
+          })
+          .join(' ');
+
+        const childContent = processNode(props?.children);
+
+        if (childContent) {
+          return `<${tagName} ${attrs}>${childContent}</${tagName}>`;
+        }
+        return `<${tagName} ${attrs}/>`;
+      }
+
+      return '';
+    };
+
+    return processNode(children);
+  };
+
+  return (
+    <div className="bg-slate-900/50 rounded-2xl border border-slate-700/50 p-8">
+      <h2 className="text-xl font-semibold text-slate-200 mb-6 flex items-center gap-2">
+        <Download className="w-5 h-5 text-cyan-400" />
+        Download Logo as PNG
+      </h2>
+
+      <div className="flex flex-col md:flex-row gap-8 items-center">
+        {/* Preview */}
+        <div
+          ref={svgRef}
+          className="w-48 h-48 flex items-center justify-center bg-slate-950 rounded-xl border border-slate-700/50 relative overflow-hidden"
+        >
+          {/* Background glow effect */}
+          <div className="absolute inset-0 bg-gradient-radial from-teal-500/10 to-transparent rounded-xl" />
+          <div className="w-32 h-32 relative z-10">
+            {logoVariants[selectedLogo]?.icon}
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="flex-1 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-3">Select Size</label>
+            <div className="flex flex-wrap gap-2">
+              {sizes.map((size) => (
+                <button
+                  key={size.value}
+                  onClick={() => setSelectedSize(size.value)}
+                  className={`
+                    px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                    ${selectedSize === size.value
+                      ? 'bg-teal-500 text-slate-900'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600'
+                    }
+                  `}
+                >
+                  {size.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={downloadAsPng}
+              disabled={downloading}
+              className={`
+                flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm
+                transition-all duration-200
+                ${downloading
+                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-900 hover:from-teal-400 hover:to-cyan-400 hover:shadow-lg hover:shadow-teal-500/25'
+                }
+              `}
+            >
+              <Download className="w-4 h-4" />
+              {downloading ? 'Generating...' : `Download PNG (${selectedSize}px)`}
+            </button>
+          </div>
+
+          <p className="text-xs text-slate-500">
+            Downloads the "{logoVariants[selectedLogo]?.name}" logo as a transparent PNG file.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 /**
  * LogoShowcase - Dedicated preview for the new quantum-inspired logos
@@ -100,6 +309,11 @@ export const LogoShowcase: React.FC = () => {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Logo Download Section */}
+      <div className="max-w-6xl mx-auto mt-12">
+        <LogoDownloader selectedLogo={selectedLogo} />
       </div>
 
       {/* Size Variations */}

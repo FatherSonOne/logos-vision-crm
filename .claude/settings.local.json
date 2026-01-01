@@ -25,7 +25,8 @@
       "Bash(grep:*)",
       "Bash(git checkout:*)",
       "Bash(findstr:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
