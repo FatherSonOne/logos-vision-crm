@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import type { Project, Client, TeamMember } from '../types';
 import { ProjectStatus } from '../types';
+import { Button } from './ui/Button';
+import { Input, Textarea } from './ui/Input';
+import { Select } from './ui/Select';
 
 interface EditProjectDialogProps {
   isOpen: boolean;
@@ -85,97 +88,74 @@ export const EditProjectDialog: React.FC<EditProjectDialogProps> = ({
     }));
   };
 
-  const inputClasses = "w-full px-3 py-2 bg-white/50 dark:bg-black/30 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all text-slate-800 dark:text-slate-100";
-  const labelClasses = "block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1";
+  const inputClasses = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 dark:focus:border-rose-400";
 
   if (!project) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Edit Project">
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Project Name */}
-        <div>
-          <label className={labelClasses}>Project Name *</label>
-          <input
-            type="text"
-            required
-            value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            className={inputClasses}
-            placeholder="Enter project name"
-          />
-        </div>
+        <Input
+          label="Project Name *"
+          required
+          value={formData.name}
+          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+          placeholder="Enter project name"
+          fullWidth
+        />
 
-        {/* Description */}
-        <div>
-          <label className={labelClasses}>Description</label>
-          <textarea
-            rows={3}
-            value={formData.description}
-            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            className={inputClasses}
-            placeholder="Project description..."
-          />
-        </div>
+        <Textarea
+          label="Description"
+          rows={3}
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Project description..."
+          fullWidth
+        />
 
-        {/* Client */}
-        <div>
-          <label className={labelClasses}>Organization *</label>
-          <select
-            required
-            value={formData.clientId}
-            onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value }))}
-            className={inputClasses}
-          >
-            <option value="">Select an organization</option>
-            {clients.map(client => (
-              <option key={client.id} value={client.id}>{client.name}</option>
-            ))}
-          </select>
-        </div>
+        <Select
+          label="Organization *"
+          required
+          value={formData.clientId}
+          onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value }))}
+          options={[
+            { value: '', label: 'Select an organization' },
+            ...clients.map(client => ({ value: client.id, label: client.name }))
+          ]}
+          fullWidth
+        />
 
-        {/* Status */}
-        <div>
-          <label className={labelClasses}>Status</label>
-          <select
-            value={formData.status}
-            onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as ProjectStatus }))}
-            className={inputClasses}
-          >
-            {Object.values(ProjectStatus).map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-        </div>
+        <Select
+          label="Status"
+          value={formData.status}
+          onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as ProjectStatus }))}
+          options={Object.values(ProjectStatus).map(status => ({ value: status, label: status }))}
+          fullWidth
+        />
 
-        {/* Dates */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelClasses}>Start Date *</label>
-            <input
-              type="date"
-              required
-              value={formData.startDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-              className={inputClasses}
-            />
-          </div>
-          <div>
-            <label className={labelClasses}>End Date *</label>
-            <input
-              type="date"
-              required
-              value={formData.endDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-              className={inputClasses}
-            />
-          </div>
+          <Input
+            label="Start Date *"
+            type="date"
+            required
+            value={formData.startDate}
+            onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+            fullWidth
+          />
+          <Input
+            label="End Date *"
+            type="date"
+            required
+            value={formData.endDate}
+            onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+            fullWidth
+          />
         </div>
 
         {/* Team Members */}
         <div>
-          <label className={labelClasses}>Team Members</label>
-          <div className="max-h-40 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-lg p-2 bg-white/50 dark:bg-black/30">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Team Members</label>
+          <div className="max-h-40 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-lg p-2 bg-white dark:bg-slate-800">
             {teamMembers.length === 0 ? (
               <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-2">No team members available</p>
             ) : (
@@ -189,10 +169,10 @@ export const EditProjectDialog: React.FC<EditProjectDialogProps> = ({
                       type="checkbox"
                       checked={formData.teamMemberIds.includes(member.id)}
                       onChange={() => handleTeamMemberToggle(member.id)}
-                      className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
+                      className="w-4 h-4 text-rose-500 rounded focus:ring-rose-500"
                     />
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white text-xs font-bold">
                         {member.name.split(' ').map(n => n[0]).join('')}
                       </div>
                       <div>
@@ -214,7 +194,7 @@ export const EditProjectDialog: React.FC<EditProjectDialogProps> = ({
 
         {/* Tags */}
         <div>
-          <label className={labelClasses}>Tags</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Tags</label>
           <div className="flex gap-2 mb-2">
             <input
               type="text"
@@ -224,26 +204,20 @@ export const EditProjectDialog: React.FC<EditProjectDialogProps> = ({
               className={`${inputClasses} flex-1`}
               placeholder="Add a tag..."
             />
-            <button
-              type="button"
-              onClick={handleAddTag}
-              className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors font-medium"
-            >
-              Add
-            </button>
+            <Button type="button" variant="secondary" onClick={handleAddTag}>Add</Button>
           </div>
           {formData.tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {formData.tags.map(tag => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 rounded-full text-sm"
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 rounded-full text-sm"
                 >
                   {tag}
                   <button
                     type="button"
                     onClick={() => handleRemoveTag(tag)}
-                    className="hover:text-cyan-900 dark:hover:text-cyan-100"
+                    className="hover:text-rose-900 dark:hover:text-rose-100"
                   >
                     ×
                   </button>
@@ -255,19 +229,8 @@ export const EditProjectDialog: React.FC<EditProjectDialogProps> = ({
 
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-6 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all shadow-md"
-          >
-            Save Changes
-          </button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="primary">Save Changes</Button>
         </div>
       </form>
     </Modal>

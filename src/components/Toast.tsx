@@ -64,12 +64,13 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // Design System aligned toast colors
   const getToastColors = (type: ToastType) => {
     switch (type) {
-      case 'success': return 'bg-teal-500/80 dark:bg-teal-600/80 border-teal-400/50';
-      case 'error': return 'bg-rose-500/80 dark:bg-rose-600/80 border-rose-400/50';
-      case 'warning': return 'bg-amber-500/80 dark:bg-amber-600/80 border-amber-400/50';
-      default: return 'bg-sky-500/80 dark:bg-sky-600/80 border-sky-400/50';
+      case 'success': return 'bg-green-500/90 dark:bg-green-600/90 border-green-400/50';
+      case 'error': return 'bg-red-500/90 dark:bg-red-600/90 border-red-400/50';
+      case 'warning': return 'bg-amber-500/90 dark:bg-amber-600/90 border-amber-400/50';
+      default: return 'bg-blue-500/90 dark:bg-blue-600/90 border-blue-400/50';
     }
   };
 
@@ -80,8 +81,14 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`${getToastColors(toast.type)} text-white px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 w-auto max-w-sm fade-in backdrop-blur-md border`}
+            className={`${getToastColors(toast.type)} text-white px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 w-auto max-w-sm animate-in slide-in-from-right backdrop-blur-md border`}
           >
+            {/* Pulsing Dot Indicator */}
+            <div className="relative flex items-center justify-center">
+              <div className="absolute w-3 h-3 rounded-full bg-white animate-ping opacity-75" />
+              <div className="relative w-2 h-2 rounded-full bg-white" />
+            </div>
+            
             {getToastIcon(toast.type)}
             <span className="flex-1 font-medium text-sm text-shadow-strong">{toast.message}</span>
             <button

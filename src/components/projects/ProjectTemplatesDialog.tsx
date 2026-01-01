@@ -26,13 +26,13 @@ const templates: ProjectTemplate[] = [
     color: 'from-blue-500 to-cyan-500',
     phases: ['Research', 'Proposal Writing', 'Budget Development', 'Review', 'Submission'],
     tasks: [
-      { title: 'Research grant opportunities', description: 'Identify potential grants', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Review eligibility requirements', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Draft project narrative', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Create detailed budget', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Gather supporting documents', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Internal review and edits', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Submit application', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] }
+      { title: 'Research grant opportunities', description: 'Identify potential grants', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Review eligibility requirements', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Draft project narrative', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Create detailed budget', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Gather supporting documents', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Internal review and edits', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Submit application', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' }
     ]
   },
   {
@@ -45,13 +45,13 @@ const templates: ProjectTemplate[] = [
     color: 'from-purple-500 to-pink-500',
     phases: ['Planning', 'Outreach', 'Setup', 'Execution', 'Follow-up'],
     tasks: [
-      { title: 'Define event goals and objectives', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Secure venue and permits', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Create event budget', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Recruit volunteers', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Marketing and promotion', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Day-of coordination', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Post-event survey and report', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] }
+      { title: 'Define event goals and objectives', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Secure venue and permits', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Create event budget', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Recruit volunteers', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Marketing and promotion', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Day-of coordination', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Post-event survey and report', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' }
     ]
   },
   {
@@ -64,14 +64,14 @@ const templates: ProjectTemplate[] = [
     color: 'from-green-500 to-emerald-500',
     phases: ['Research', 'Design', 'Testing', 'Launch', 'Evaluation'],
     tasks: [
-      { title: 'Conduct needs assessment', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Define program objectives', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Develop program curriculum', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Create marketing materials', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Pilot program with small group', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Gather feedback and refine', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Full program launch', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Monitor and evaluate outcomes', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] }
+      { title: 'Conduct needs assessment', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Define program objectives', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Develop program curriculum', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Create marketing materials', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Pilot program with small group', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Gather feedback and refine', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Full program launch', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Monitor and evaluate outcomes', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' }
     ]
   },
   {
@@ -84,13 +84,13 @@ const templates: ProjectTemplate[] = [
     color: 'from-orange-500 to-red-500',
     phases: ['Planning', 'Outreach', 'Onboarding', 'Engagement'],
     tasks: [
-      { title: 'Define volunteer roles and needs', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Create volunteer job descriptions', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Set up application process', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Promote opportunities', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Screen and interview candidates', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Conduct orientation training', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Assign first activities', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] }
+      { title: 'Define volunteer roles and needs', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Create volunteer job descriptions', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Set up application process', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Promote opportunities', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Screen and interview candidates', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Conduct orientation training', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Assign first activities', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' }
     ]
   },
   {
@@ -103,14 +103,14 @@ const templates: ProjectTemplate[] = [
     color: 'from-teal-500 to-blue-500',
     phases: ['Research', 'Introduction', 'Cultivation', 'Solicitation', 'Stewardship'],
     tasks: [
-      { title: 'Identify prospect donors', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Research donor interests', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Schedule introductory meetings', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Provide organizational updates', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Invite to events/site visits', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Prepare solicitation strategy', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Make ask', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] },
-      { title: 'Thank and recognize donor', description: '', status: TaskStatus.ToDo, dueDate: '', assignedTo: [] }
+      { title: 'Identify prospect donors', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Research donor interests', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Schedule introductory meetings', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Provide organizational updates', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Invite to events/site visits', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Prepare solicitation strategy', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Make ask', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' },
+      { title: 'Thank and recognize donor', description: '', status: TaskStatus.ToDo, dueDate: '', teamMemberId: '', assignedTo: '' }
     ]
   },
   {

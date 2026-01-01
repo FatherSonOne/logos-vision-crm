@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
 
 interface CreateRoomDialogProps {
   isOpen: boolean;
@@ -18,26 +20,21 @@ export const CreateRoomDialog: React.FC<CreateRoomDialogProps> = ({ isOpen, onCl
     }
   };
 
-  const inputStyles = "w-full p-2 bg-slate-100 border border-slate-300 rounded-md focus:ring-teal-500 focus:border-teal-500 text-slate-900 placeholder-slate-400 dark:bg-slate-700/50 dark:border-slate-600 dark:text-white dark:placeholder-slate-400";
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Channel">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="roomName" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Channel Name</label>
-          <input
-            type="text"
-            id="roomName"
-            value={roomName}
-            onChange={(e) => setRoomName(e.target.value)}
-            placeholder="#e-g-project-kickoff"
-            required
-            className={inputStyles}
-          />
-        </div>
+        <Input
+          label="Channel Name"
+          id="roomName"
+          value={roomName}
+          onChange={(e) => setRoomName(e.target.value)}
+          placeholder="#e-g-project-kickoff"
+          required
+          fullWidth
+        />
         <div className="flex justify-end gap-2 pt-4">
-          <button type="button" onClick={onClose} className="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-600">Cancel</button>
-          <button type="submit" className="px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-md text-sm font-semibold hover:from-teal-700 hover:to-cyan-700">Create Channel</button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="primary">Create Channel</Button>
         </div>
       </form>
     </Modal>

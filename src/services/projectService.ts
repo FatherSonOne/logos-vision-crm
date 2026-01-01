@@ -1,5 +1,6 @@
 // Project Service - Handles all database operations for Projects
 import { supabase } from './supabaseClient';
+import { logosSupabase } from '../lib/supabaseLogosClient';
 import type { Project } from '../types';
 
 // Helper function to convert database format to app format
@@ -28,11 +29,11 @@ function dbToProject(dbProject: any): Project {
 export const projectService = {
   // Get all projects WITH their tasks
   async getAll(): Promise<Project[]> {
-    // First get all projects
-    const { data: projectsData, error: projectsError } = await supabase
-      .from('projects')
+    // First get all projects from Logos Supabase
+    const { data: projectsData, error: projectsError } = await logosSupabase
+      .from('lv_projects')
       .select('*')
-      .order('created_at', { ascending: false});
+      .order('name', { ascending: true });
     
     if (projectsError) {
       console.error('Error fetching projects:', projectsError);

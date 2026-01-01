@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Project, TeamMember, EnrichedTask } from '../types';
 import { TaskStatus } from '../types';
-import { getDeadlineStatus } from '../utils/dateHelpers';
+import { getDeadlineStatus } from '../src/utils/dateHelpers';
 
 interface TaskViewProps {
   projects: Project[];

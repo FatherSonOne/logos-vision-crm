@@ -112,21 +112,21 @@ export const getBreadcrumbsForPage = (
     case 'organizations':
       breadcrumbs.push({ label: 'Organizations', page: 'organizations' });
       break;
-    
+
     case 'projects':
       breadcrumbs.push({ label: 'Projects', page: 'projects' });
       break;
-    
+
     case 'tasks':
       breadcrumbs.push({ label: 'Tasks', page: 'tasks' });
       break;
-    
+
     case 'activities':
       breadcrumbs.push({ label: 'Activities', page: 'activities' });
       break;
-    
-    case 'cases':
+
     case 'case':
+    case 'cases':
       breadcrumbs.push({ label: 'Cases', page: 'cases' });
       break;
     

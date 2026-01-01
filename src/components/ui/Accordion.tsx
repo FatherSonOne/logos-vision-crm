@@ -2,16 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRightIcon } from '../icons';
 
 /**
- * Accordion Component - Expandable/Collapsible Sections
- * 
- * Features:
- * - Smooth expand/collapse animations
- * - Single or multiple expansion modes
- * - Keyboard navigation (Space, Enter, Arrow keys)
- * - Icons and badges support
- * - Dark mode support
- * - Accessible (ARIA attributes)
- * - Nested accordions support
+ * CMF Nothing Design System - Accordion Component
+ * ================================================
+ * Expandable/Collapsible sections using CMF design tokens.
+ * Clean, minimal aesthetic without gradients.
  */
 
 export interface AccordionItem {
@@ -55,8 +49,8 @@ export const Accordion: React.FC<AccordionProps> = ({
     return defaultExpandedItems.length > 0 ? defaultExpandedItems : defaultExpanded;
   });
 
-  const expandedItems = controlledExpandedItems !== undefined 
-    ? controlledExpandedItems 
+  const expandedItems = controlledExpandedItems !== undefined
+    ? controlledExpandedItems
     : internalExpandedItems;
 
   const setExpandedItems = (ids: string[]) => {
@@ -88,12 +82,18 @@ export const Accordion: React.FC<AccordionProps> = ({
 
   const containerClasses = {
     default: 'space-y-2',
-    bordered: 'border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-200 dark:divide-slate-700',
+    bordered: 'rounded-lg divide-y',
     separated: 'space-y-4'
   };
 
   return (
-    <div className={`${containerClasses[variant]} ${className}`}>
+    <div
+      className={`${containerClasses[variant]} ${className}`}
+      style={variant === 'bordered' ? {
+        border: '1px solid var(--cmf-border)',
+        borderRadius: 'var(--cmf-radius-lg)',
+      } : undefined}
+    >
       {items.map((item, index) => (
         <AccordionItemComponent
           key={item.id}
@@ -163,25 +163,34 @@ const AccordionItemComponent: React.FC<AccordionItemComponentProps> = ({
     lg: 'px-6 py-5'
   };
 
-  // Variant-specific classes
-  const headerClasses = {
-    default: 'bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md',
-    bordered: 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50',
-    separated: 'bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md'
+  const getHeaderStyles = (): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      backgroundColor: 'var(--cmf-surface)',
+      transition: 'all 150ms ease-out',
+    };
+
+    if (variant === 'default' || variant === 'separated') {
+      return {
+        ...base,
+        borderRadius: 'var(--cmf-radius-lg)',
+        boxShadow: 'var(--cmf-shadow-sm)',
+      };
+    }
+
+    return base;
   };
 
-  const contentClasses = {
-    default: 'bg-slate-50 dark:bg-slate-900/50 rounded-b-lg mt-1',
-    bordered: 'bg-slate-50 dark:bg-slate-900/50',
-    separated: 'bg-slate-50 dark:bg-slate-900/50 rounded-b-lg mt-1'
+  const getContentStyles = (): React.CSSProperties => {
+    return {
+      backgroundColor: 'var(--cmf-surface-2)',
+      borderRadius: variant === 'bordered' ? '0' : '0 0 var(--cmf-radius-lg) var(--cmf-radius-lg)',
+    };
   };
 
   return (
     <div
-      className={`
-        ${variant === 'default' || variant === 'separated' ? 'overflow-hidden' : ''}
-        ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}
-      `}
+      className={`${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      style={variant === 'bordered' ? { borderColor: 'var(--cmf-divider)' } : undefined}
     >
       {/* Header/Trigger */}
       <button
@@ -193,49 +202,50 @@ const AccordionItemComponent: React.FC<AccordionItemComponentProps> = ({
         className={`
           w-full flex items-center justify-between gap-3
           ${sizeClasses[size]}
-          ${headerClasses[variant]}
           ${!item.disabled ? 'cursor-pointer' : 'cursor-not-allowed'}
-          transition-all duration-200
-          focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2
-          dark:focus:ring-offset-slate-900
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
           ${variant === 'bordered' && index === 0 ? 'rounded-t-lg' : ''}
           ${variant === 'bordered' && index === totalItems - 1 && !isExpanded ? 'rounded-b-lg' : ''}
         `}
+        style={{
+          ...getHeaderStyles(),
+          outlineColor: 'var(--cmf-accent)',
+        }}
       >
         <div className="flex items-center gap-3 flex-1 text-left">
           {/* Icon */}
           {item.icon && (
-            <span className="flex-shrink-0 text-slate-500 dark:text-slate-400">
+            <span style={{ color: 'var(--cmf-text-faint)' }}>
               {item.icon}
             </span>
           )}
 
           {/* Title */}
-          <span className={`font-semibold ${isExpanded ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-900 dark:text-slate-100'}`}>
+          <span
+            className="font-semibold"
+            style={{ color: isExpanded ? 'var(--cmf-accent)' : 'var(--cmf-text)' }}
+          >
             {item.title}
           </span>
 
           {/* Badge */}
           {item.badge !== undefined && (
-            <span className={`
-              flex items-center justify-center min-w-[20px] h-5 px-2 rounded-full text-xs font-semibold
-              ${isExpanded
-                ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-800 dark:text-cyan-300'
-                : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
-              }
-            `}>
+            <span
+              className="flex items-center justify-center min-w-[20px] h-5 px-2 rounded-full text-xs font-semibold"
+              style={{
+                backgroundColor: isExpanded ? 'var(--cmf-accent-muted)' : 'var(--cmf-surface-2)',
+                color: isExpanded ? 'var(--cmf-accent)' : 'var(--cmf-text-muted)',
+              }}
+            >
               {item.badge}
             </span>
           )}
         </div>
 
         {/* Chevron */}
-        <ChevronRightIcon 
-          className={`
-            flex-shrink-0 transition-transform duration-300 ease-out
-            ${isExpanded ? 'rotate-90' : 'rotate-0'}
-            ${isExpanded ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-400 dark:text-slate-500'}
-          `}
+        <ChevronRightIcon
+          className={`flex-shrink-0 transition-transform duration-300 ease-out ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
+          style={{ color: isExpanded ? 'var(--cmf-accent)' : 'var(--cmf-text-faint)' }}
         />
       </button>
 
@@ -244,12 +254,10 @@ const AccordionItemComponent: React.FC<AccordionItemComponentProps> = ({
         id={`accordion-content-${item.id}`}
         ref={contentRef}
         style={{
-          height: isExpanded ? `${contentHeight}px` : '0px'
+          height: isExpanded ? `${contentHeight}px` : '0px',
+          ...getContentStyles(),
         }}
-        className={`
-          overflow-hidden transition-all duration-300 ease-in-out
-          ${contentClasses[variant]}
-        `}
+        className="overflow-hidden transition-all duration-300 ease-in-out"
         aria-hidden={!isExpanded}
       >
         <div className={contentPaddingClasses[size]}>

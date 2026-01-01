@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Client } from '../types';
-import { getCoordsForAddress } from '../utils/geocoding';
+import { getCoordsForAddress } from '../src/utils/geocoding';
 
 interface ContactsMapProps {
     clients: Client[];

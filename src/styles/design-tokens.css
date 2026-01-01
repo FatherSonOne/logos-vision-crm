@@ -7,6 +7,803 @@
  * Example: background-color: var(--color-primary-500);
  */
 
+/* ============================================================================
+   CMF BY NOTHING - DESIGN SYSTEM
+   ============================================================================
+   Inspired by Nothing's minimalist aesthetic: high-contrast, neutral-first
+   with a restrained red accent and user-selectable highlight colors.
+
+   Color/Material/Finish philosophy:
+   - Color: Clear semantic tokens, restrained palette
+   - Material: Consistent surfaces and borders
+   - Finish: Polished interaction states
+   ============================================================================ */
+
+:root {
+  /* ========================================
+     AURORA PALETTE - Core Brand Colors
+     Ethereal, serene colors for the "bigger picture"
+     ======================================== */
+  --aurora-green: #4ade80;
+  --aurora-teal: #2dd4bf;
+  --aurora-pink: #f472b6;
+  --aurora-violet: #a78bfa;
+  --aurora-cyan: #22d3ee;
+  --aurora-rose: #fb7185;
+
+  /* Aurora Gradients */
+  --aurora-gradient-primary: linear-gradient(135deg, var(--aurora-teal), var(--aurora-cyan));
+  --aurora-gradient-accent: linear-gradient(135deg, var(--aurora-green), var(--aurora-teal));
+  --aurora-gradient-warm: linear-gradient(135deg, var(--aurora-pink), var(--aurora-violet));
+  --aurora-gradient-full: linear-gradient(135deg, var(--aurora-green), var(--aurora-teal), var(--aurora-cyan), var(--aurora-pink));
+
+  /* ========================================
+     CMF NOTHING - CORE NEUTRALS (Light Mode)
+     Warm off-white tones for a serene feel
+     ======================================== */
+  --cmf-bg: #FFFBF7;           /* Warm off-white */
+  --cmf-surface: #FDF8F3;      /* Warm cream */
+  --cmf-surface-2: #F7F2ED;    /* Warm light gray */
+  --cmf-surface-3: #EDE8E3;    /* Warm medium gray */
+  --cmf-text: #1E1B18;         /* Warm dark */
+  --cmf-text-secondary: #3D3833;
+  --cmf-text-muted: #6B6560;
+  --cmf-text-faint: #9A9590;
+  --cmf-border: rgba(30, 27, 24, 0.08);
+  --cmf-border-strong: rgba(30, 27, 24, 0.12);
+  --cmf-divider: rgba(30, 27, 24, 0.06);
+
+  /* ========================================
+     CMF NOTHING - BRAND RED (Fixed Accent)
+     Nothing's signature red for destructive/brand actions
+     ======================================== */
+  --cmf-brand-red: #D71921;
+  --cmf-brand-red-hover: #B91318;
+  --cmf-brand-red-active: #9E1015;
+  --cmf-brand-red-muted: rgba(215, 25, 33, 0.12);
+  --cmf-brand-red-subtle: rgba(215, 25, 33, 0.08);
+
+  /* ========================================
+     CMF AURORA - HIGHLIGHT PALETTE (User Selectable)
+     Aurora-inspired accent options
+     ======================================== */
+
+  /* Highlight Option 1: Teal (Default - Aurora Primary) */
+  --cmf-highlight-teal: var(--aurora-teal);
+  --cmf-highlight-teal-hover: #5eead4;
+  --cmf-highlight-teal-muted: rgba(45, 212, 191, 0.15);
+  --cmf-highlight-teal-subtle: rgba(45, 212, 191, 0.08);
+
+  /* Highlight Option 2: Cyan */
+  --cmf-highlight-cyan: var(--aurora-cyan);
+  --cmf-highlight-cyan-hover: #67e8f9;
+  --cmf-highlight-cyan-muted: rgba(34, 211, 238, 0.15);
+  --cmf-highlight-cyan-subtle: rgba(34, 211, 238, 0.08);
+
+  /* Highlight Option 3: Green */
+  --cmf-highlight-green: var(--aurora-green);
+  --cmf-highlight-green-hover: #86efac;
+  --cmf-highlight-green-muted: rgba(74, 222, 128, 0.15);
+  --cmf-highlight-green-subtle: rgba(74, 222, 128, 0.08);
+
+  /* Highlight Option 4: Pink */
+  --cmf-highlight-pink: var(--aurora-pink);
+  --cmf-highlight-pink-hover: #f9a8d4;
+  --cmf-highlight-pink-muted: rgba(244, 114, 182, 0.15);
+  --cmf-highlight-pink-subtle: rgba(244, 114, 182, 0.08);
+
+  /* Highlight Option 5: Violet */
+  --cmf-highlight-violet: var(--aurora-violet);
+  --cmf-highlight-violet-hover: #c4b5fd;
+  --cmf-highlight-violet-muted: rgba(167, 139, 250, 0.15);
+  --cmf-highlight-violet-subtle: rgba(167, 139, 250, 0.08);
+
+  /* ========================================
+     CMF AURORA - ACTIVE HIGHLIGHT (Dynamic)
+     These are the active accent colors - controlled by JS
+     Default to Teal (Aurora primary), updated via ThemeProvider
+     ======================================== */
+  --cmf-accent: var(--cmf-highlight-teal);
+  --cmf-accent-hover: var(--cmf-highlight-teal-hover);
+  --cmf-accent-muted: var(--cmf-highlight-teal-muted);
+  --cmf-accent-subtle: var(--cmf-highlight-teal-subtle);
+  --cmf-accent-text: #0F172A; /* Dark text on aurora accent backgrounds */
+
+  /* Aurora glow effects */
+  --aurora-glow-sm: 0 0 10px rgba(45, 212, 191, 0.3);
+  --aurora-glow-md: 0 0 20px rgba(45, 212, 191, 0.25);
+  --aurora-glow-lg: 0 0 30px rgba(45, 212, 191, 0.2), 0 0 60px rgba(34, 211, 238, 0.1);
+  --aurora-glow-pulse: 0 0 20px rgba(45, 212, 191, 0.4), 0 0 40px rgba(244, 114, 182, 0.15);
+
+  /* ========================================
+     CMF AURORA - SEMANTIC COLORS
+     Harmonized with aurora palette
+     ======================================== */
+  --cmf-success: var(--aurora-green);
+  --cmf-success-hover: #86efac;
+  --cmf-success-muted: rgba(74, 222, 128, 0.12);
+  --cmf-success-text: #166534;
+
+  --cmf-warning: #fbbf24;
+  --cmf-warning-hover: #fcd34d;
+  --cmf-warning-muted: rgba(251, 191, 36, 0.12);
+  --cmf-warning-text: #92400E;
+
+  --cmf-error: var(--aurora-rose);
+  --cmf-error-hover: #fda4af;
+  --cmf-error-muted: rgba(251, 113, 133, 0.12);
+  --cmf-error-text: #9f1239;
+
+  --cmf-info: var(--aurora-cyan);
+  --cmf-info-hover: #67e8f9;
+  --cmf-info-muted: rgba(34, 211, 238, 0.12);
+  --cmf-info-text: #0e7490;
+
+  /* ========================================
+     CMF NOTHING - INTERACTION STATES
+     ======================================== */
+  --cmf-hover-overlay: rgba(0, 0, 0, 0.04);
+  --cmf-active-overlay: rgba(0, 0, 0, 0.08);
+  --cmf-focus-ring: var(--cmf-accent);
+  --cmf-focus-ring-offset: 2px;
+  --cmf-disabled-opacity: 0.5;
+
+  /* ========================================
+     CMF NOTHING - SHADOWS (Minimal in Light Mode)
+     ======================================== */
+  --cmf-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --cmf-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --cmf-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --cmf-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+
+  /* Accent glow for focus/active states */
+  --cmf-glow-accent: 0 0 0 3px var(--cmf-accent-muted);
+
+  /* ========================================
+     CMF NOTHING - TRANSITIONS
+     ======================================== */
+  --cmf-transition-fast: 100ms ease-out;
+  --cmf-transition-normal: 150ms ease-out;
+  --cmf-transition-slow: 200ms ease-out;
+  --cmf-transition-slower: 300ms ease-out;
+
+  /* ========================================
+     CMF NOTHING - BORDER RADIUS
+     Crisp, minimal radii
+     ======================================== */
+  --cmf-radius-none: 0;
+  --cmf-radius-sm: 4px;
+  --cmf-radius-md: 6px;
+  --cmf-radius-lg: 8px;
+  --cmf-radius-xl: 12px;
+  --cmf-radius-full: 9999px;
+}
+
+
+/* ============================================================================
+   CMF SOURCE PRISM - THEME
+   Replaces/Updates the default Dark Mode to "Source Prism"
+   - Background: Deep Slate/Navy (#020617, #0F172A)
+   - Accents: Cyan (#22D3EE), Blue (#3B82F6)
+   - Visuals: Prismatic glows, rounded corners
+   ============================================================================ */
+
+[data-theme="dark"],
+html.dark,
+.dark {
+  /* Core Neutrals - Deep Space Slate */
+  --cmf-bg: #020617; /* Slate 950 */
+  --cmf-surface: #0F172A; /* Slate 900 */
+  --cmf-surface-2: #1E293B; /* Slate 800 */
+  --cmf-surface-3: #334155; /* Slate 700 */
+  --cmf-text: #F8FAFC; /* Slate 50 */
+  --cmf-text-secondary: #94A3B8; /* Slate 400 */
+  --cmf-text-muted: #64748B; /* Slate 500 */
+  --cmf-text-faint: #475569; /* Slate 600 */
+  --cmf-border: rgba(148, 163, 184, 0.1); /* Slate 400 at 10% */
+  --cmf-border-strong: rgba(148, 163, 184, 0.2); /* Slate 400 at 20% */
+  --cmf-divider: rgba(148, 163, 184, 0.05);
+
+  /* Semantic colors - Neon/Prism inspired */
+  --cmf-success-text: #2DD4BF; /* Teal 400 */
+  --cmf-warning-text: #FBBF24; /* Amber 400 */
+  --cmf-error-text: #F87171; /* Red 400 */
+  --cmf-info-text: #38BDF8; /* Sky 400 */
+
+  /* Interaction states */
+  --cmf-hover-overlay: rgba(56, 189, 248, 0.05); /* Sky blue tint */
+  --cmf-active-overlay: rgba(56, 189, 248, 0.1);
+
+  /* Shadows - Colored Glows */
+  --cmf-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --cmf-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  --cmf-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  --cmf-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6);
+  
+  /* Prism Specific Glows */
+  --cmf-glow-accent: 0 0 15px rgba(34, 211, 238, 0.15); /* Cyan glow */
+  --cmf-glow-strong: 0 0 25px rgba(59, 130, 246, 0.25); /* Blue glow */
+}
+
+/* Rounded Corners Override for Prism Theme */
+:root {
+  --cmf-radius-sm: 6px;
+  --cmf-radius-md: 10px;
+  --cmf-radius-lg: 16px; /* Significantly more rounded */
+  --cmf-radius-xl: 24px;
+}
+
+/* Prism Accent Colors - Cyan/Blue Gradients */
+[data-theme="dark"] {
+  --cmf-accent: #22D3EE; /* Cyan 400 */
+  --cmf-accent-hover: #67E8F9; /* Cyan 300 */
+  --cmf-accent-muted: rgba(34, 211, 238, 0.15);
+  --cmf-accent-subtle: rgba(34, 211, 238, 0.05);
+  --cmf-accent-text: #020617; /* Dark text on bright accent */
+}
+
+/* ========================================
+   GLOBAL PRISM OVERRIDES
+   Ensuring pure black/slate consistency
+   ======================================== */
+
+.dark, .dark body, html.dark {
+  background-color: var(--cmf-bg) !important;
+  color: var(--cmf-text) !important;
+}
+
+/* Cards */
+.dark .card,
+.dark [class*="rounded-lg"][class*="shadow"],
+.dark [class*="rounded-xl"][class*="shadow"],
+.dark .cmf-card,
+.dark .cmf-section-card {
+  background-color: var(--cmf-surface) !important;
+  border-color: var(--cmf-border) !important;
+  box-shadow: var(--cmf-shadow-md) !important;
+}
+
+/* Inputs */
+.dark input, .dark textarea, .dark select, .dark .cmf-input {
+  background-color: var(--cmf-surface-2) !important;
+  border-color: var(--cmf-border) !important;
+  color: var(--cmf-text) !important;
+}
+
+.dark input:focus, .dark textarea:focus, .dark select:focus {
+  border-color: var(--cmf-accent) !important;
+  box-shadow: var(--cmf-glow-accent) !important;
+}
+
+/* Sidebar */
+.dark aside, .dark #main-sidebar {
+  background-color: var(--cmf-bg) !important;
+  border-right: 1px solid var(--cmf-border) !important;
+}
+
+/* Headers */
+.dark header {
+  background-color: rgba(2, 6, 23, 0.8) !important; /* Semi-transparent slate 950 */
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--cmf-border) !important;
+}
+
+/* Buttons - Prism Gradient */
+.dark .cmf-btn-primary,
+.dark .btn-primary,
+.dark button[class*="bg-blue-600"], 
+.dark button[class*="bg-indigo-600"] {
+  background: linear-gradient(135deg, #3B82F6, #22D3EE) !important; /* Blue to Cyan */
+  color: #FFFFFF !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3) !important;
+}
+
+.dark .cmf-btn-primary:hover {
+  background: linear-gradient(135deg, #2563EB, #06B6D4) !important;
+  box-shadow: 0 6px 16px rgba(34, 211, 238, 0.4) !important;
+}
+
+/* Active Navigation State - Prism Glow */
+.dark aside a.active,
+.dark nav a.active {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), transparent) !important;
+  border-left: 3px solid #22D3EE !important;
+  color: #22D3EE !important;
+}
+
+
+/* ============================================================================
+   SYSTEM PREFERENCE FALLBACK
+   When no explicit data-theme is set, respect OS preference
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    /* Core Neutrals - Matte Black */
+    --cmf-bg: #0B0B0C;
+    --cmf-surface: #111113;
+    --cmf-surface-2: #1B1B1D;
+    --cmf-surface-3: #252527;
+    --cmf-text: #FFFFFF;
+    --cmf-text-secondary: #B3B3B3;
+    --cmf-text-muted: #808080;
+    --cmf-text-faint: #4D4D4D;
+    --cmf-border: rgba(255, 255, 255, 0.08);
+    --cmf-border-strong: rgba(255, 255, 255, 0.12);
+    --cmf-divider: rgba(255, 255, 255, 0.06);
+
+    /* Semantic colors adjusted for dark */
+    --cmf-success-text: #6EE7B7;
+    --cmf-warning-text: #FCD34D;
+    --cmf-error-text: #FCA5A5;
+    --cmf-info-text: #93C5FD;
+
+    /* Interaction states */
+    --cmf-hover-overlay: rgba(255, 255, 255, 0.04);
+    --cmf-active-overlay: rgba(255, 255, 255, 0.08);
+
+    /* Shadows - Deeper for matte effect */
+    --cmf-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --cmf-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+    --cmf-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+    --cmf-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Explicit light mode override (when user selects light in system mode) */
+[data-theme="light"] {
+  /* Force light mode tokens - Warm off-white aurora palette */
+  --cmf-bg: #FFFBF7;           /* Warm off-white */
+  --cmf-surface: #FDF8F3;      /* Warm cream */
+  --cmf-surface-2: #F7F2ED;    /* Warm light gray */
+  --cmf-surface-3: #EDE8E3;    /* Warm medium gray */
+  --cmf-text: #1E1B18;         /* Warm dark */
+  --cmf-text-secondary: #3D3833;
+  --cmf-text-muted: #6B6560;
+  --cmf-text-faint: #9A9590;
+  --cmf-border: rgba(30, 27, 24, 0.08);
+  --cmf-border-strong: rgba(30, 27, 24, 0.12);
+  --cmf-divider: rgba(30, 27, 24, 0.06);
+
+  /* Semantic colors for light - aurora harmonized */
+  --cmf-success-text: #166534;
+  --cmf-warning-text: #92400E;
+  --cmf-error-text: #9f1239;
+  --cmf-info-text: #0e7490;
+
+  /* Interaction states - aurora tinted */
+  --cmf-hover-overlay: rgba(45, 212, 191, 0.06);
+  --cmf-active-overlay: rgba(45, 212, 191, 0.12);
+
+  /* Shadows with subtle aurora warmth */
+  --cmf-shadow-sm: 0 1px 2px rgba(30, 27, 24, 0.05);
+  --cmf-shadow-md: 0 4px 6px -1px rgba(30, 27, 24, 0.08), 0 2px 4px -2px rgba(30, 27, 24, 0.04);
+  --cmf-shadow-lg: 0 10px 15px -3px rgba(30, 27, 24, 0.08), 0 4px 6px -4px rgba(30, 27, 24, 0.04);
+  --cmf-shadow-xl: 0 20px 25px -5px rgba(30, 27, 24, 0.1), 0 8px 10px -6px rgba(30, 27, 24, 0.04);
+
+  /* Aurora glow for light mode */
+  --aurora-glow-sm: 0 0 10px rgba(45, 212, 191, 0.2);
+  --aurora-glow-md: 0 0 20px rgba(45, 212, 191, 0.15);
+  --aurora-glow-lg: 0 0 30px rgba(45, 212, 191, 0.12), 0 0 60px rgba(34, 211, 238, 0.08);
+}
+
+/* ============================================================================
+   CMF AURORA - HIGHLIGHT THEME CLASSES
+   Applied via JavaScript when user selects a highlight color
+   ============================================================================ */
+
+/* Theme: Teal (Default - Aurora Primary) */
+[data-cmf-highlight="teal"], :root {
+  --cmf-accent: var(--cmf-highlight-teal);
+  --cmf-accent-hover: var(--cmf-highlight-teal-hover);
+  --cmf-accent-muted: var(--cmf-highlight-teal-muted);
+  --cmf-accent-subtle: var(--cmf-highlight-teal-subtle);
+  --cmf-accent-text: #0F172A;
+}
+
+/* Theme: Cyan */
+[data-cmf-highlight="cyan"] {
+  --cmf-accent: var(--cmf-highlight-cyan);
+  --cmf-accent-hover: var(--cmf-highlight-cyan-hover);
+  --cmf-accent-muted: var(--cmf-highlight-cyan-muted);
+  --cmf-accent-subtle: var(--cmf-highlight-cyan-subtle);
+  --cmf-accent-text: #0F172A;
+}
+
+/* Theme: Green */
+[data-cmf-highlight="green"] {
+  --cmf-accent: var(--cmf-highlight-green);
+  --cmf-accent-hover: var(--cmf-highlight-green-hover);
+  --cmf-accent-muted: var(--cmf-highlight-green-muted);
+  --cmf-accent-subtle: var(--cmf-highlight-green-subtle);
+  --cmf-accent-text: #0F172A;
+}
+
+/* Theme: Pink */
+[data-cmf-highlight="pink"] {
+  --cmf-accent: var(--cmf-highlight-pink);
+  --cmf-accent-hover: var(--cmf-highlight-pink-hover);
+  --cmf-accent-muted: var(--cmf-highlight-pink-muted);
+  --cmf-accent-subtle: var(--cmf-highlight-pink-subtle);
+  --cmf-accent-text: #0F172A;
+}
+
+/* Theme: Violet */
+[data-cmf-highlight="violet"] {
+  --cmf-accent: var(--cmf-highlight-violet);
+  --cmf-accent-hover: var(--cmf-highlight-violet-hover);
+  --cmf-accent-muted: var(--cmf-highlight-violet-muted);
+  --cmf-accent-subtle: var(--cmf-highlight-violet-subtle);
+  --cmf-accent-text: #FFFFFF;
+}
+
+/* ============================================================================
+   CMF NOTHING - COMPONENT CLASSES
+   Reusable utility classes for consistent styling
+   ============================================================================ */
+
+/* CMF Button - Primary */
+.cmf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  border-radius: var(--cmf-radius-md);
+  transition: all var(--cmf-transition-normal);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.cmf-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--cmf-glow-accent);
+}
+
+.cmf-btn:disabled {
+  opacity: var(--cmf-disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Primary Button - Uses accent color */
+.cmf-btn-primary {
+  background-color: var(--cmf-accent);
+  color: var(--cmf-accent-text);
+  border-color: var(--cmf-accent);
+}
+
+.cmf-btn-primary:hover {
+  background-color: var(--cmf-accent-hover);
+  border-color: var(--cmf-accent-hover);
+}
+
+.cmf-btn-primary:active {
+  transform: translateY(1px);
+}
+
+/* Secondary Button - Subtle */
+.cmf-btn-secondary {
+  background-color: var(--cmf-surface);
+  color: var(--cmf-text);
+  border-color: var(--cmf-border-strong);
+}
+
+.cmf-btn-secondary:hover {
+  background-color: var(--cmf-surface-2);
+  border-color: var(--cmf-border-strong);
+}
+
+/* Ghost Button - Minimal */
+.cmf-btn-ghost {
+  background-color: transparent;
+  color: var(--cmf-text-secondary);
+  border-color: transparent;
+}
+
+.cmf-btn-ghost:hover {
+  background-color: var(--cmf-hover-overlay);
+  color: var(--cmf-text);
+}
+
+/* Destructive Button - Uses brand red */
+.cmf-btn-destructive {
+  background-color: var(--cmf-brand-red);
+  color: #FFFFFF;
+  border-color: var(--cmf-brand-red);
+}
+
+.cmf-btn-destructive:hover {
+  background-color: var(--cmf-brand-red-hover);
+  border-color: var(--cmf-brand-red-hover);
+}
+
+/* Button Sizes */
+.cmf-btn-sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.cmf-btn-md {
+  height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.cmf-btn-lg {
+  height: 48px;
+  padding: 0 24px;
+  font-size: 15px;
+}
+
+/* CMF Input */
+.cmf-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  font-size: 14px;
+  background-color: var(--cmf-surface);
+  color: var(--cmf-text);
+  border: 1px solid var(--cmf-border-strong);
+  border-radius: var(--cmf-radius-md);
+  transition: all var(--cmf-transition-normal);
+}
+
+.cmf-input::placeholder {
+  color: var(--cmf-text-faint);
+}
+
+.cmf-input:hover {
+  border-color: var(--cmf-text-faint);
+}
+
+.cmf-input:focus {
+  outline: none;
+  border-color: var(--cmf-accent);
+  box-shadow: var(--cmf-glow-accent);
+}
+
+.cmf-input:disabled {
+  opacity: var(--cmf-disabled-opacity);
+  cursor: not-allowed;
+}
+
+.cmf-input-error {
+  border-color: var(--cmf-error);
+}
+
+.cmf-input-error:focus {
+  border-color: var(--cmf-error);
+  box-shadow: 0 0 0 3px var(--cmf-error-muted);
+}
+
+/* CMF Card */
+.cmf-card {
+  background-color: var(--cmf-surface);
+  border: 1px solid var(--cmf-border);
+  border-radius: var(--cmf-radius-lg);
+  transition: all var(--cmf-transition-normal);
+}
+
+.cmf-card-elevated {
+  box-shadow: var(--cmf-shadow-md);
+}
+
+.cmf-card-interactive {
+  cursor: pointer;
+}
+
+.cmf-card-interactive:hover {
+  border-color: var(--cmf-border-strong);
+  box-shadow: var(--cmf-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.cmf-card-interactive:active {
+  transform: translateY(0);
+}
+
+/* CMF Surface Levels */
+.cmf-surface-base {
+  background-color: var(--cmf-bg);
+}
+
+.cmf-surface-1 {
+  background-color: var(--cmf-surface);
+}
+
+.cmf-surface-2 {
+  background-color: var(--cmf-surface-2);
+}
+
+.cmf-surface-3 {
+  background-color: var(--cmf-surface-3);
+}
+
+/* CMF Focus Ring Utility */
+.cmf-focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--cmf-glow-accent);
+}
+
+/* CMF Badge */
+.cmf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--cmf-radius-full);
+  border: 1px solid transparent;
+}
+
+.cmf-badge-neutral {
+  background-color: var(--cmf-surface-2);
+  color: var(--cmf-text-secondary);
+  border-color: var(--cmf-border);
+}
+
+.cmf-badge-accent {
+  background-color: var(--cmf-accent-muted);
+  color: var(--cmf-accent);
+  border-color: var(--cmf-accent-subtle);
+}
+
+.cmf-badge-success {
+  background-color: var(--cmf-success-muted);
+  color: var(--cmf-success-text);
+}
+
+.cmf-badge-warning {
+  background-color: var(--cmf-warning-muted);
+  color: var(--cmf-warning-text);
+}
+
+.cmf-badge-error {
+  background-color: var(--cmf-error-muted);
+  color: var(--cmf-error-text);
+}
+
+/* CMF Table */
+.cmf-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cmf-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cmf-text-muted);
+  background-color: var(--cmf-surface);
+  border-bottom: 1px solid var(--cmf-border);
+}
+
+.cmf-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--cmf-divider);
+  color: var(--cmf-text);
+}
+
+.cmf-table tr {
+  transition: background-color var(--cmf-transition-fast);
+}
+
+.cmf-table tbody tr:hover {
+  background-color: var(--cmf-hover-overlay);
+}
+
+/* CMF Divider */
+.cmf-divider {
+  height: 1px;
+  background-color: var(--cmf-divider);
+  border: none;
+}
+
+/* CMF Text Utilities */
+.cmf-text-primary {
+  color: var(--cmf-text);
+}
+
+.cmf-text-secondary {
+  color: var(--cmf-text-secondary);
+}
+
+.cmf-text-muted {
+  color: var(--cmf-text-muted);
+}
+
+.cmf-text-faint {
+  color: var(--cmf-text-faint);
+}
+
+.cmf-text-accent {
+  color: var(--cmf-accent);
+}
+
+.cmf-text-brand-red {
+  color: var(--cmf-brand-red);
+}
+
+/* CMF Link */
+.cmf-link {
+  color: var(--cmf-accent);
+  text-decoration: none;
+  transition: color var(--cmf-transition-fast);
+}
+
+.cmf-link:hover {
+  color: var(--cmf-accent-hover);
+  text-decoration: underline;
+}
+
+/* CMF Modal Backdrop */
+.cmf-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.dark .cmf-modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* CMF Modal Content */
+.cmf-modal-content {
+  background-color: var(--cmf-surface);
+  border: 1px solid var(--cmf-border);
+  border-radius: var(--cmf-radius-xl);
+  box-shadow: var(--cmf-shadow-xl);
+}
+
+/* CMF Tabs */
+.cmf-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background-color: var(--cmf-surface);
+  border-radius: var(--cmf-radius-lg);
+  border: 1px solid var(--cmf-border);
+}
+
+.cmf-tab {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cmf-text-muted);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--cmf-radius-md);
+  cursor: pointer;
+  transition: all var(--cmf-transition-normal);
+}
+
+.cmf-tab:hover {
+  color: var(--cmf-text);
+  background-color: var(--cmf-hover-overlay);
+}
+
+.cmf-tab-active {
+  color: var(--cmf-accent-text);
+  background-color: var(--cmf-accent);
+}
+
+.cmf-tab-active:hover {
+  color: var(--cmf-accent-text);
+  background-color: var(--cmf-accent-hover);
+}
+
+/* ============================================================================
+   END CMF NOTHING DESIGN SYSTEM
+   ============================================================================ */
+
 :root {
   /* ========================================
      COLOR PALETTE
@@ -291,37 +1088,54 @@
 
 /* ========================================
    DARK MODE OVERRIDES
+   CMF Nothing Brand Style - Matte black with light blue accents
+   Inspired by Nothing Phone's minimalist design language
    ======================================== */
 
 .dark {
-  /* Dark Mode Backgrounds */
-  --bg-primary: var(--color-secondary-900);
-  --bg-secondary: var(--color-secondary-800);
-  --bg-tertiary: var(--color-secondary-700);
-  --bg-elevated: var(--color-secondary-800);
-  --bg-overlay: rgba(0, 0, 0, 0.7);
+  /* Nothing-style Matte Black Backgrounds */
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #121212;
+  --bg-elevated: #0f0f0f;
+  --bg-overlay: rgba(0, 0, 0, 0.92);
 
-  /* Dark Mode Text Colors */
-  --text-primary: var(--color-gray-50);
-  --text-secondary: var(--color-gray-300);
-  --text-tertiary: var(--color-gray-400);
-  --text-muted: var(--color-gray-500);
-  --text-inverse: var(--color-gray-900);
+  /* Dark Mode Text Colors - High contrast */
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-tertiary: #808080;
+  --text-muted: #4d4d4d;
+  --text-inverse: #000000;
 
-  /* Dark Mode Border Colors */
-  --border-default: var(--color-secondary-700);
-  --border-light: var(--color-secondary-800);
-  --border-strong: var(--color-secondary-600);
-  --border-focus: var(--color-primary-400);
+  /* Dark Mode Border Colors - Subtle matte */
+  --border-default: #1a1a1a;
+  --border-light: #0d0d0d;
+  --border-strong: #2a2a2a;
+  --border-focus: #7dd3fc;
 
-  /* Dark Mode Shadows */
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  /* Dark Mode Shadows - Subtle for matte effect */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 2px 4px 0 rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 4px 8px 0 rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 8px 16px 0 rgba(0, 0, 0, 0.6);
 
-  /* Card in dark mode */
-  --card-shadow: var(--shadow-lg);
+  /* Nothing-style light blue accent glow shadows */
+  --shadow-accent: 0 0 15px rgba(125, 211, 252, 0.12);
+  --shadow-accent-strong: 0 0 25px rgba(125, 211, 252, 0.2);
+
+  /* Card in dark mode - Nothing style (minimal shadow) */
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+
+  /* Colored shadows with light blue accent */
+  --shadow-primary: 0 2px 10px 0 rgba(125, 211, 252, 0.15);
+  --shadow-success: 0 2px 10px 0 rgba(74, 222, 128, 0.15);
+  --shadow-warning: 0 2px 10px 0 rgba(251, 191, 36, 0.15);
+  --shadow-error: 0 2px 10px 0 rgba(248, 113, 113, 0.15);
+
+  /* Nothing brand light blue accent color */
+  --color-accent-nothing: #7dd3fc;
+  --color-accent-nothing-hover: #a5f3fc;
+  --color-accent-nothing-muted: rgba(125, 211, 252, 0.2);
 }
 
 /* ========================================
@@ -367,4 +1181,1417 @@
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Tour highlight effect */
+.tour-highlight {
+  position: relative;
+  z-index: 9999;
+}
+
+/* Theme toggle animation class */
+.theme-toggle {
+  transition: transform 0.3s ease, background-color 0.2s ease;
+}
+.theme-toggle:active {
+  transform: scale(0.95);
+}
+
+/* ========================================
+   NOTHING BRAND DARK MODE GLOBAL STYLES
+   Pure matte black with light blue accents
+   Matching Pulse app aesthetic
+   ======================================== */
+
+/* ===========================================
+   LEVEL 1: Base Background Colors
+   Pure black (#000000) for main app background
+   =========================================== */
+
+.dark,
+.dark body,
+html.dark {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Main layout container */
+.dark #root,
+.dark .app-container,
+.dark main {
+  background-color: #000000 !important;
+}
+
+/* ===========================================
+   LEVEL 2: Sidebar - Pure Black
+   =========================================== */
+
+.dark aside,
+.dark nav,
+.dark #main-sidebar,
+.dark [class*="bg-slate-800"],
+.dark [class*="bg-white"] {
+  background-color: #000000 !important;
+  border-color: #1a1a1a !important;
+}
+
+/* Sidebar navigation items */
+.dark aside a,
+.dark aside button,
+.dark nav a,
+.dark nav button {
+  color: #b3b3b3 !important;
+}
+
+.dark aside a:hover,
+.dark aside button:hover,
+.dark nav a:hover,
+.dark nav button:hover {
+  background-color: #0f0f0f !important;
+  color: #ffffff !important;
+}
+
+/* Active nav item - light blue glow like Pulse */
+.dark aside a[class*="rose-"],
+.dark aside a.active,
+.dark nav a[class*="rose-"],
+.dark [class*="bg-rose-50"],
+.dark [class*="bg-rose-900"] {
+  background-color: rgba(125, 211, 252, 0.1) !important;
+  color: #7dd3fc !important;
+}
+
+/* Active indicator bar - light blue */
+.dark [class*="bg-rose-500"],
+.dark [class*="bg-rose-400"] {
+  background-color: #7dd3fc !important;
+}
+
+/* ===========================================
+   LEVEL 3: Header - Pure Black
+   =========================================== */
+
+.dark header {
+  background-color: #000000 !important;
+  border-color: #1a1a1a !important;
+}
+
+/* Header tabs */
+.dark header [role="tab"] {
+  background-color: transparent !important;
+  color: #808080 !important;
+}
+
+.dark header [role="tab"]:hover {
+  background-color: #0f0f0f !important;
+  color: #b3b3b3 !important;
+}
+
+.dark header [role="tab"][aria-selected="true"] {
+  background-color: #0f0f0f !important;
+  color: #ffffff !important;
+  border-color: #7dd3fc !important;
+}
+
+/* ===========================================
+   LEVEL 4: Cards & Panels - Elevated Matte (#0a0a0a)
+   Slightly lighter for visual separation
+   =========================================== */
+
+.dark .card,
+.dark [class*="rounded-lg"][class*="shadow"],
+.dark [class*="rounded-xl"][class*="shadow"],
+.dark [class*="bg-slate-700"],
+.dark [class*="bg-gray-50"] {
+  background-color: #0a0a0a !important;
+  border-color: #1a1a1a !important;
+}
+
+/* Secondary level cards/panels (#0f0f0f) */
+.dark [class*="bg-slate-100"],
+.dark [class*="bg-gray-100"] {
+  background-color: #0f0f0f !important;
+}
+
+/* Tertiary level (#121212) */
+.dark [class*="bg-slate-200"],
+.dark [class*="bg-gray-200"] {
+  background-color: #121212 !important;
+}
+
+/* ===========================================
+   LEVEL 5: Form Elements - Matte Input Fields
+   =========================================== */
+
+.dark input,
+.dark textarea,
+.dark select,
+.dark [type="text"],
+.dark [type="email"],
+.dark [type="password"],
+.dark [type="search"],
+.dark [type="number"] {
+  background-color: #0a0a0a !important;
+  border-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #4d4d4d !important;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #7dd3fc !important;
+  box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.15) !important;
+  outline: none !important;
+}
+
+/* ===========================================
+   LEVEL 6: Modals & Dialogs
+   =========================================== */
+
+.dark [role="dialog"],
+.dark .modal,
+.dark [class*="fixed"][class*="inset"],
+.dark [class*="z-50"] > div {
+  background-color: #0a0a0a !important;
+  border-color: #1a1a1a !important;
+}
+
+/* Modal backdrop */
+.dark [class*="bg-black/"],
+.dark [class*="bg-opacity-"] {
+  background-color: rgba(0, 0, 0, 0.85) !important;
+}
+
+/* ===========================================
+   LEVEL 7: Dropdown Menus
+   =========================================== */
+
+.dark [role="menu"],
+.dark [role="listbox"],
+.dark [class*="dropdown"],
+.dark ul[class*="absolute"] {
+  background-color: #0a0a0a !important;
+  border-color: #1a1a1a !important;
+}
+
+.dark [role="menuitem"],
+.dark [role="option"] {
+  color: #b3b3b3 !important;
+}
+
+.dark [role="menuitem"]:hover,
+.dark [role="option"]:hover {
+  background-color: #0f0f0f !important;
+  color: #ffffff !important;
+}
+
+/* ===========================================
+   LEVEL 8: Tables
+   =========================================== */
+
+.dark table,
+.dark thead,
+.dark tbody {
+  background-color: #000000 !important;
+}
+
+.dark th {
+  background-color: #0a0a0a !important;
+  border-color: #1a1a1a !important;
+  color: #808080 !important;
+}
+
+.dark td {
+  border-color: #1a1a1a !important;
+}
+
+.dark tr:hover {
+  background-color: #0a0a0a !important;
+}
+
+/* ===========================================
+   LEVEL 9: Scrollbars - Matte Style
+   =========================================== */
+
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #2a2a2a;
+}
+
+
+/* Clean up old override blocks that conflict with Prism Theme */
+
+/* ===========================================
+   ACCENT COLORS: Prism Cyan/Blue
+   =========================================== */
+
+/* Primary accent color - Cyan */
+.dark [class*="text-rose-"],
+.dark [class*="text-sky-"],
+.dark [class*="text-cyan-"],
+.dark [class*="text-primary"] {
+  color: #22D3EE !important;
+}
+
+/* Focus rings - Cyan */
+.dark *:focus-visible {
+  outline: 2px solid #22D3EE !important;
+  outline-offset: 2px !important;
+}
+
+/* Selection */
+.dark ::selection {
+  background-color: rgba(34, 211, 238, 0.3) !important;
+  color: #ffffff !important;
+}
+
+/* ===========================================
+   BADGES & INDICATORS (Prism Neon)
+   =========================================== */
+
+/* Success badges */
+.dark [class*="bg-green-"],
+.dark [class*="bg-emerald-"] {
+  background-color: rgba(45, 212, 191, 0.15) !important;
+  color: #2DD4BF !important; /* Teal 400 */
+}
+
+/* Warning badges */
+.dark [class*="bg-amber-"],
+.dark [class*="bg-yellow-"],
+.dark [class*="bg-orange-"] {
+  background-color: rgba(251, 191, 36, 0.15) !important;
+  color: #FBBF24 !important; /* Amber 400 */
+}
+
+/* Error/Danger badges */
+.dark [class*="bg-red-"] {
+  background-color: rgba(248, 113, 113, 0.15) !important;
+  color: #F87171 !important; /* Red 400 */
+}
+
+/* Info/Primary badges */
+.dark [class*="bg-blue-"],
+.dark .badge-primary {
+  background-color: rgba(34, 211, 238, 0.15) !important;
+  color: #22D3EE !important; /* Cyan 400 */
+}
+
+/* Neutral badges */
+.dark [class*="bg-slate-600"],
+.dark [class*="bg-gray-600"] {
+  background-color: rgba(148, 163, 184, 0.1) !important;
+  color: #94A3B8 !important;
+}
+
+/* ===========================================
+   PROGRESS BARS & INDICATORS
+   =========================================== */
+
+.dark [role="progressbar"],
+.dark .progress-bar {
+  background-color: var(--cmf-surface-2) !important;
+}
+
+.dark [role="progressbar"] > div,
+.dark .progress-bar > div {
+  background: linear-gradient(90deg, #3B82F6, #22D3EE) !important;
+}
+
+
+/* ===========================================
+   TOOLTIPS
+   =========================================== */
+
+.dark [role="tooltip"],
+.dark [class*="tooltip"] {
+  background-color: #0f0f0f !important;
+  border-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+/* ===========================================
+   BORDERS - Subtle Separation
+   =========================================== */
+
+.dark [class*="border-gray-"],
+.dark [class*="border-slate-"],
+.dark [class*="divide-gray-"] > *,
+.dark [class*="divide-slate-"] > * {
+  border-color: #1a1a1a !important;
+}
+
+/* Stronger borders for emphasis */
+.dark [class*="border-gray-300"],
+.dark [class*="border-slate-300"] {
+  border-color: #2a2a2a !important;
+}
+
+/* ===========================================
+   TEXT COLORS
+   =========================================== */
+
+.dark [class*="text-gray-900"],
+.dark [class*="text-slate-900"] {
+  color: #ffffff !important;
+}
+
+.dark [class*="text-gray-700"],
+.dark [class*="text-slate-700"],
+.dark [class*="text-gray-600"],
+.dark [class*="text-slate-600"] {
+  color: #b3b3b3 !important;
+}
+
+.dark [class*="text-gray-500"],
+.dark [class*="text-slate-500"] {
+  color: #808080 !important;
+}
+
+.dark [class*="text-gray-400"],
+.dark [class*="text-slate-400"] {
+  color: #4d4d4d !important;
+}
+
+/* ===========================================
+   ICONS
+   =========================================== */
+
+.dark svg {
+  color: inherit;
+}
+
+.dark [class*="text-gray-"] svg,
+.dark [class*="text-slate-"] svg {
+  color: currentColor !important;
+}
+
+/* ===========================================
+   SHADOWS - Subtle for Matte Effect
+   =========================================== */
+
+.dark [class*="shadow-sm"],
+.dark [class*="shadow-md"],
+.dark [class*="shadow-lg"],
+.dark [class*="shadow-xl"] {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Light blue glow for active/focus states */
+.dark .glow-accent {
+  box-shadow: 0 0 20px rgba(125, 211, 252, 0.2) !important;
+}
+
+/* ===========================================
+   CMF NOTHING BRAND - UNIFIED SECTION STYLING
+   Apply these classes to section containers
+   for consistent styling across:
+   - Organizations
+   - Contacts
+   - Households
+   - Projects
+   - Case Management
+   - Activities
+   =========================================== */
+
+/* Page header styling */
+.cmf-page-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .cmf-page-header {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.cmf-page-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dark .cmf-page-title {
+  color: #ffffff;
+}
+
+.cmf-page-subtitle {
+  color: #475569;
+  margin-top: 0.25rem;
+}
+
+.dark .cmf-page-subtitle {
+  color: #94a3b8;
+}
+
+/* Section card - consistent card styling */
+.cmf-section-card {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark .cmf-section-card {
+  background-color: rgba(15, 23, 42, 0.5);
+  border-color: #1e293b;
+}
+
+.cmf-section-card-padded {
+  padding: 1.5rem;
+}
+
+/* Stats grid */
+.cmf-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .cmf-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .cmf-stats-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Stat card */
+.cmf-stat-card {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.dark .cmf-stat-card {
+  border-color: #334155;
+}
+
+.cmf-stat-card-interactive {
+  cursor: pointer;
+}
+
+.cmf-stat-card-interactive:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Filter bar */
+.cmf-filter-bar {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  padding: 1rem;
+}
+
+.dark .cmf-filter-bar {
+  background-color: rgba(15, 23, 42, 0.5);
+  border-color: #1e293b;
+}
+
+/* Search input with icon */
+.cmf-search-input {
+  width: 100%;
+  padding: 0.625rem 1rem 0.625rem 2.5rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.dark .cmf-search-input {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #ffffff;
+}
+
+.cmf-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.dark .cmf-search-input::placeholder {
+  color: #64748b;
+}
+
+.cmf-search-input:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+}
+
+/* Filter button */
+.cmf-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #475569;
+  transition: all 0.2s ease;
+}
+
+.dark .cmf-filter-button {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.cmf-filter-button:hover {
+  background-color: #f1f5f9;
+}
+
+.dark .cmf-filter-button:hover {
+  background-color: #334155;
+}
+
+.cmf-filter-button-active {
+  background-color: #f0f9ff;
+  border-color: #7dd3fc;
+  color: #0369a1;
+}
+
+.dark .cmf-filter-button-active {
+  background-color: rgba(125, 211, 252, 0.1);
+  border-color: #0ea5e9;
+  color: #7dd3fc;
+}
+
+/* Primary action button */
+.cmf-button-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.cmf-button-primary:hover {
+  background: linear-gradient(135deg, #0284c7, #0891b2);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+}
+
+/* Secondary button */
+.cmf-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  transition: all 0.2s ease;
+}
+
+.dark .cmf-button-secondary {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.cmf-button-secondary:hover {
+  background-color: #f1f5f9;
+}
+
+.dark .cmf-button-secondary:hover {
+  background-color: #334155;
+}
+
+/* Table styling */
+.cmf-table {
+  width: 100%;
+}
+
+.cmf-table thead {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dark .cmf-table thead {
+  background-color: rgba(30, 41, 59, 0.5);
+  border-color: #334155;
+}
+
+.cmf-table th {
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+}
+
+.dark .cmf-table th {
+  color: #94a3b8;
+}
+
+.cmf-table tbody {
+  /* divide style handled by tr */
+}
+
+.cmf-table tr {
+  transition: background-color 0.15s ease;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dark .cmf-table tr {
+  border-color: #334155;
+}
+
+.cmf-table tr:hover {
+  background-color: rgba(14, 165, 233, 0.05);
+}
+
+.dark .cmf-table tr:hover {
+  background-color: rgba(14, 165, 233, 0.1);
+}
+
+.cmf-table td {
+  padding: 1rem 1.5rem;
+}
+
+/* Icon container with gradient */
+.cmf-icon-container {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Gradient backgrounds for icons */
+.cmf-gradient-sky {
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+}
+
+.cmf-gradient-rose {
+  background: linear-gradient(135deg, #f43f5e, #ec4899);
+}
+
+.cmf-gradient-emerald {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+}
+
+.cmf-gradient-amber {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+}
+
+.cmf-gradient-purple {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+}
+
+/* Empty state */
+.cmf-empty-state {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+.cmf-empty-state-icon {
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+.dark .cmf-empty-state-icon {
+  color: #475569;
+}
+
+.cmf-empty-state-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.dark .cmf-empty-state-title {
+  color: #cbd5e1;
+}
+
+.cmf-empty-state-message {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.dark .cmf-empty-state-message {
+  color: #94a3b8;
+}
+
+/* Badge variants for CMF */
+.cmf-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+.cmf-badge-success {
+  background-color: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.dark .cmf-badge-success {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.cmf-badge-warning {
+  background-color: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.dark .cmf-badge-warning {
+  background-color: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.cmf-badge-danger {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.dark .cmf-badge-danger {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.cmf-badge-info {
+  background-color: #f0f9ff;
+  color: #0c4a6e;
+  border-color: #bae6fd;
+}
+
+.dark .cmf-badge-info {
+  background-color: rgba(14, 165, 233, 0.15);
+  color: #7dd3fc;
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.cmf-badge-neutral {
+  background-color: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.dark .cmf-badge-neutral {
+  background-color: rgba(100, 116, 139, 0.15);
+  color: #94a3b8;
+  border-color: rgba(100, 116, 139, 0.3);
+}
+
+/* Card hover effect - Prism Glow */
+.cmf-card-hover {
+  transition: all 0.2s ease;
+}
+
+.cmf-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border-color: var(--cmf-accent);
+}
+
+.dark .cmf-card-hover:hover {
+  box-shadow: var(--cmf-glow-accent);
+  border-color: var(--cmf-accent);
+}
+
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+
+/* Slide in and highlight animation for newly added items */
+@keyframes slideInHighlight {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+    background-color: var(--cmf-accent-muted);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(0);
+    background-color: var(--cmf-accent-muted);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    background-color: transparent;
+  }
+}
+
+.animate-slideInHighlight {
+  animation: slideInHighlight 0.6s ease-out;
+}
+
+/* Slide out panel animation */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0.8;
+  }
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Scale in animation for cards/modals */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* ============================================================================
+   AURORA ANIMATIONS & EFFECTS
+   Serene, flowing animations inspired by northern lights
+   ============================================================================ */
+
+/* Logo Glow Pulse Animation - Soft, breathing effect */
+@keyframes auroraGlowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(45, 212, 191, 0.4))
+            drop-shadow(0 0 16px rgba(34, 211, 238, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(45, 212, 191, 0.6))
+            drop-shadow(0 0 24px rgba(244, 114, 182, 0.25))
+            drop-shadow(0 0 36px rgba(34, 211, 238, 0.15));
+  }
+}
+
+.aurora-glow-pulse {
+  animation: auroraGlowPulse 4s ease-in-out infinite;
+}
+
+/* Logo Container Glow - Box shadow version */
+@keyframes auroraBoxGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(45, 212, 191, 0.3),
+                0 0 30px rgba(34, 211, 238, 0.15),
+                inset 0 0 10px rgba(45, 212, 191, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(45, 212, 191, 0.5),
+                0 0 40px rgba(244, 114, 182, 0.2),
+                0 0 60px rgba(34, 211, 238, 0.1),
+                inset 0 0 15px rgba(45, 212, 191, 0.08);
+  }
+}
+
+.aurora-box-glow {
+  animation: auroraBoxGlow 4s ease-in-out infinite;
+}
+
+/* Shimmer Loading Effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--cmf-surface-2) 25%,
+    var(--cmf-surface-3) 50%,
+    var(--cmf-surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--cmf-radius-md);
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(30, 41, 59, 0.5) 25%,
+    rgba(51, 65, 85, 0.5) 50%,
+    rgba(30, 41, 59, 0.5) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Aurora Shimmer - Colored loading effect */
+@keyframes auroraShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-aurora {
+  background: linear-gradient(
+    90deg,
+    var(--cmf-surface-2) 0%,
+    rgba(45, 212, 191, 0.1) 25%,
+    rgba(34, 211, 238, 0.15) 50%,
+    rgba(244, 114, 182, 0.1) 75%,
+    var(--cmf-surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: auroraShimmer 2s ease-in-out infinite;
+  border-radius: var(--cmf-radius-md);
+}
+
+/* Skeleton Sizes */
+.skeleton-text {
+  height: 1rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-text-sm {
+  height: 0.75rem;
+  width: 80%;
+}
+
+.skeleton-text-lg {
+  height: 1.25rem;
+  width: 60%;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--cmf-radius-full);
+}
+
+.skeleton-avatar-lg {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--cmf-radius-full);
+}
+
+.skeleton-card {
+  height: 120px;
+  width: 100%;
+}
+
+.skeleton-button {
+  height: 40px;
+  width: 100px;
+  border-radius: var(--cmf-radius-md);
+}
+
+/* Menu/Nav Transition Animations */
+@keyframes menuSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.menu-item-enter {
+  animation: menuSlideIn 0.2s ease-out forwards;
+}
+
+.menu-fade-in {
+  animation: menuFadeIn 0.15s ease-out forwards;
+}
+
+/* Staggered Menu Items */
+.menu-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.menu-stagger > *:nth-child(2) { animation-delay: 30ms; }
+.menu-stagger > *:nth-child(3) { animation-delay: 60ms; }
+.menu-stagger > *:nth-child(4) { animation-delay: 90ms; }
+.menu-stagger > *:nth-child(5) { animation-delay: 120ms; }
+.menu-stagger > *:nth-child(6) { animation-delay: 150ms; }
+.menu-stagger > *:nth-child(7) { animation-delay: 180ms; }
+.menu-stagger > *:nth-child(8) { animation-delay: 210ms; }
+
+/* Dropdown Animation */
+@keyframes dropdownOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dropdownClose {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+.dropdown-enter {
+  animation: dropdownOpen 0.2s ease-out forwards;
+}
+
+.dropdown-exit {
+  animation: dropdownClose 0.15s ease-in forwards;
+}
+
+/* Modal Animations */
+@keyframes modalBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalContentIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-backdrop-enter {
+  animation: modalBackdropIn 0.2s ease-out forwards;
+}
+
+.modal-content-enter {
+  animation: modalContentIn 0.25s ease-out forwards;
+}
+
+/* Toast/Notification Animations */
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.toast-enter {
+  animation: toastSlideIn 0.3s ease-out forwards;
+}
+
+.toast-exit {
+  animation: toastSlideOut 0.2s ease-in forwards;
+}
+
+/* Card Hover Lift Effect */
+.card-lift {
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--aurora-glow-md);
+}
+
+/* Aurora Border Gradient Animation */
+@keyframes auroraBorderFlow {
+  0%, 100% {
+    border-color: var(--aurora-teal);
+  }
+  33% {
+    border-color: var(--aurora-cyan);
+  }
+  66% {
+    border-color: var(--aurora-pink);
+  }
+}
+
+.aurora-border-animated {
+  animation: auroraBorderFlow 6s ease-in-out infinite;
+}
+
+/* Button Press Effect */
+.btn-press {
+  transition: transform 0.1s ease-out;
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* Ripple Effect Base */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%),
+              rgba(45, 212, 191, 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0);
+  transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+}
+
+.ripple:active::after {
+  opacity: 1;
+  transform: scale(2);
+}
+
+/* Floating Animation for Icons/Elements */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Spin Animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
+
+/* Bounce Animation */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+/* Page Transition */
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: pageIn 0.3s ease-out forwards;
+}
+
+/* Subtle Background Aurora Effect */
+@keyframes auroraBackground {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.aurora-bg {
+  background: linear-gradient(
+    135deg,
+    rgba(45, 212, 191, 0.05) 0%,
+    rgba(34, 211, 238, 0.03) 25%,
+    rgba(244, 114, 182, 0.03) 50%,
+    rgba(167, 139, 250, 0.03) 75%,
+    rgba(45, 212, 191, 0.05) 100%
+  );
+  background-size: 400% 400%;
+  animation: auroraBackground 15s ease infinite;
+}
+
+.dark .aurora-bg {
+  background: linear-gradient(
+    135deg,
+    rgba(45, 212, 191, 0.08) 0%,
+    rgba(34, 211, 238, 0.05) 25%,
+    rgba(244, 114, 182, 0.05) 50%,
+    rgba(167, 139, 250, 0.05) 75%,
+    rgba(45, 212, 191, 0.08) 100%
+  );
+  background-size: 400% 400%;
+}
+
+/* Focus Visible Aurora Ring */
+.aurora-focus:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--cmf-bg), 0 0 0 4px var(--aurora-teal), var(--aurora-glow-sm);
+}
+
+/* ============================================================================
+   ENHANCED TRANSITIONS
+   Smooth, consistent transitions across the UI
+   ============================================================================ */
+
+/* Global smooth transitions */
+.transition-smooth {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-colors-smooth {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, fill 0.2s ease, stroke 0.2s ease;
+}
+
+.transition-transform-smooth {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-opacity-smooth {
+  transition: opacity 0.2s ease;
+}
+
+/* Hover state transitions */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--cmf-shadow-lg);
+}
+
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: var(--aurora-glow-md);
+}
+
+.dark .hover-glow:hover {
+  box-shadow: var(--aurora-glow-lg);
 }

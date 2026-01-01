@@ -1,20 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GlobalSearch } from './GlobalSearch';
 import type { Page } from '../types';
-import { MoonIcon, SunIcon, QuestionMarkCircleIcon } from './icons';
-import { Button, IconButton } from './ui/Button';
+import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
+import { ThemeToggle } from './ui/ThemeToggle';
+import { HelpToggle } from './ui/HelpToggle';
+import { InviteTeamModal } from './InviteTeamModal';
+import { UserPlus } from 'lucide-react';
+
+
+/**
+ * CMF Nothing Design System - Header Component
+ * =============================================
+ * Minimal header with search and user controls.
+ * Navigation state is shown via sidebar highlighting only.
+ */
 
 interface HeaderProps {
     onSearch: (query: string, includeWeb: boolean) => void;
     isSearching: boolean;
-    theme: 'light' | 'dark';
-    onToggleTheme: () => void;
-    openTabs: Page[];
     currentPage: Page;
-    onNavigate: (page: Page) => void;
-    onCloseTab: (page: Page, e: React.MouseEvent) => void;
-    onStartTour: () => void;
+    // Keep these props for compatibility but don't use them
+    breadcrumbs?: any[];
+    onGoBack?: () => void;
+    onGoForward?: () => void;
+    canGoBack?: boolean;
+    canGoForward?: boolean;
+    onStartTour?: () => void;
     userEmail?: string;
     onLogout?: () => void;
 }
@@ -22,34 +34,57 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
     onSearch,
     isSearching,
-    theme,
-    onToggleTheme,
-    openTabs,
-    currentPage,
-    onNavigate,
-    onCloseTab,
-    onStartTour,
     userEmail,
     onLogout
 }) => {
+    const [showInviteModal, setShowInviteModal] = useState(false);
+
     return (
-        <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 pt-4 flex flex-col z-10 flex-shrink-0 shadow-sm">
-            {/* Top row for search and theme toggle */}
-            <div className="flex items-start justify-between w-full">
-                <div className="flex-1 flex-shrink-0">
-                    {/* Left Spacer */}
-                </div>
-                <div className="px-4">
-                    <div className="relative w-full max-w-sm">
+        <>
+        <InviteTeamModal
+            isOpen={showInviteModal}
+            onClose={() => setShowInviteModal(false)}
+        />
+        <header
+            className="border-b px-4 py-3 flex items-center z-10 flex-shrink-0"
+            style={{
+                backgroundColor: 'var(--cmf-bg)',
+                borderColor: 'var(--cmf-border)'
+            }}
+        >
+            {/* Clean single row layout */}
+            <div className="flex items-center justify-between w-full gap-4">
+                {/* Left spacer for balance */}
+                <div className="flex-1" />
+
+                {/* Center: Search */}
+                <div className="flex-shrink-0">
+                    <div className="relative w-full max-w-md">
                         <GlobalSearch onSearch={onSearch} />
                         {isSearching && (
-                            <div className="absolute right-3 top-2.5">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-rose-500"></div>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <div
+                                    className="animate-spin rounded-full h-4 w-4 border-2 border-t-transparent"
+                                    style={{ borderColor: 'var(--cmf-accent)', borderTopColor: 'transparent' }}
+                                />
                             </div>
                         )}
                     </div>
                 </div>
-                <div className="flex-1 flex justify-end items-center gap-2">
+
+                {/* Right section: User controls */}
+                <div className="flex items-center gap-2 flex-1 justify-end">
+                    {/* Invite Team Button */}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowInviteModal(true)}
+                        className="flex items-center gap-1.5"
+                        title="Invite Team Member"
+                    >
+                        <UserPlus className="w-4 h-4" />
+                        <span className="hidden sm:inline">Invite</span>
+                    </Button>
                     {userEmail && (
                         <Badge variant="neutral" size="md">
                             {userEmail}
@@ -57,69 +92,18 @@ export const Header: React.FC<HeaderProps> = ({
                     )}
                     {onLogout && (
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={onLogout}
-                            className="rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
                         >
                             Logout
                         </Button>
                     )}
-                    <IconButton
-                        id="guided-tour-button"
-                        variant="outline"
-                        size="sm"
-                        onClick={onStartTour}
-                        icon={<QuestionMarkCircleIcon />}
-                        aria-label="Start guided tour"
-                        className="rounded-full"
-                    />
-                    <IconButton
-                        variant="outline"
-                        size="sm"
-                        onClick={onToggleTheme}
-                        icon={theme === 'light' ? <MoonIcon /> : <SunIcon />}
-                        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-                        className="rounded-full"
-                    />
-                </div>
-            </div>
-            
-            {/* Bottom row for tabs */}
-            <div className="w-full overflow-x-auto scrollbar-hide mt-3">
-                <div role="tablist" aria-label="Open pages" className="flex items-end border-b-2 border-gray-200 dark:border-slate-700">
-                    {openTabs.map((page, index) => {
-                        const isActive = page === currentPage;
-                        return (
-                            <div
-                                key={page}
-                                role="tab"
-                                aria-selected={isActive}
-                                aria-controls={`panel-${page}`}
-                                id={`tab-${page}`}
-                                onClick={() => onNavigate(page)}
-                                className={`fade-in flex items-center h-10 px-4 py-2 text-sm font-medium rounded-t-lg cursor-pointer group transition-all duration-200 border-b-2 shrink-0
-                                    ${isActive
-                                        ? 'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white border-rose-500 shadow-sm'
-                                        : 'bg-transparent text-gray-700 dark:text-gray-300 border-transparent hover:bg-gray-100 dark:hover:bg-slate-700/50'
-                                    }`}
-                                style={{ animationDelay: `${index * 50}ms` }}
-                            >
-                                <span className="capitalize whitespace-nowrap">{page.replace('-', ' ')}</span>
-                                {openTabs.length > 1 && (
-                                    <button
-                                        onClick={(e) => onCloseTab(page, e)}
-                                        className="ml-3 -mr-1 p-1 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600 hover:text-gray-800 dark:hover:text-white transition-colors"
-                                        aria-label={`Close ${page} tab`}
-                                    >
-                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                                    </button>
-                                )}
-                            </div>
-                        );
-                    })}
+                    <HelpToggle />
+                    <ThemeToggle size="sm" />
                 </div>
             </div>
         </header>
+        </>
     );
 };

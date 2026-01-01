@@ -11,11 +11,10 @@ function dbToDocument(dbDoc: any): AppDocument {
     name: dbDoc.name,
     category: dbDoc.category,
     relatedId: dbDoc.related_id,
-    uploadedBy: dbDoc.uploaded_by,
-    uploadDate: dbDoc.upload_date,
-    fileUrl: dbDoc.file_url,
-    fileSize: dbDoc.file_size,
-    fileType: dbDoc.file_type
+    uploadedById: dbDoc.uploaded_by,
+    lastModified: dbDoc.upload_date,
+    size: dbDoc.file_size || '0 KB',
+    fileType: dbDoc.file_type || 'other'
   };
 }
 

@@ -3,8 +3,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import type { Volunteer, Client } from '../types';
-import { getCoordsForAddress, GeocodeResult } from '../utils/geocoding';
-import { calculateDistance } from '../utils/distance';
+import { getCoordsForAddress, GeocodeResult } from '../src/utils/geocoding';
+import { calculateDistance } from '../src/utils/distance';
 
 interface VolunteersMapProps {
     volunteers: Volunteer[];

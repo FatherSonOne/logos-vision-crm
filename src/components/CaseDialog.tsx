@@ -3,6 +3,9 @@ import type { Case, Client, TeamMember } from '../types';
 import { CaseStatus, CasePriority } from '../types';
 import { Modal } from './Modal';
 import { AiEnhancedTextarea } from './AiEnhancedTextarea';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Select } from './ui/Select';
 
 interface CaseDialogProps {
   isOpen: boolean;
@@ -62,62 +65,80 @@ export const CaseDialog: React.FC<CaseDialogProps> = ({ isOpen, onClose, onSave,
   const handleTextareaChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
-  const inputStyles = "w-full p-2 bg-slate-100 border border-slate-300 rounded-md focus:ring-violet-500 focus:border-violet-500 text-slate-900 placeholder-slate-400";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={caseToEdit ? "Edit Case" : "Create New Case"}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-            <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1">Title *</label>
-            <input type="text" id="title" name="title" value={formData.title} onChange={handleChange} required className={inputStyles} />
-        </div>
+        <Input
+          label="Title *"
+          id="title"
+          name="title"
+          value={formData.title}
+          onChange={handleChange}
+          required
+          fullWidth
+        />
 
         <div>
-            <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-            <AiEnhancedTextarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onValueChange={(value) => handleTextareaChange('description', value)}
-                rows={4}
-                className={inputStyles}
-            />
+          <label htmlFor="description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Description</label>
+          <AiEnhancedTextarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onValueChange={(value) => handleTextareaChange('description', value)}
+            rows={4}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 dark:focus:border-rose-400"
+          />
         </div>
 
-         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label htmlFor="clientId" className="block text-sm font-medium text-slate-700 mb-1">Client *</label>
-                <select id="clientId" name="clientId" value={formData.clientId} onChange={handleChange} required className={inputStyles} disabled={!!caseToEdit}>
-                    {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
-                </select>
-            </div>
-             <div>
-                <label htmlFor="assignedToId" className="block text-sm font-medium text-slate-700 mb-1">Assignee *</label>
-                <select id="assignedToId" name="assignedToId" value={formData.assignedToId} onChange={handleChange} required className={inputStyles}>
-                    {teamMembers.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
-                </select>
-            </div>
-        </div>
-        
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label htmlFor="status" className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                <select id="status" name="status" value={formData.status} onChange={handleChange} className={inputStyles}>
-                    {Object.values(CaseStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-            </div>
-             <div>
-                <label htmlFor="priority" className="block text-sm font-medium text-slate-700 mb-1">Priority</label>
-                <select id="priority" name="priority" value={formData.priority} onChange={handleChange} className={inputStyles}>
-                    {Object.values(CasePriority).map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-            </div>
+          <Select
+            label="Client *"
+            id="clientId"
+            name="clientId"
+            value={formData.clientId}
+            onChange={handleChange}
+            required
+            disabled={!!caseToEdit}
+            options={clients.map(client => ({ value: client.id, label: client.name }))}
+            fullWidth
+          />
+          <Select
+            label="Assignee *"
+            id="assignedToId"
+            name="assignedToId"
+            value={formData.assignedToId}
+            onChange={handleChange}
+            required
+            options={teamMembers.map(member => ({ value: member.id, label: member.name }))}
+            fullWidth
+          />
         </div>
-        
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Select
+            label="Status"
+            id="status"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            options={Object.values(CaseStatus).map(s => ({ value: s, label: s }))}
+            fullWidth
+          />
+          <Select
+            label="Priority"
+            id="priority"
+            name="priority"
+            value={formData.priority}
+            onChange={handleChange}
+            options={Object.values(CasePriority).map(p => ({ value: p, label: p }))}
+            fullWidth
+          />
+        </div>
+
         <div className="flex justify-end gap-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-            <button type="submit" className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-md text-sm font-semibold hover:from-indigo-700 hover:to-violet-700">Save Case</button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="primary">Save Case</Button>
         </div>
       </form>
     </Modal>

@@ -1273,7 +1273,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
       {/* Bulk Action Bar */}
       {isSelectionMode && selectedProjectIds.size > 0 && (
-        <BulkActionBar
+        <BulkActionToolbar
           selectedCount={selectedProjectIds.size}
           totalCount={searchedAndSortedProjects.length}
           onSelectAll={handleSelectAll}

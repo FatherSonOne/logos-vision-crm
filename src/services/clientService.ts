@@ -1,33 +1,47 @@
 // Client Service - Handles all database operations for Clients
 import { supabase } from './supabaseClient';
-import type { Client } from '../types';
+import { logosSupabase } from '../lib/supabaseLogosClient';
+import type { Client, PreferredContactMethod } from '../types';
+
+// Helper to map database row to Client type
+const mapClientRow = (row: any): Client => ({
+  id: row.id,
+  name: row.name,
+  contactPerson: row.contact_person || row.contactPerson || '',
+  email: row.email || '',
+  phone: row.phone || '',
+  location: row.location || row.company || '',
+  notes: row.notes,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+  householdId: row.household_id,
+  // Communication preferences
+  preferredContactMethod: row.preferred_contact_method as PreferredContactMethod,
+  doNotEmail: row.do_not_email ?? false,
+  doNotCall: row.do_not_call ?? false,
+  doNotMail: row.do_not_mail ?? false,
+  doNotText: row.do_not_text ?? false,
+  emailOptIn: row.email_opt_in ?? true,
+  newsletterSubscriber: row.newsletter_subscriber ?? false,
+  communicationNotes: row.communication_notes,
+});
 
 export const clientService = {
   // Get all clients
   async getAll(): Promise<Client[]> {
-    const { data, error } = await supabase
-      .from('clients')
+    const { data, error } = await logosSupabase
+      .from('lv_clients')
       .select('*')
-      .eq('is_active', true)
-      .order('name');
-    
+      .order('name', { ascending: true });
+
     if (error) {
-      console.error('Error fetching clients:', error);
+      console.error('❌ Error loading lv_clients from Supabase', error);
       throw error;
     }
-    
-    // Transform snake_case to camelCase
-    return (data || []).map(row => ({
-      id: row.id,
-      name: row.name,
-      contactPerson: row.contact_person,
-      email: row.email,
-      phone: row.phone,
-      location: row.location,
-      notes: row.notes,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
-    }));
+
+    console.log('✅ Loaded', data?.length ?? 0, 'clients from Logos Supabase');
+
+    return (data || []).map(mapClientRow);
   },
 
   // Get a single client by ID
@@ -37,32 +51,20 @@ export const clientService = {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) {
       console.error('Error fetching client:', error);
       throw error;
     }
-    
+
     if (!data) return null;
-    
-    // Transform snake_case to camelCase
-    return {
-      id: data.id,
-      name: data.name,
-      contactPerson: data.contact_person,
-      email: data.email,
-      phone: data.phone,
-      location: data.location,
-      notes: data.notes,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+
+    return mapClientRow(data);
   },
 
   // Create a new client
   async create(client: Partial<Client>): Promise<Client> {
     // Transform camelCase to snake_case for database
-    // Build the insert object - only include id if it's provided (for migration)
     const insertData: any = {
       name: client.name,
       contact_person: client.contactPerson,
@@ -70,71 +72,73 @@ export const clientService = {
       phone: client.phone,
       location: client.location,
       notes: client.notes || '',
-      is_active: true
+      is_active: true,
+      household_id: client.householdId || null,
+      // Communication preferences
+      preferred_contact_method: client.preferredContactMethod || 'email',
+      do_not_email: client.doNotEmail ?? false,
+      do_not_call: client.doNotCall ?? false,
+      do_not_mail: client.doNotMail ?? false,
+      do_not_text: client.doNotText ?? false,
+      email_opt_in: client.emailOptIn ?? true,
+      newsletter_subscriber: client.newsletterSubscriber ?? false,
+      communication_notes: client.communicationNotes || null,
     };
-    
+
     // Only include id if it exists (for migrating existing data)
     if (client.id) {
       insertData.id = client.id;
     }
-    
+
     const { data, error } = await supabase
       .from('clients')
       .insert([insertData])
       .select()
       .single();
-    
+
     if (error) {
       console.error('Error creating client:', error);
       throw error;
     }
-    
-    // Transform response back to camelCase
-    return {
-      id: data.id,
-      name: data.name,
-      contactPerson: data.contact_person,
-      email: data.email,
-      phone: data.phone,
-      location: data.location,
-      notes: data.notes,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+
+    return mapClientRow(data);
   },
 
   // Update an existing client
   async update(id: string, updates: Partial<Client>): Promise<Client> {
+    const updateData: any = {};
+
+    // Only include fields that are being updated
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.contactPerson !== undefined) updateData.contact_person = updates.contactPerson;
+    if (updates.email !== undefined) updateData.email = updates.email;
+    if (updates.phone !== undefined) updateData.phone = updates.phone;
+    if (updates.location !== undefined) updateData.location = updates.location;
+    if (updates.notes !== undefined) updateData.notes = updates.notes;
+    if (updates.householdId !== undefined) updateData.household_id = updates.householdId;
+    // Communication preferences
+    if (updates.preferredContactMethod !== undefined) updateData.preferred_contact_method = updates.preferredContactMethod;
+    if (updates.doNotEmail !== undefined) updateData.do_not_email = updates.doNotEmail;
+    if (updates.doNotCall !== undefined) updateData.do_not_call = updates.doNotCall;
+    if (updates.doNotMail !== undefined) updateData.do_not_mail = updates.doNotMail;
+    if (updates.doNotText !== undefined) updateData.do_not_text = updates.doNotText;
+    if (updates.emailOptIn !== undefined) updateData.email_opt_in = updates.emailOptIn;
+    if (updates.newsletterSubscriber !== undefined) updateData.newsletter_subscriber = updates.newsletterSubscriber;
+    if (updates.communicationNotes !== undefined) updateData.communication_notes = updates.communicationNotes;
+
     const { data, error } = await supabase
       .from('clients')
-      .update({
-        name: updates.name,
-        contact_person: updates.contactPerson,
-        email: updates.email,
-        phone: updates.phone,
-        location: updates.location,
-        notes: updates.notes
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) {
       console.error('Error updating client:', error);
       throw error;
     }
-    
-    return {
-      id: data.id,
-      name: data.name,
-      contactPerson: data.contact_person,
-      email: data.email,
-      phone: data.phone,
-      location: data.location,
-      notes: data.notes,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+
+    return mapClientRow(data);
   },
 
   // Delete a client (soft delete - mark as inactive)
@@ -158,22 +162,65 @@ export const clientService = {
       .ilike('name', `%${query}%`)
       .eq('is_active', true)
       .order('name');
-    
+
     if (error) {
       console.error('Error searching clients:', error);
       throw error;
     }
-    
-    return (data || []).map(row => ({
-      id: row.id,
-      name: row.name,
-      contactPerson: row.contact_person,
-      email: row.email,
-      phone: row.phone,
-      location: row.location,
-      notes: row.notes,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
-    }));
+
+    return (data || []).map(mapClientRow);
+  },
+
+  // Get clients with opt-in for email communications
+  async getEmailOptInClients(): Promise<Client[]> {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('is_active', true)
+      .eq('email_opt_in', true)
+      .eq('do_not_email', false)
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching email opt-in clients:', error);
+      throw error;
+    }
+
+    return (data || []).map(mapClientRow);
+  },
+
+  // Get newsletter subscribers
+  async getNewsletterSubscribers(): Promise<Client[]> {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('is_active', true)
+      .eq('newsletter_subscriber', true)
+      .eq('do_not_email', false)
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching newsletter subscribers:', error);
+      throw error;
+    }
+
+    return (data || []).map(mapClientRow);
+  },
+
+  // Update communication preferences only
+  async updateCommunicationPreferences(
+    id: string,
+    preferences: {
+      preferredContactMethod?: Client['preferredContactMethod'];
+      doNotEmail?: boolean;
+      doNotCall?: boolean;
+      doNotMail?: boolean;
+      doNotText?: boolean;
+      emailOptIn?: boolean;
+      newsletterSubscriber?: boolean;
+      communicationNotes?: string | null;
+    }
+  ): Promise<Client> {
+    return this.update(id, preferences);
   }
 };

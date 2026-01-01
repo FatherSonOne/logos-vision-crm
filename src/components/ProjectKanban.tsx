@@ -58,7 +58,9 @@ export const ProjectKanban: React.FC<ProjectKanbanProps> = ({
       [ProjectStatus.Planning]: [],
       [ProjectStatus.InProgress]: [],
       [ProjectStatus.OnHold]: [],
-      [ProjectStatus.Completed]: []
+      [ProjectStatus.Completed]: [],
+      [ProjectStatus.Active]: [],
+      [ProjectStatus.Cancelled]: []
     };
 
     projects.forEach(project => {

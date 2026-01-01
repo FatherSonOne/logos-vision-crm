@@ -1,5 +1,11 @@
 import React from 'react';
 
+/**
+ * CMF Nothing Design System - Card Component
+ * ==========================================
+ * Container components using CMF design tokens.
+ */
+
 export type CardVariant = 'default' | 'elevated' | 'outlined' | 'ghost';
 export type CardPadding = 'none' | 'sm' | 'md' | 'lg';
 
@@ -13,32 +19,12 @@ interface CardProps {
   as?: 'div' | 'article' | 'section';
 }
 
-const variantClasses: Record<CardVariant, string> = {
-  default:
-    'bg-white border border-slate-200 shadow-sm ' +
-    'dark:bg-slate-800 dark:border-slate-700',
-  elevated:
-    'bg-white border border-slate-100 shadow-md ' +
-    'dark:bg-slate-800 dark:border-slate-700 dark:shadow-lg',
-  outlined:
-    'bg-transparent border border-slate-300 ' +
-    'dark:border-slate-600',
-  ghost:
-    'bg-slate-50 border border-transparent ' +
-    'dark:bg-slate-800/50',
-};
-
 const paddingClasses: Record<CardPadding, string> = {
   none: '',
   sm: 'p-4',
   md: 'p-6',
   lg: 'p-8',
 };
-
-const hoverClasses =
-  'cursor-pointer transition-all duration-200 ' +
-  'hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 ' +
-  'dark:hover:border-slate-600 dark:hover:shadow-lg';
 
 export const Card: React.FC<CardProps> = ({
   children,
@@ -50,15 +36,69 @@ export const Card: React.FC<CardProps> = ({
   as: Component = 'div',
 }) => {
   const isClickable = !!onClick || hoverable;
+  const [isHovered, setIsHovered] = React.useState(false);
+
+  // CMF-based variant styles
+  const getVariantStyles = (): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      borderRadius: 'var(--cmf-radius-lg)',
+      transition: 'all 150ms ease-out',
+    };
+
+    switch (variant) {
+      case 'default':
+        return {
+          ...base,
+          backgroundColor: 'var(--cmf-surface)',
+          border: '1px solid var(--cmf-border)',
+          boxShadow: 'var(--cmf-shadow-sm)',
+        };
+      case 'elevated':
+        return {
+          ...base,
+          backgroundColor: 'var(--cmf-surface)',
+          border: '1px solid var(--cmf-border)',
+          boxShadow: 'var(--cmf-shadow-md)',
+        };
+      case 'outlined':
+        return {
+          ...base,
+          backgroundColor: 'transparent',
+          border: '1px solid var(--cmf-border-strong)',
+        };
+      case 'ghost':
+        return {
+          ...base,
+          backgroundColor: 'var(--cmf-surface-2)',
+          border: '1px solid transparent',
+        };
+      default:
+        return base;
+    }
+  };
+
+  const getHoverStyles = (): React.CSSProperties => {
+    if (!isClickable || !isHovered) return {};
+
+    return {
+      transform: 'translateY(-2px)',
+      boxShadow: 'var(--cmf-shadow-lg)',
+      borderColor: 'var(--cmf-border-strong)',
+    };
+  };
 
   return (
     <Component
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        ...getVariantStyles(),
+        ...getHoverStyles(),
+        cursor: isClickable ? 'pointer' : undefined,
+      }}
       className={`
-        rounded-lg
-        ${variantClasses[variant]}
         ${paddingClasses[padding]}
-        ${isClickable ? hoverClasses : ''}
         ${className}
       `.trim().replace(/\s+/g, ' ')}
       role={onClick ? 'button' : undefined}
@@ -105,7 +145,8 @@ export const CardTitle: React.FC<CardTitleProps> = ({
   as: Component = 'h3',
 }) => (
   <Component
-    className={`text-lg font-semibold text-slate-900 dark:text-white ${className}`.trim()}
+    className={`text-lg font-semibold ${className}`.trim()}
+    style={{ color: 'var(--cmf-text)' }}
   >
     {children}
   </Component>
@@ -122,7 +163,10 @@ export const CardDescription: React.FC<CardDescriptionProps> = ({
   children,
   className = '',
 }) => (
-  <p className={`text-sm text-slate-600 dark:text-slate-400 mt-1 ${className}`.trim()}>
+  <p
+    className={`text-sm mt-1 ${className}`.trim()}
+    style={{ color: 'var(--cmf-text-muted)' }}
+  >
     {children}
   </p>
 );
@@ -161,10 +205,11 @@ export const CardFooter: React.FC<CardFooterProps> = ({
 }) => (
   <div
     className={`
-      flex items-center gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700
+      flex items-center gap-3 mt-6 pt-4
       ${footerAlignClasses[align]}
       ${className}
     `.trim().replace(/\s+/g, ' ')}
+    style={{ borderTop: '1px solid var(--cmf-divider)' }}
   >
     {children}
   </div>
@@ -182,7 +227,7 @@ interface StatCardProps {
     value: number;
     label?: string;
   };
-  gradient?: string;
+  accentColor?: string; // Optional: use specific accent color
   onClick?: () => void;
   className?: string;
 }
@@ -193,66 +238,79 @@ export const StatCard: React.FC<StatCardProps> = ({
   subtitle,
   icon,
   trend,
-  gradient,
+  accentColor,
   onClick,
   className = '',
 }) => {
-  const baseClasses = gradient
-    ? `bg-gradient-to-br ${gradient} text-white`
-    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700';
-
-  const textClasses = gradient
-    ? {
-        title: 'text-white/80',
-        value: 'text-white',
-        subtitle: 'text-white/70',
-        icon: 'text-white/30',
-      }
-    : {
-        title: 'text-slate-600 dark:text-slate-400',
-        value: 'text-slate-900 dark:text-white',
-        subtitle: 'text-slate-500 dark:text-slate-500',
-        icon: 'text-slate-300 dark:text-slate-600',
-      };
+  const [isHovered, setIsHovered] = React.useState(false);
 
   return (
     <div
       onClick={onClick}
-      className={`
-        rounded-lg shadow-md p-6
-        ${onClick ? 'cursor-pointer transform hover:scale-105 transition-transform' : ''}
-        ${baseClasses}
-        ${className}
-      `.trim().replace(/\s+/g, ' ')}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`p-6 ${className}`.trim()}
+      style={{
+        backgroundColor: 'var(--cmf-surface)',
+        border: '1px solid var(--cmf-border)',
+        borderRadius: 'var(--cmf-radius-lg)',
+        boxShadow: isHovered && onClick ? 'var(--cmf-shadow-lg)' : 'var(--cmf-shadow-md)',
+        transform: isHovered && onClick ? 'scale(1.02)' : 'scale(1)',
+        transition: 'all 150ms ease-out',
+        cursor: onClick ? 'pointer' : undefined,
+      }}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className={`text-sm font-medium ${textClasses.title}`}>{title}</p>
-          <p className={`text-3xl font-bold mt-1 ${textClasses.value}`}>{value}</p>
+          <p
+            className="text-sm font-medium"
+            style={{ color: 'var(--cmf-text-muted)' }}
+          >
+            {title}
+          </p>
+          <p
+            className="text-3xl font-bold mt-1"
+            style={{ color: accentColor || 'var(--cmf-text)' }}
+          >
+            {value}
+          </p>
           {subtitle && (
-            <p className={`text-xs mt-1 ${textClasses.subtitle}`}>{subtitle}</p>
+            <p
+              className="text-xs mt-1"
+              style={{ color: 'var(--cmf-text-faint)' }}
+            >
+              {subtitle}
+            </p>
           )}
           {trend && (
             <div className="flex items-center gap-1 mt-2">
               <span
-                className={`text-xs font-medium ${
-                  trend.value >= 0
-                    ? 'text-green-500 dark:text-green-400'
-                    : 'text-red-500 dark:text-red-400'
-                }`}
+                className="text-xs font-medium"
+                style={{
+                  color: trend.value >= 0 ? 'var(--cmf-success)' : 'var(--cmf-error)',
+                }}
               >
                 {trend.value >= 0 ? '+' : ''}
                 {trend.value}%
               </span>
               {trend.label && (
-                <span className={`text-xs ${textClasses.subtitle}`}>{trend.label}</span>
+                <span
+                  className="text-xs"
+                  style={{ color: 'var(--cmf-text-faint)' }}
+                >
+                  {trend.label}
+                </span>
               )}
             </div>
           )}
         </div>
-        {icon && <div className={textClasses.icon}>{icon}</div>}
+        {icon && (
+          <div style={{ color: 'var(--cmf-text-faint)' }}>
+            {icon}
+          </div>
+        )}
       </div>
     </div>
   );

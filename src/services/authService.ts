@@ -1,11 +1,12 @@
 // Auth Service - Handles all authentication operations using Supabase Auth
 import { supabase } from './supabaseClient';
-import type { User, Session } from '@supabase/supabase-js';
+import type { User, Session, Provider } from '@supabase/supabase-js';
 
 export interface AuthUser {
   id: string;
   email: string;
   name?: string;
+  avatar_url?: string;
   role?: string;
 }
 
@@ -31,6 +32,24 @@ export const authService = {
     });
 
     return { user: data.user, error };
+  },
+
+  // Sign in with OAuth provider (Google, Microsoft, etc.)
+  async signInWithOAuth(provider: Provider): Promise<{ error: any }> {
+    const redirectTo = `${window.location.origin}/auth/callback`;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo,
+        queryParams: provider === 'google' ? {
+          access_type: 'offline',
+          prompt: 'consent',
+        } : undefined
+      }
+    });
+
+    return { error };
   },
 
   // Sign out current user
@@ -87,7 +106,8 @@ export const authService = {
     return {
       id: user.id,
       email: user.email || '',
-      name: user.user_metadata?.name,
+      name: user.user_metadata?.name || user.user_metadata?.full_name,
+      avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
       role: user.user_metadata?.role
     };
   }

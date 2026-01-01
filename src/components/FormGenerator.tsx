@@ -36,7 +36,13 @@ export const FormGenerator: React.FC<FormGeneratorProps> = ({ clients }) => {
         try {
             const resultJson = await generateFormFromDescription(description, client);
             const parsedResult = JSON.parse(resultJson);
-            setFormDef(parsedResult);
+            // Ensure fields is always an array
+            setFormDef({
+                title: parsedResult.title || 'Untitled Form',
+                description: parsedResult.description || '',
+                fields: Array.isArray(parsedResult.fields) ? parsedResult.fields : [],
+                error: parsedResult.error
+            });
         } catch (error) {
             console.error("Failed to parse form JSON", error);
             setFormDef({ title: 'Error', description: 'Failed to generate a valid form.', fields: [], error: "The AI returned an invalid structure." });
@@ -161,7 +167,7 @@ export const FormGenerator: React.FC<FormGeneratorProps> = ({ clients }) => {
                                 <h2 className="text-2xl font-bold mb-1">{formDef.title}</h2>
                                 <p className="text-slate-600 mb-6 dark:text-slate-300">{formDef.description}</p>
                                 {formDef.error && <p className="text-red-500">{formDef.error}</p>}
-                                {formDef.fields.map((field, index) => renderField(field, index))}
+                                {formDef.fields && formDef.fields.map((field, index) => renderField(field, index))}
                             </form>
                         )}
                         {!isLoading && !formDef && (

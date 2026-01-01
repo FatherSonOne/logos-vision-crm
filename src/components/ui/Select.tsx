@@ -1,5 +1,11 @@
 import React from 'react';
 
+/**
+ * CMF Nothing Design System - Select Component
+ * =============================================
+ * Form select and checkbox components using CMF design tokens.
+ */
+
 export type SelectSize = 'sm' | 'md' | 'lg';
 
 interface SelectOption {
@@ -19,15 +25,15 @@ interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>
 }
 
 const sizeClasses: Record<SelectSize, string> = {
-  sm: 'h-8 text-xs px-3 pr-8',
+  sm: 'h-8 text-[13px] px-3 pr-8',
   md: 'h-10 text-sm px-3 pr-10',
-  lg: 'h-12 text-base px-4 pr-12',
+  lg: 'h-12 text-[15px] px-4 pr-12',
 };
 
 const labelSizeClasses: Record<SelectSize, string> = {
   sm: 'text-xs',
   md: 'text-sm',
-  lg: 'text-base',
+  lg: 'text-[15px]',
 };
 
 const chevronSizeClasses: Record<SelectSize, string> = {
@@ -43,7 +49,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       helperText,
       error,
       size = 'md',
-      options,
+      options = [],
       placeholder,
       fullWidth = false,
       disabled,
@@ -56,26 +62,13 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`;
     const hasError = !!error;
 
-    const baseClasses = `
-      w-full rounded-lg border bg-white appearance-none
-      transition-all duration-200 ease-in-out
-      focus:outline-none focus:ring-2 focus:ring-offset-0
-      disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50
-      dark:bg-slate-800
-    `;
-
-    const stateClasses = hasError
-      ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20 dark:border-red-600'
-      : 'border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-600 dark:focus:border-rose-400';
-
-    const textColorClasses = 'text-slate-900 dark:text-slate-100';
-
     return (
       <div className={`${fullWidth ? 'w-full' : ''}`}>
         {label && (
           <label
             htmlFor={selectId}
-            className={`block font-medium text-slate-700 dark:text-slate-300 mb-1.5 ${labelSizeClasses[size]}`}
+            className={`block font-medium mb-1.5 ${labelSizeClasses[size]}`}
+            style={{ color: 'var(--cmf-text-secondary)' }}
           >
             {label}
           </label>
@@ -87,12 +80,31 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             id={selectId}
             disabled={disabled}
             className={`
-              ${baseClasses}
-              ${stateClasses}
-              ${textColorClasses}
+              w-full appearance-none
+              rounded-[var(--cmf-radius-md)]
+              transition-all duration-150 ease-out
+              focus:outline-none
+              disabled:opacity-50 disabled:cursor-not-allowed
               ${sizeClasses[size]}
               ${className}
             `.trim().replace(/\s+/g, ' ')}
+            style={{
+              backgroundColor: 'var(--cmf-surface)',
+              color: 'var(--cmf-text)',
+              border: `1px solid ${hasError ? 'var(--cmf-error)' : 'var(--cmf-border-strong)'}`,
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = hasError ? 'var(--cmf-error)' : 'var(--cmf-accent)';
+              e.currentTarget.style.boxShadow = hasError
+                ? '0 0 0 3px var(--cmf-error-muted)'
+                : '0 0 0 3px var(--cmf-accent-muted)';
+              props.onFocus?.(e);
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = hasError ? 'var(--cmf-error)' : 'var(--cmf-border-strong)';
+              e.currentTarget.style.boxShadow = 'none';
+              props.onBlur?.(e);
+            }}
             aria-invalid={hasError}
             aria-describedby={
               hasError ? `${selectId}-error` : helperText ? `${selectId}-helper` : undefined
@@ -104,7 +116,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                 {placeholder}
               </option>
             )}
-            {options.map((option) => (
+            {options && options.map((option) => (
               <option key={option.value} value={option.value} disabled={option.disabled}>
                 {option.label}
               </option>
@@ -113,7 +125,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 
           {/* Chevron Icon */}
           <div
-            className={`absolute top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500 ${chevronSizeClasses[size]}`}
+            className={`absolute top-1/2 -translate-y-1/2 pointer-events-none ${chevronSizeClasses[size]}`}
+            style={{ color: 'var(--cmf-text-faint)' }}
           >
             <svg
               className="w-full h-full"
@@ -130,11 +143,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         {(error || helperText) && (
           <p
             id={error ? `${selectId}-error` : `${selectId}-helper`}
-            className={`mt-1.5 text-xs ${
-              error
-                ? 'text-red-600 dark:text-red-400'
-                : 'text-slate-500 dark:text-slate-400'
-            }`}
+            className="mt-1.5 text-xs"
+            style={{ color: error ? 'var(--cmf-error-text)' : 'var(--cmf-text-muted)' }}
           >
             {error || helperText}
           </p>
@@ -157,36 +167,67 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   ({ label, helperText, error, disabled, className = '', id, ...props }, ref) => {
     const checkboxId = id || `checkbox-${Math.random().toString(36).substr(2, 9)}`;
     const hasError = !!error;
+    const [isChecked, setIsChecked] = React.useState(props.checked || props.defaultChecked || false);
+
+    React.useEffect(() => {
+      if (props.checked !== undefined) {
+        setIsChecked(props.checked);
+      }
+    }, [props.checked]);
 
     return (
       <div className="flex items-start gap-3">
         <div className="flex items-center h-5">
-          <input
-            ref={ref}
-            type="checkbox"
-            id={checkboxId}
-            disabled={disabled}
+          <div
             className={`
-              h-4 w-4 rounded border-slate-300
-              text-rose-500 focus:ring-rose-500 focus:ring-2 focus:ring-offset-0
-              disabled:opacity-50 disabled:cursor-not-allowed
-              dark:border-slate-600 dark:bg-slate-800 dark:focus:ring-rose-400
-              ${hasError ? 'border-red-500' : ''}
+              relative w-4 h-4 rounded
+              transition-all duration-150 ease-out
+              ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
               ${className}
             `.trim().replace(/\s+/g, ' ')}
-            aria-invalid={hasError}
-            aria-describedby={
-              hasError ? `${checkboxId}-error` : helperText ? `${checkboxId}-helper` : undefined
-            }
-            {...props}
-          />
+            style={{
+              backgroundColor: isChecked ? 'var(--cmf-accent)' : 'var(--cmf-surface)',
+              border: `1px solid ${hasError ? 'var(--cmf-error)' : isChecked ? 'var(--cmf-accent)' : 'var(--cmf-border-strong)'}`,
+            }}
+          >
+            <input
+              ref={ref}
+              type="checkbox"
+              id={checkboxId}
+              disabled={disabled}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              onChange={(e) => {
+                if (props.checked === undefined) {
+                  setIsChecked(e.target.checked);
+                }
+                props.onChange?.(e);
+              }}
+              aria-invalid={hasError}
+              aria-describedby={
+                hasError ? `${checkboxId}-error` : helperText ? `${checkboxId}-helper` : undefined
+              }
+              {...props}
+            />
+            {isChecked && (
+              <svg
+                className="absolute inset-0 w-4 h-4 p-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="var(--cmf-accent-text)"
+                strokeWidth={3}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
         </div>
         {(label || helperText || error) && (
           <div className="flex-1">
             {label && (
               <label
                 htmlFor={checkboxId}
-                className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
+                className="text-sm font-medium cursor-pointer"
+                style={{ color: 'var(--cmf-text)' }}
               >
                 {label}
               </label>
@@ -194,11 +235,8 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             {(error || helperText) && (
               <p
                 id={error ? `${checkboxId}-error` : `${checkboxId}-helper`}
-                className={`text-xs mt-0.5 ${
-                  error
-                    ? 'text-red-600 dark:text-red-400'
-                    : 'text-slate-500 dark:text-slate-400'
-                }`}
+                className="text-xs mt-0.5"
+                style={{ color: error ? 'var(--cmf-error-text)' : 'var(--cmf-text-muted)' }}
               >
                 {error || helperText}
               </p>
@@ -246,7 +284,10 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
   return (
     <fieldset className={className}>
       {label && (
-        <legend className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+        <legend
+          className="text-sm font-medium mb-3"
+          style={{ color: 'var(--cmf-text-secondary)' }}
+        >
           {label}
         </legend>
       )}
@@ -257,35 +298,52 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
       >
         {options.map((option) => {
           const radioId = `${name}-${option.value}`;
+          const isSelected = value === option.value;
           return (
             <div key={option.value} className="flex items-start gap-3">
               <div className="flex items-center h-5">
-                <input
-                  type="radio"
-                  id={radioId}
-                  name={name}
-                  value={option.value}
-                  checked={value === option.value}
-                  onChange={(e) => onChange?.(e.target.value)}
-                  disabled={option.disabled}
+                <div
                   className={`
-                    h-4 w-4 border-slate-300
-                    text-rose-500 focus:ring-rose-500 focus:ring-2 focus:ring-offset-0
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    dark:border-slate-600 dark:bg-slate-800 dark:focus:ring-rose-400
-                    ${hasError ? 'border-red-500' : ''}
+                    relative w-4 h-4 rounded-full
+                    transition-all duration-150 ease-out
+                    ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                   `.trim().replace(/\s+/g, ' ')}
-                />
+                  style={{
+                    backgroundColor: 'var(--cmf-surface)',
+                    border: `1px solid ${hasError ? 'var(--cmf-error)' : isSelected ? 'var(--cmf-accent)' : 'var(--cmf-border-strong)'}`,
+                  }}
+                >
+                  <input
+                    type="radio"
+                    id={radioId}
+                    name={name}
+                    value={option.value}
+                    checked={isSelected}
+                    onChange={(e) => onChange?.(e.target.value)}
+                    disabled={option.disabled}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  {isSelected && (
+                    <div
+                      className="absolute inset-1 rounded-full"
+                      style={{ backgroundColor: 'var(--cmf-accent)' }}
+                    />
+                  )}
+                </div>
               </div>
               <div className="flex-1">
                 <label
                   htmlFor={radioId}
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
+                  className="text-sm font-medium cursor-pointer"
+                  style={{ color: 'var(--cmf-text)' }}
                 >
                   {option.label}
                 </label>
                 {option.helperText && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: 'var(--cmf-text-muted)' }}
+                  >
                     {option.helperText}
                   </p>
                 )}
@@ -295,7 +353,12 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
         })}
       </div>
       {error && (
-        <p className="text-xs text-red-600 dark:text-red-400 mt-2">{error}</p>
+        <p
+          className="text-xs mt-2"
+          style={{ color: 'var(--cmf-error-text)' }}
+        >
+          {error}
+        </p>
       )}
     </fieldset>
   );

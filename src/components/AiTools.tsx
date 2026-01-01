@@ -3,8 +3,8 @@ import React, { useState, useRef } from 'react';
 import { analyzeImage, transcribeAudio } from '../services/geminiService';
 
 const AiToolCard: React.FC<{ title: string, icon: React.ReactNode, children: React.ReactNode }> = ({ title, icon, children }) => (
-    <div className="bg-white/10 dark:bg-black/20 p-4 rounded-lg h-full flex flex-col">
-        <h4 className="font-bold text-slate-800 dark:text-slate-100 mb-3 text-center flex items-center justify-center gap-2">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md border border-gray-200 dark:border-slate-700 p-4 h-full flex flex-col hover:shadow-xl transition-shadow">
+        <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-center flex items-center justify-center gap-2">
             {icon} {title}
         </h4>
         {children}
@@ -19,7 +19,7 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
         setTimeout(() => setCopied(false), 2000);
     };
     return (
-        <button onClick={handleCopy} className="absolute top-2 right-2 p-1.5 bg-white/30 rounded-md text-slate-600 hover:bg-white/50 dark:bg-black/30 dark:text-slate-300 dark:hover:bg-black/50 text-xs">
+        <button onClick={handleCopy} className="absolute top-2 right-2 p-1.5 bg-gray-100 dark:bg-slate-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 text-xs transition-colors">
             {copied ? 'Copied!' : 'Copy'}
         </button>
     );
@@ -56,9 +56,9 @@ const ImageAnalyzer: React.FC = () => {
     
     return (
         <AiToolCard title="Image Analyzer" icon={<ImageIcon />}>
-            <div className="p-4 border-2 border-dashed border-white/30 rounded-lg text-center flex-grow flex flex-col justify-center">
+            <div className="p-4 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-center flex-grow flex flex-col justify-center bg-gray-50 dark:bg-slate-700/50">
                 <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                <button onClick={() => fileInputRef.current?.click()} className="text-cyan-600 font-semibold dark:text-cyan-400 hover:underline text-sm">
+                <button onClick={() => fileInputRef.current?.click()} className="text-rose-600 dark:text-rose-400 font-semibold hover:underline text-sm transition-colors">
                     {image ? `Selected: ${image.name}` : 'Select an Image'}
                 </button>
                 {image && <img src={`data:${image.mime};base64,${image.b64}`} alt="preview" className="mt-4 max-h-24 mx-auto rounded-md" />}
@@ -67,18 +67,18 @@ const ImageAnalyzer: React.FC = () => {
                 value={prompt} 
                 onChange={e => setPrompt(e.target.value)} 
                 rows={2} 
-                className="w-full p-2 border border-white/30 rounded-md mt-4 bg-white/20 dark:bg-black/20 text-sm placeholder-slate-500"
+                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md mt-4 bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-rose-500"
                 placeholder="Enter a prompt..."
             />
             <button 
                 onClick={handleAnalyze} 
                 disabled={!image || isLoading} 
-                className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-sky-600 text-white p-2 rounded-md disabled:opacity-50 text-sm font-semibold btn-hover-scale"
+                className="w-full mt-2 bg-rose-500 text-white p-2 rounded-lg disabled:opacity-50 text-sm font-semibold hover:bg-rose-600 transition-colors shadow-md"
             >
                 {isLoading ? 'Analyzing...' : 'Analyze Image'}
             </button>
-            {isLoading && <div className="text-center mt-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-500 mx-auto"></div></div>}
-            {result && <div className="relative mt-4 p-3 bg-white/20 dark:bg-black/20 rounded-md whitespace-pre-wrap text-sm max-h-48 overflow-y-auto"><CopyButton text={result}/>{result}</div>}
+            {isLoading && <div className="text-center mt-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-rose-500 mx-auto"></div></div>}
+            {result && <div className="relative mt-4 p-3 bg-gray-100 dark:bg-slate-700 rounded-md whitespace-pre-wrap text-sm text-gray-900 dark:text-white max-h-48 overflow-y-auto"><CopyButton text={result}/>{result}</div>}
         </AiToolCard>
     )
 };
@@ -123,9 +123,9 @@ const VideoAnalyzer: React.FC = () => {
 
     return (
         <AiToolCard title="Video Analyzer" icon={<VideoIcon />}>
-            <div className="p-4 border-2 border-dashed border-white/30 rounded-lg text-center flex-grow flex flex-col justify-center">
+            <div className="p-4 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-center flex-grow flex flex-col justify-center bg-gray-50 dark:bg-slate-700/50">
                 <input type="file" accept="video/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                <button onClick={() => fileInputRef.current?.click()} className="text-cyan-600 font-semibold dark:text-cyan-400 hover:underline text-sm">
+                <button onClick={() => fileInputRef.current?.click()} className="text-rose-600 dark:text-rose-400 font-semibold hover:underline text-sm transition-colors">
                     {video ? `Selected: ${video.name}` : 'Select a Video'}
                 </button>
                 {firstFrame && <img src={`data:${firstFrame.mime};base64,${firstFrame.b64}`} alt="video first frame" className="mt-4 max-h-24 mx-auto rounded-md" />}
@@ -134,18 +134,18 @@ const VideoAnalyzer: React.FC = () => {
                 value={prompt} 
                 onChange={e => setPrompt(e.target.value)} 
                 rows={2} 
-                className="w-full p-2 border border-white/30 rounded-md mt-4 bg-white/20 dark:bg-black/20 text-sm placeholder-slate-500"
+                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md mt-4 bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-rose-500"
                 placeholder="Enter a prompt for the first frame..."
             />
             <button 
                 onClick={handleAnalyze} 
                 disabled={!firstFrame || isLoading} 
-                className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-sky-600 text-white p-2 rounded-md disabled:opacity-50 text-sm font-semibold btn-hover-scale"
+                className="w-full mt-2 bg-rose-500 text-white p-2 rounded-lg disabled:opacity-50 text-sm font-semibold hover:bg-rose-600 transition-colors shadow-md"
             >
                 {isLoading ? 'Analyzing...' : 'Analyze First Frame'}
             </button>
-             {isLoading && <div className="text-center mt-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-500 mx-auto"></div></div>}
-            {result && <div className="relative mt-4 p-3 bg-white/20 dark:bg-black/20 rounded-md whitespace-pre-wrap text-sm max-h-48 overflow-y-auto"><CopyButton text={result}/>{result}</div>}
+             {isLoading && <div className="text-center mt-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-rose-500 mx-auto"></div></div>}
+            {result && <div className="relative mt-4 p-3 bg-gray-100 dark:bg-slate-700 rounded-md whitespace-pre-wrap text-sm text-gray-900 dark:text-white max-h-48 overflow-y-auto"><CopyButton text={result}/>{result}</div>}
         </AiToolCard>
     );
 };
@@ -181,9 +181,9 @@ const AudioTranscription: React.FC = () => {
 
     return (
         <AiToolCard title="Audio Transcription" icon={<AudioIcon />}>
-            <div className="p-4 border-2 border-dashed border-white/30 rounded-lg text-center flex-grow flex flex-col justify-center">
+            <div className="p-4 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-center flex-grow flex flex-col justify-center bg-gray-50 dark:bg-slate-700/50">
                 <input type="file" accept="audio/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                <button onClick={() => fileInputRef.current?.click()} className="text-cyan-600 font-semibold dark:text-cyan-400 hover:underline text-sm">
+                <button onClick={() => fileInputRef.current?.click()} className="text-rose-600 dark:text-rose-400 font-semibold hover:underline text-sm transition-colors">
                     {audio ? `Selected: ${audio.name}` : 'Select an Audio File'}
                 </button>
                 {audio && <audio src={audio.url} controls className="mt-4 w-full" />}
@@ -191,12 +191,12 @@ const AudioTranscription: React.FC = () => {
             <button 
                 onClick={handleTranscribe} 
                 disabled={!audio || isLoading} 
-                className="w-full mt-4 bg-gradient-to-r from-cyan-600 to-sky-600 text-white p-2 rounded-md disabled:opacity-50 text-sm font-semibold btn-hover-scale"
+                className="w-full mt-4 bg-rose-500 text-white p-2 rounded-lg disabled:opacity-50 text-sm font-semibold hover:bg-rose-600 transition-colors shadow-md"
             >
                 {isLoading ? 'Transcribing...' : 'Transcribe Audio'}
             </button>
-            {isLoading && <div className="text-center mt-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-500 mx-auto"></div></div>}
-            {result && <div className="relative mt-4 p-3 bg-white/20 dark:bg-black/20 rounded-md whitespace-pre-wrap text-sm max-h-48 overflow-y-auto"><CopyButton text={result}/>{result}</div>}
+            {isLoading && <div className="text-center mt-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-rose-500 mx-auto"></div></div>}
+            {result && <div className="relative mt-4 p-3 bg-gray-100 dark:bg-slate-700 rounded-md whitespace-pre-wrap text-sm text-gray-900 dark:text-white max-h-48 overflow-y-auto"><CopyButton text={result}/>{result}</div>}
         </AiToolCard>
     );
 };
@@ -207,15 +207,15 @@ const ToolLinkCard: React.FC<{ name: string; description: string; url: string; i
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="block p-4 bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl rounded-lg border border-white/20 hover:border-cyan-500/50 dark:hover:border-cyan-400/50 hover:shadow-lg transition-all group text-shadow-strong"
+        className="block p-4 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-gray-200 dark:border-slate-700 hover:border-rose-300 dark:hover:border-rose-600 hover:shadow-xl transition-all group transform hover:scale-[1.02]"
     >
         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-white dark:bg-slate-800 rounded-lg shadow-sm p-1.5 overflow-hidden">
+            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-gray-100 dark:bg-slate-700 rounded-lg shadow-sm p-1.5 overflow-hidden">
                 {icon}
             </div>
-            <h4 className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400">{name}</h4>
+            <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">{name}</h4>
         </div>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{description}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{description}</p>
     </a>
 );
 
@@ -397,14 +397,14 @@ const workflowTools = [
 
 export const AiTools: React.FC = () => {
     return (
-        <div className="text-shadow-strong">
+        <div>
             <div className="mb-6">
-                <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">AI Tools</h2>
-                <p className="text-slate-600 mt-1 dark:text-slate-300">Leverage powerful AI models for various tasks and discover tools to enhance your workflow.</p>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">AI Tools</h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">Leverage powerful AI models for various tasks and discover tools to enhance your workflow.</p>
             </div>
             
-            <div className="bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl p-6 rounded-lg border border-white/20 shadow-lg">
-                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">AI Media Analyzer</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md border border-gray-200 dark:border-slate-700 p-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">AI Media Analyzer</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <ImageAnalyzer />
                     <VideoAnalyzer />
@@ -413,8 +413,8 @@ export const AiTools: React.FC = () => {
             </div>
 
             <div className="mt-8">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">Workflow Enhancement Tools</h3>
-                <p className="text-slate-600 dark:text-slate-400 mt-1 mb-6">A curated list of external AI tools and applications to help streamline your workflow.</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Workflow Enhancement Tools</h3>
+                <p className="text-gray-600 dark:text-gray-400 mt-1 mb-6">A curated list of external AI tools and applications to help streamline your workflow.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {workflowTools.map(tool => (
                         <ToolLinkCard key={tool.name} {...tool} />

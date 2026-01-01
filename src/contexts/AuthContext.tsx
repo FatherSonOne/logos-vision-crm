@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, type AuthUser } from '../services/authService';
-import type { Session } from '@supabase/supabase-js';
+import type { Session, Provider } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithOAuth: (provider: Provider) => Promise<{ error: any }>;
   signUp: (email: string, password: string, metadata?: { name?: string; role?: string }) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateProfile: (metadata: { name?: string; role?: string }) => Promise<{ error: any }>;
@@ -111,6 +112,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return { error };
   };
 
+  const signInWithOAuth = async (provider: Provider) => {
+    // In development mode, simulate OAuth sign-in
+    const isDevelopmentMode = import.meta.env.VITE_DEV_MODE === 'true';
+
+    if (isDevelopmentMode) {
+      console.log(`🔧 Development Mode: ${provider} OAuth bypassed`);
+      setUser({
+        id: 'dev-user-001',
+        email: 'demo@logosvision.com',
+        name: 'Demo User',
+        avatar_url: undefined,
+        role: 'admin'
+      });
+      return { error: null };
+    }
+
+    const { error } = await authService.signInWithOAuth(provider);
+    return { error };
+  };
+
   const signUp = async (email: string, password: string, metadata?: { name?: string; role?: string }) => {
     const { user: authUser, error } = await authService.signUp(email, password, metadata);
 
@@ -142,6 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     session,
     loading,
     signIn,
+    signInWithOAuth,
     signUp,
     signOut,
     updateProfile

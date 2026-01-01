@@ -13,10 +13,10 @@ interface EmailCampaignsProps {
 }
 
 const StatCard: React.FC<{ label: string; value: string | number; subtext?: string; }> = ({ label, value, subtext }) => (
-  <div className="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-lg">
-    <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
-    <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">{value}</p>
-    {subtext && <p className="text-xs text-slate-400 dark:text-slate-500">{subtext}</p>}
+  <div className="bg-gray-100 dark:bg-slate-700 p-4 rounded-lg shadow-sm">
+    <p className="text-sm text-gray-600 dark:text-gray-400">{label}</p>
+    <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
+    {subtext && <p className="text-xs text-gray-500 dark:text-gray-400">{subtext}</p>}
   </div>
 );
 
@@ -25,28 +25,28 @@ const CampaignCard: React.FC<{ campaign: EmailCampaign, onView: () => void }> = 
     const clickRate = campaign.stats.opened > 0 ? (campaign.stats.clicked / campaign.stats.opened) * 100 : 0;
 
     const statusStyles = {
-        Sent: { bg: 'bg-blue-100 dark:bg-blue-900/50', text: 'text-blue-800 dark:text-blue-300' },
-        Scheduled: { bg: 'bg-amber-100 dark:bg-amber-900/50', text: 'text-amber-800 dark:text-amber-300' },
-        Draft: { bg: 'bg-slate-200 dark:bg-slate-700', text: 'text-slate-800 dark:text-slate-300' },
+        Sent: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-800 dark:text-blue-400' },
+        Scheduled: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-800 dark:text-amber-400' },
+        Draft: { bg: 'bg-gray-200 dark:bg-slate-700', text: 'text-gray-800 dark:text-gray-300' },
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-lg border border-slate-200 dark:border-slate-700 flex flex-col group">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md border border-gray-200 dark:border-slate-700 p-5 hover:shadow-xl hover:border-rose-300 dark:hover:border-rose-600 transition-all transform hover:scale-[1.02] flex flex-col group">
             <div className="flex justify-between items-start">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{campaign.name}</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">{campaign.name}</h3>
                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusStyles[campaign.status].bg} ${statusStyles[campaign.status].text}`}>
                     {campaign.status}
                 </span>
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 my-2 h-10">{campaign.subject}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 my-2 h-10">{campaign.subject}</p>
             
             <div className="grid grid-cols-2 gap-4 text-center my-4">
                 <Stat label="Open Rate" value={`${openRate.toFixed(1)}%`} />
                 <Stat label="Click Rate" value={`${clickRate.toFixed(1)}%`} />
             </div>
 
-            <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-700">
-                <button onClick={onView} className="w-full text-center bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-md text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+            <div className="mt-auto pt-4 border-t border-gray-200 dark:border-slate-700">
+                <button onClick={onView} className="w-full text-center bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors">
                     View Analytics
                 </button>
             </div>
@@ -102,12 +102,12 @@ export const EmailCampaigns: React.FC<EmailCampaignsProps> = ({ campaigns, clien
     <div>
       <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Email Campaigns</h2>
-          <p className="text-slate-500 mt-1 dark:text-slate-400">Create, send, and track your email marketing campaigns.</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Email Campaigns</h2>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Create, send, and track your email marketing campaigns.</p>
         </div>
         <button
           onClick={() => setIsCreateOpen(true)}
-          className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700 transition-colors"
+          className="flex items-center bg-rose-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-rose-600 transition-colors shadow-md"
         >
           <PlusIcon />
           Create New Campaign
@@ -115,15 +115,17 @@ export const EmailCampaigns: React.FC<EmailCampaignsProps> = ({ campaigns, clien
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {campaigns.map((campaign) => (
-            <CampaignCard key={campaign.id} campaign={campaign} onView={() => setViewingCampaign(campaign)} />
+        {campaigns.map((campaign, index) => (
+            <div key={campaign.id} className="animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${index * 50}ms` }}>
+                <CampaignCard campaign={campaign} onView={() => setViewingCampaign(campaign)} />
+            </div>
         ))}
       </div>
       
       {campaigns.length === 0 && (
-          <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">
-            <p className="text-slate-500 dark:text-slate-400 font-semibold">No campaigns yet.</p>
-            <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Click "Create New Campaign" to get started.</p>
+          <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-700 shadow-sm">
+            <p className="text-gray-600 dark:text-gray-400 font-semibold">No campaigns yet.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">Click "Create New Campaign" to get started.</p>
           </div>
       )}
 

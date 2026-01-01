@@ -7,15 +7,111 @@ import { Skeleton, CardSkeleton as StatCardSkeleton, ListSkeleton } from './ui/S
 import { useDonationSummary } from '../hooks/useDonationSummary';
 
 // Design System Components
-import { StatCard, Card, CardHeader, CardTitle, CardContent, Badge } from './ui';
-import { IconButton } from './ui/Button';
+import { StatCard, Card, CardTitle, CardContent, Badge } from './ui';
 
 // Phase 1 Dashboard Widgets
 import { DonorRetentionWidget } from './dashboard/DonorRetentionWidget';
 import { LapsedDonorAlert } from './dashboard/LapsedDonorAlert';
 import { PledgeFulfillmentWidget } from './dashboard/PledgeFulfillmentWidget';
 import { ServiceImpactSummary } from './dashboard/ServiceImpactSummary';
+import { HouseholdStatsWidget } from './dashboard/HouseholdStatsWidget';
+import { DonorEngagementWidget } from './dashboard/DonorEngagementWidget';
 
+// Dashboard Role Types - Extended with specialized roles
+export type DashboardRole = 'fundraising' | 'programs' | 'leadership' | 'grants' | 'volunteers' | 'custom';
+
+export interface DashboardConfig {
+  role: DashboardRole;
+  expandedWidgets: string[];
+  collapsedWidgets: string[];
+  hiddenWidgets: string[];
+}
+
+const DEFAULT_CONFIG: DashboardConfig = {
+  role: 'leadership',
+  expandedWidgets: [],
+  collapsedWidgets: [],
+  hiddenWidgets: [],
+};
+
+// Widget metadata for display and role filtering
+interface WidgetMeta {
+  id: string;
+  title: string;
+  roles: DashboardRole[];
+  defaultCollapsed?: boolean;
+}
+
+const WIDGET_DEFINITIONS: WidgetMeta[] = [
+  { id: 'donations', title: 'Donations This Year', roles: ['fundraising', 'leadership', 'grants'] },
+  { id: 'retention', title: 'Donor Retention', roles: ['fundraising', 'leadership'] },
+  { id: 'lapsed', title: 'Lapsed Donors', roles: ['fundraising'] },
+  { id: 'pledges', title: 'Pledge Fulfillment', roles: ['fundraising', 'leadership', 'grants'] },
+  { id: 'engagement', title: 'Donor Engagement', roles: ['fundraising'] },
+  { id: 'service-impact', title: 'Service Impact', roles: ['programs', 'leadership', 'grants'] },
+  { id: 'household', title: 'Household Stats', roles: ['fundraising', 'leadership'] },
+  { id: 'projects-deadline', title: 'Projects Nearing Deadline', roles: ['programs', 'leadership', 'grants'] },
+  { id: 'activities', title: 'Recent Activities', roles: ['programs', 'leadership', 'volunteers'] },
+  { id: 'upcoming', title: 'Upcoming For You', roles: ['fundraising', 'programs', 'leadership', 'grants', 'volunteers'] },
+];
+
+// Legacy compatibility - convert to lookup
+const WIDGET_ROLES: Record<string, DashboardRole[]> = Object.fromEntries(
+  WIDGET_DEFINITIONS.map(w => [w.id, w.roles])
+);
+
+// Collapsible Widget Wrapper Component
+const CollapsibleWidget: React.FC<{
+  id: string;
+  title: string;
+  isCollapsed: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}> = ({ id: _id, title, isCollapsed, onToggle, children }) => {
+  return (
+    <div
+      className="rounded-xl overflow-hidden transition-all duration-300"
+      style={{
+        backgroundColor: 'var(--cmf-surface)',
+        border: '1px solid var(--cmf-border)',
+      }}
+    >
+      {/* Collapsible Header */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-4 py-3 hover:opacity-80 transition-opacity"
+        style={{ backgroundColor: isCollapsed ? 'var(--cmf-surface-2)' : 'transparent' }}
+      >
+        <span
+          className="text-sm font-semibold uppercase tracking-wide"
+          style={{ color: 'var(--cmf-text-secondary)' }}
+        >
+          {title}
+        </span>
+        <svg
+          className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? '' : 'rotate-180'}`}
+          style={{ color: 'var(--cmf-text-faint)' }}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Collapsible Content */}
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100'
+        }`}
+      >
+        <div className="p-4 pt-0">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface DashboardProps {
   projects: Project[];
@@ -196,9 +292,178 @@ const DashboardSkeleton: React.FC = () => (
 );
 
 
+// Dashboard Role Selector Component - With expanded role options
+const DashboardRoleSelector: React.FC<{
+  currentRole: DashboardRole;
+  onRoleChange: (role: DashboardRole) => void;
+}> = ({ currentRole, onRoleChange }) => {
+  const [showMore, setShowMore] = useState(false);
+
+  const primaryRoles: { id: DashboardRole; label: string; description: string }[] = [
+    { id: 'leadership', label: 'Leadership', description: 'Executive overview' },
+    { id: 'fundraising', label: 'Fundraising', description: 'Donor-focused' },
+    { id: 'programs', label: 'Programs', description: 'Service delivery' },
+  ];
+
+  const moreRoles: { id: DashboardRole; label: string; description: string }[] = [
+    { id: 'grants', label: 'Grants', description: 'Grant writer focus' },
+    { id: 'volunteers', label: 'Volunteers', description: 'Volunteer coordination' },
+    { id: 'custom', label: 'Custom', description: 'Show all widgets' },
+  ];
+
+  const allRoles = [...primaryRoles, ...moreRoles];
+  const currentRoleData = allRoles.find(r => r.id === currentRole);
+  const isMoreRole = moreRoles.some(r => r.id === currentRole);
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--cmf-surface-2)' }}>
+        {primaryRoles.map((role) => (
+          <button
+            key={role.id}
+            onClick={() => onRoleChange(role.id)}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+              currentRole === role.id ? 'shadow-sm' : 'hover:opacity-80'
+            }`}
+            style={{
+              backgroundColor: currentRole === role.id ? 'var(--cmf-surface)' : 'transparent',
+              color: currentRole === role.id ? 'var(--cmf-accent)' : 'var(--cmf-text-secondary)',
+            }}
+            title={role.description}
+          >
+            {role.label}
+          </button>
+        ))}
+
+        {/* More dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowMore(!showMore)}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1 ${
+              isMoreRole ? 'shadow-sm' : 'hover:opacity-80'
+            }`}
+            style={{
+              backgroundColor: isMoreRole ? 'var(--cmf-surface)' : 'transparent',
+              color: isMoreRole ? 'var(--cmf-accent)' : 'var(--cmf-text-secondary)',
+            }}
+          >
+            {isMoreRole ? currentRoleData?.label : 'More'}
+            <svg className={`w-3 h-3 transition-transform ${showMore ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showMore && (
+            <div
+              className="absolute right-0 top-full mt-1 py-1 rounded-lg shadow-lg z-50 min-w-[140px]"
+              style={{
+                backgroundColor: 'var(--cmf-surface)',
+                border: '1px solid var(--cmf-border)',
+              }}
+            >
+              {moreRoles.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => {
+                    onRoleChange(role.id);
+                    setShowMore(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm hover:opacity-80 transition-opacity flex flex-col"
+                  style={{
+                    color: currentRole === role.id ? 'var(--cmf-accent)' : 'var(--cmf-text)',
+                    backgroundColor: currentRole === role.id ? 'var(--cmf-accent-muted)' : 'transparent',
+                  }}
+                >
+                  <span className="font-medium">{role.label}</span>
+                  <span className="text-xs" style={{ color: 'var(--cmf-text-faint)' }}>{role.description}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, activities, teamMembers, currentUserId, onSelectProject, setCurrentPage, onScheduleEvent }) => {
   const [isLoading, setIsLoading] = useState(true);
+
+  // Dashboard configuration state with localStorage persistence
+  const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig>(() => {
+    const saved = localStorage.getItem('dashboardConfig');
+    return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
+  });
+
+  // Save config to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('dashboardConfig', JSON.stringify(dashboardConfig));
+  }, [dashboardConfig]);
+
+  const handleRoleChange = (role: DashboardRole) => {
+    setDashboardConfig(prev => ({ ...prev, role }));
+  };
+
+  // Check if a widget should be visible based on role
+  const isWidgetVisible = (widgetId: string): boolean => {
+    if (dashboardConfig.hiddenWidgets.includes(widgetId)) return false;
+    if (dashboardConfig.role === 'custom') return true;
+    const allowedRoles = WIDGET_ROLES[widgetId] || [];
+    return allowedRoles.includes(dashboardConfig.role);
+  };
+
+  // Check if a widget is collapsed
+  const isWidgetCollapsed = (widgetId: string): boolean => {
+    return dashboardConfig.collapsedWidgets.includes(widgetId);
+  };
+
+  // Toggle widget collapse state
+  const toggleWidgetCollapse = (widgetId: string) => {
+    setDashboardConfig(prev => ({
+      ...prev,
+      collapsedWidgets: prev.collapsedWidgets.includes(widgetId)
+        ? prev.collapsedWidgets.filter(id => id !== widgetId)
+        : [...prev.collapsedWidgets, widgetId],
+    }));
+  };
+
+  // Get role description for subtitle
+  const getRoleDescription = (role: DashboardRole): string => {
+    const descriptions: Record<DashboardRole, string> = {
+      leadership: 'Executive overview of your organization',
+      fundraising: 'Donor and fundraising metrics',
+      programs: 'Service delivery and impact',
+      grants: 'Grant reporting and compliance data',
+      volunteers: 'Volunteer coordination and activities',
+      custom: 'Your customized view showing all widgets',
+    };
+    return descriptions[role];
+  };
+
+  // Computed stats - FIXED: Proper calculations
+  const organizations = useMemo(() =>
+    clients.filter(c => c.organization && c.organization.trim() !== ''),
+    [clients]
+  );
+
+  const contactsCount = clients.length;
+  const organizationsCount = new Set(organizations.map(c => c.organization)).size;
+
+  const pipelineValue = useMemo(() => {
+    const activeProjectBudgets = projects
+      .filter(p => p.status === ProjectStatus.InProgress || p.status === ProjectStatus.Planning)
+      .reduce((sum, p) => sum + (p.budget || 0), 0);
+    return activeProjectBudgets;
+  }, [projects]);
+
+  const formatCurrency = (value: number): string => {
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+    return `$${value}`;
+  };
+
   const activeProjects = projects.filter(p => p.status === ProjectStatus.InProgress).length;
+  const totalProjects = projects.length;
   const recentActivities = activities.slice(0, 5);
   const currentUser = useMemo(() => teamMembers.find(tm => tm.id === currentUserId), [teamMembers, currentUserId]);
   const donationSummary = useDonationSummary();
@@ -249,26 +514,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, 
 
   return (
     <div className="space-y-8">
-      <DailyBriefing 
-        userName={currentUser?.name || 'User'}
-        projects={projects}
-        cases={cases}
-        activities={activities}
-        currentUserId={currentUserId}
-      />
+      {/* Dashboard Header with Role Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--cmf-text)' }}>Dashboard</h1>
+          <p className="text-sm" style={{ color: 'var(--cmf-text-secondary)' }}>
+            {getRoleDescription(dashboardConfig.role)}
+          </p>
+        </div>
+        <DashboardRoleSelector currentRole={dashboardConfig.role} onRoleChange={handleRoleChange} />
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div id="dashboard-briefing">
+        <DailyBriefing
+          userName={currentUser?.name || 'User'}
+          projects={projects}
+          cases={cases}
+          activities={activities}
+          currentUserId={currentUserId}
+        />
+      </div>
+
+      <div id="dashboard-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Organizations"
-          value={clients.length}
-          subtitle="0 active"
+          value={organizationsCount}
+          subtitle={`${contactsCount} total contacts`}
           icon={<BuildingIcon />}
           gradient="from-blue-500 to-cyan-600"
-          onClick={() => setCurrentPage('organizations')}
+          onClick={() => setCurrentPage('contacts')}
         />
         <StatCard
           title="Total Contacts"
-          value={clients.length}
+          value={contactsCount}
           subtitle="All contacts"
           icon={<UsersIcon />}
           gradient="from-green-500 to-emerald-600"
@@ -276,8 +554,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, 
         />
         <StatCard
           title="Pipeline Value"
-          value="$0K"
-          subtitle="Total project value"
+          value={formatCurrency(pipelineValue)}
+          subtitle={`${activeProjects} active projects`}
           icon={<DollarSignIcon />}
           gradient="from-purple-500 to-pink-600"
           onClick={() => setCurrentPage('projects')}
@@ -286,124 +564,185 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, 
           id="stat-card-active-projects"
           title="Active Projects"
           value={activeProjects}
-          subtitle="0 total projects"
+          subtitle={`${totalProjects} total projects`}
           icon={<TrendingUpIcon />}
           gradient="from-orange-500 to-red-600"
           onClick={() => setCurrentPage('projects')}
         />
       </div>
 
-      {/* Key Performance Indicators Section */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">Key Performance Indicators</h2>
+      {/* Key Performance Indicators Section - Role-based visibility with collapsible widgets */}
+      <div id="dashboard-kpis" className="mt-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--cmf-text)' }}>Key Performance Indicators</h2>
+          <p className="text-sm" style={{ color: 'var(--cmf-text-faint)' }}>
+            {dashboardConfig.role === 'custom' ? 'All widgets' : `${dashboardConfig.role} view`}
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Donations Summary */}
-          <Card variant="elevated" className="flex flex-col">
-            <CardHeader
-              action={
-                <Badge variant="info" size="sm">
-                  {donationSummary.thisYearCount} gifts
-                </Badge>
-              }
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Donations Summary - Fundraising, Leadership & Grants */}
+          {isWidgetVisible('donations') && (
+            <CollapsibleWidget
+              id="donations"
+              title="Donations This Year"
+              isCollapsed={isWidgetCollapsed('donations')}
+              onToggle={() => toggleWidgetCollapse('donations')}
             >
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-                Donations This Year
-              </h3>
-              {donationSummary.loading ? (
-                <div className="mt-2 h-7 w-24 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
-              ) : (
-                <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
-                  ${donationSummary.thisYearTotal.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  })}
-                </p>
-              )}
-            </CardHeader>
-
-            <CardContent className="text-sm text-slate-600 dark:text-slate-400">
-              {donationSummary.loading ? (
-                <div className="h-4 w-40 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
-              ) : (
-                <>
-                  <p>
-                    Avg gift this year:{' '}
-                    <span className="font-semibold">
-                      ${donationSummary.averageGiftThisYear.toFixed(2)}
-                    </span>
-                  </p>
-                  <p className="mt-1">
-                    Last year total:{' '}
-                    <span className="font-semibold">
-                      ${donationSummary.lastYearTotal.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  {donationSummary.loading ? (
+                    <div className="h-8 w-28 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+                  ) : (
+                    <p className="text-3xl font-bold" style={{ color: 'var(--cmf-text)' }}>
+                      ${donationSummary.thisYearTotal.toLocaleString(undefined, {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
                       })}
-                    </span>
-                  </p>
-                </>
-              )}
-            </CardContent>
+                    </p>
+                  )}
+                  <Badge variant="info" size="sm">{donationSummary.thisYearCount} gifts</Badge>
+                </div>
+                {!donationSummary.loading && (
+                  <div className="flex gap-4 text-sm" style={{ color: 'var(--cmf-text-secondary)' }}>
+                    <span>Avg: <strong>${donationSummary.averageGiftThisYear.toFixed(0)}</strong></span>
+                    <span>Last yr: <strong>${donationSummary.lastYearTotal.toLocaleString()}</strong></span>
+                  </div>
+                )}
+              </div>
+            </CollapsibleWidget>
+          )}
 
-            {donationSummary.error && (
-              <p className="mt-3 text-xs text-red-600 dark:text-red-400">
-                {donationSummary.error}
-              </p>
-            )}
-          </Card>
+          {/* Donor Retention - Fundraising & Leadership */}
+          {isWidgetVisible('retention') && (
+            <CollapsibleWidget
+              id="retention"
+              title="Donor Retention"
+              isCollapsed={isWidgetCollapsed('retention')}
+              onToggle={() => toggleWidgetCollapse('retention')}
+            >
+              <DonorRetentionWidget />
+            </CollapsibleWidget>
+          )}
 
-          <DonorRetentionWidget />
-          <LapsedDonorAlert />
-          <PledgeFulfillmentWidget />
-          <ServiceImpactSummary />
+          {/* Lapsed Donors - Fundraising only */}
+          {isWidgetVisible('lapsed') && (
+            <CollapsibleWidget
+              id="lapsed"
+              title="Lapsed Donors"
+              isCollapsed={isWidgetCollapsed('lapsed')}
+              onToggle={() => toggleWidgetCollapse('lapsed')}
+            >
+              <LapsedDonorAlert />
+            </CollapsibleWidget>
+          )}
+
+          {/* Pledge Fulfillment - Fundraising, Leadership & Grants */}
+          {isWidgetVisible('pledges') && (
+            <CollapsibleWidget
+              id="pledges"
+              title="Pledge Fulfillment"
+              isCollapsed={isWidgetCollapsed('pledges')}
+              onToggle={() => toggleWidgetCollapse('pledges')}
+            >
+              <PledgeFulfillmentWidget />
+            </CollapsibleWidget>
+          )}
+
+          {/* Donor Engagement - Fundraising only */}
+          {isWidgetVisible('engagement') && (
+            <CollapsibleWidget
+              id="engagement"
+              title="Donor Engagement"
+              isCollapsed={isWidgetCollapsed('engagement')}
+              onToggle={() => toggleWidgetCollapse('engagement')}
+            >
+              <DonorEngagementWidget />
+            </CollapsibleWidget>
+          )}
+
+          {/* Service Impact - Programs, Leadership & Grants */}
+          {isWidgetVisible('service-impact') && (
+            <CollapsibleWidget
+              id="service-impact"
+              title="Service Impact"
+              isCollapsed={isWidgetCollapsed('service-impact')}
+              onToggle={() => toggleWidgetCollapse('service-impact')}
+            >
+              <ServiceImpactSummary />
+            </CollapsibleWidget>
+          )}
+
+          {/* Household Stats - Fundraising & Leadership */}
+          {isWidgetVisible('household') && (
+            <CollapsibleWidget
+              id="household"
+              title="Household Giving"
+              isCollapsed={isWidgetCollapsed('household')}
+              onToggle={() => toggleWidgetCollapse('household')}
+            >
+              <HouseholdStatsWidget />
+            </CollapsibleWidget>
+          )}
         </div>
       </div>
 
+      {/* Activity Section - Role-based visibility */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <ProjectsNearingDeadline projects={projects} onSelectProject={onSelectProject} />
-          <Card>
-            <CardTitle>Recent Activities</CardTitle>
-            <CardContent className="mt-4">
+          {/* Projects Nearing Deadline - Programs & Leadership */}
+          {isWidgetVisible('projects-deadline') && (
+            <ProjectsNearingDeadline projects={projects} onSelectProject={onSelectProject} />
+          )}
+
+          {/* Recent Activities - Programs & Leadership */}
+          {isWidgetVisible('activities') && (
+            <Card>
+              <CardTitle>Recent Activities</CardTitle>
+              <CardContent className="mt-4">
+                <ul className="space-y-4">
+                  {recentActivities.map(activity => (
+                    <li key={activity.id} className="flex items-center gap-4">
+                      <ActivityIcon type={activity.type} />
+                      <div className="flex-1">
+                        <p className="font-semibold text-slate-800 dark:text-slate-200">{activity.title}</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">{getClientName(activity.clientId)}</p>
+                      </div>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{formatTimeAgo(activity.activityDate)}</p>
+                    </li>
+                  ))}
+                  {recentActivities.length === 0 && (
+                    <p className="text-slate-600 dark:text-slate-400">No recent activities.</p>
+                  )}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Upcoming For You - All roles */}
+        {isWidgetVisible('upcoming') && (
+          <Card className="flex flex-col">
+            <CardTitle>Upcoming For You</CardTitle>
+            <CardContent className="mt-4 flex-grow">
               <ul className="space-y-4">
-                {recentActivities.map(activity => (
-                  <li key={activity.id} className="flex items-center gap-4">
-                    <ActivityIcon type={activity.type} />
+                {upcomingItems.length > 0 ? upcomingItems.map(item => (
+                  <li key={`${item.type}-${item.id}`} className="flex items-center gap-3 group cursor-pointer" onClick={item.onClick}>
+                    <div className="flex-shrink-0">{item.icon}</div>
                     <div className="flex-1">
-                      <p className="font-semibold text-slate-800 dark:text-slate-200">{activity.title}</p>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">{getClientName(activity.clientId)}</p>
+                      <p className="font-semibold text-sm text-slate-800 dark:text-slate-200 group-hover:text-rose-600 dark:group-hover:text-rose-400">{item.title}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{item.date.toLocaleDateString()} - {item.context}</p>
                     </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">{formatTimeAgo(activity.activityDate)}</p>
                   </li>
-                ))}
-                {recentActivities.length === 0 && (
-                  <p className="text-slate-600 dark:text-slate-400">No recent activities.</p>
+                )) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">Nothing upcoming on your schedule.</p>
+                  </div>
                 )}
               </ul>
             </CardContent>
           </Card>
-        </div>
-        <Card className="flex flex-col">
-          <CardTitle>Upcoming For You</CardTitle>
-          <CardContent className="mt-4 flex-grow">
-            <ul className="space-y-4">
-              {upcomingItems.length > 0 ? upcomingItems.map(item => (
-                <li key={`${item.type}-${item.id}`} className="flex items-center gap-3 group cursor-pointer" onClick={item.onClick}>
-                  <div className="flex-shrink-0">{item.icon}</div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm text-slate-800 dark:text-slate-200 group-hover:text-rose-600 dark:group-hover:text-rose-400">{item.title}</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">{item.date.toLocaleDateString()} - {item.context}</p>
-                  </div>
-                </li>
-              )) : (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Nothing upcoming on your schedule.</p>
-                </div>
-              )}
-            </ul>
-          </CardContent>
-        </Card>
+        )}
       </div>
     </div>
   );

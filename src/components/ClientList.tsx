@@ -3,6 +3,9 @@ import { Search, Filter, Users, Home, Award, AlertCircle, Plus, Mail, Phone, Cal
 import { supabase } from '../services/supabaseClient';
 import { Badge, DonorStageBadge, EngagementBadge } from './ui/Badge';
 import type { DonorStage, EngagementLevel } from './ui/Badge';
+import { ActivityDialog } from './ActivityDialog';
+import RecordDonationDialog from './RecordDonationDialog';
+import type { Activity, Client as ClientType, Project } from '../types';
 
 interface Client {
   id: string;
@@ -34,6 +37,12 @@ export const ClientList: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; client: Client } | null>(null);
 
+  // Dialog states
+  const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+  const [donationDialogOpen, setDonationDialogOpen] = useState(false);
+  const [selectedClientForAction, setSelectedClientForAction] = useState<Client | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     engagement: [],
@@ -43,12 +52,27 @@ export const ClientList: React.FC = () => {
 
   useEffect(() => {
     fetchClients();
+    fetchProjects();
 
     // Close context menu on click outside
     const handleClick = () => setContextMenu(null);
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
   }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('name');
+      if (!error && data) {
+        setProjects(data);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
 
   const fetchClients = async () => {
     try {
@@ -121,22 +145,61 @@ export const ClientList: React.FC = () => {
   const handleQuickAction = (action: string, client: Client) => {
     console.log(`Quick action: ${action} for ${client.name}`);
     setContextMenu(null);
+    setSelectedClientForAction(client);
 
-    // TODO: Implement actual actions
     switch (action) {
       case 'log-interaction':
-        // Open ActivityDialog
+        setActivityDialogOpen(true);
         break;
       case 'record-donation':
-        // Open donation form
+        setDonationDialogOpen(true);
         break;
       case 'send-email':
-        // Open email composer
+        // Open default email client with mailto link
+        if (client.email) {
+          window.location.href = `mailto:${client.email}`;
+        } else {
+          alert('No email address available for this contact.');
+        }
         break;
       case 'schedule-task':
-        // Open task form
+        // Open activity dialog with Meeting type pre-selected
+        setActivityDialogOpen(true);
         break;
     }
+  };
+
+  const handleActivitySave = async (activity: Omit<Activity, 'createdById'> & { id?: string }) => {
+    try {
+      const { error } = await supabase
+        .from('activities')
+        .insert({
+          type: activity.type,
+          title: activity.title,
+          client_id: selectedClientForAction?.id || activity.clientId,
+          project_id: activity.projectId,
+          activity_date: activity.activityDate,
+          activity_time: activity.activityTime,
+          status: activity.status,
+          notes: activity.notes,
+          shared_with_client: activity.sharedWithClient,
+        });
+
+      if (error) throw error;
+
+      setActivityDialogOpen(false);
+      setSelectedClientForAction(null);
+      // Refresh data could be added here if needed
+    } catch (error) {
+      console.error('Error saving activity:', error);
+      alert('Failed to save activity. Please try again.');
+    }
+  };
+
+  const handleDonationSuccess = () => {
+    setDonationDialogOpen(false);
+    setSelectedClientForAction(null);
+    fetchClients(); // Refresh to show updated donation data
   };
 
   const toggleFilter = (type: 'engagement' | 'donorStage', value: string) => {
@@ -438,6 +501,37 @@ export const ClientList: React.FC = () => {
             View Full Profile
           </button>
         </div>
+      )}
+
+      {/* Activity Dialog */}
+      <ActivityDialog
+        isOpen={activityDialogOpen}
+        onClose={() => {
+          setActivityDialogOpen(false);
+          setSelectedClientForAction(null);
+        }}
+        onSave={handleActivitySave}
+        clients={clients.map(c => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+          organization: c.organization,
+          notes: '',
+        })) as ClientType[]}
+        projects={projects}
+      />
+
+      {/* Record Donation Dialog */}
+      {donationDialogOpen && (
+        <RecordDonationDialog
+          contactId={selectedClientForAction?.id || null}
+          onClose={() => {
+            setDonationDialogOpen(false);
+            setSelectedClientForAction(null);
+          }}
+          onSuccess={handleDonationSuccess}
+        />
       )}
     </div>
   );

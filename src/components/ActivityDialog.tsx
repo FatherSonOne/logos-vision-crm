@@ -3,6 +3,9 @@ import type { Activity, Client, Project } from '../types';
 import { ActivityType, ActivityStatus } from '../types';
 import { Modal } from './Modal';
 import { AiEnhancedTextarea } from './AiEnhancedTextarea';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Select, Checkbox } from './ui/Select';
 
 interface ActivityDialogProps {
   isOpen: boolean;
@@ -76,88 +79,111 @@ export const ActivityDialog: React.FC<ActivityDialogProps> = ({ isOpen, onClose,
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
-  const inputStyles = "w-full p-2 bg-slate-100 border border-slate-300 rounded-md focus:ring-teal-500 focus:border-teal-500 text-slate-900 placeholder-slate-400 dark:bg-slate-700/50 dark:border-slate-600 dark:text-white dark:placeholder-slate-400";
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={activityToEdit ? "Edit Activity" : "Log New Activity"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label htmlFor="type" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Activity Type *</label>
-                <select id="type" name="type" value={formData.type} onChange={(e) => handleSelectChange('type', e.target.value)} className={inputStyles}>
-                    {Object.values(ActivityType).map(type => <option key={type} value={type}>{type}</option>)}
-                </select>
-            </div>
-             <div>
-                <label htmlFor="status" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Status *</label>
-                <select id="status" name="status" value={formData.status} onChange={(e) => handleSelectChange('status', e.target.value)} className={inputStyles}>
-                    {Object.values(ActivityStatus).map(status => <option key={status} value={status}>{status}</option>)}
-                </select>
-            </div>
+            <Select
+                label="Activity Type *"
+                id="type"
+                name="type"
+                value={formData.type}
+                onChange={(e) => handleSelectChange('type', e.target.value)}
+                options={Object.values(ActivityType).map(type => ({ value: type, label: type }))}
+                fullWidth
+            />
+            <Select
+                label="Status *"
+                id="status"
+                name="status"
+                value={formData.status}
+                onChange={(e) => handleSelectChange('status', e.target.value)}
+                options={Object.values(ActivityStatus).map(status => ({ value: status, label: status }))}
+                fullWidth
+            />
         </div>
 
-        <div>
-            <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Title *</label>
-            <input type="text" id="title" name="title" value={formData.title} onChange={handleChange} required className={inputStyles} />
+        <Input
+            label="Title *"
+            id="title"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            required
+            fullWidth
+        />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+                label="Related Client"
+                id="clientId"
+                name="clientId"
+                value={formData.clientId || ''}
+                onChange={handleChange}
+                options={[
+                    { value: '', label: 'None' },
+                    ...clients.map(client => ({ value: client.id, label: client.name }))
+                ]}
+                fullWidth
+            />
+            <Select
+                label="Related Project"
+                id="projectId"
+                name="projectId"
+                value={formData.projectId || ''}
+                onChange={handleChange}
+                options={[
+                    { value: '', label: 'None' },
+                    ...projects.map(project => ({ value: project.id, label: project.name }))
+                ]}
+                fullWidth
+            />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label htmlFor="clientId" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Related Client</label>
-                <select id="clientId" name="clientId" value={formData.clientId || ''} onChange={handleChange} className={inputStyles}>
-                    <option value="">None</option>
-                    {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
-                </select>
-            </div>
-             <div>
-                <label htmlFor="projectId" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Related Project</label>
-                <select id="projectId" name="projectId" value={formData.projectId || ''} onChange={handleChange} className={inputStyles}>
-                    <option value="">None</option>
-                    {projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}
-                </select>
-            </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label htmlFor="activityDate" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Date</label>
-                <input type="date" id="activityDate" name="activityDate" value={formData.activityDate} onChange={handleChange} className={inputStyles} />
-            </div>
-            <div>
-                <label htmlFor="activityTime" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Time</label>
-                <input type="time" id="activityTime" name="activityTime" value={formData.activityTime || ''} onChange={handleChange} className={inputStyles} />
-            </div>
+            <Input
+                label="Date"
+                type="date"
+                id="activityDate"
+                name="activityDate"
+                value={formData.activityDate}
+                onChange={handleChange}
+                fullWidth
+            />
+            <Input
+                label="Time"
+                type="time"
+                id="activityTime"
+                name="activityTime"
+                value={formData.activityTime || ''}
+                onChange={handleChange}
+                fullWidth
+            />
         </div>
 
         <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Notes</label>
+            <label htmlFor="notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Notes</label>
             <AiEnhancedTextarea
                 id="notes"
                 name="notes"
                 value={formData.notes || ''}
                 onValueChange={(value) => handleTextareaChange('notes', value)}
                 rows={4}
-                className={inputStyles}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 dark:focus:border-rose-400"
             />
         </div>
 
-        <div className="flex items-center">
-            <input
-                id="sharedWithClient"
-                name="sharedWithClient"
-                type="checkbox"
-                checked={formData.sharedWithClient || false}
-                onChange={handleChange}
-                className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 dark:bg-slate-700 dark:border-slate-600"
-            />
-            <label htmlFor="sharedWithClient" className="ml-2 block text-sm text-slate-900 dark:text-slate-200">
-                Share this activity with the client portal
-            </label>
-        </div>
-        
+        <Checkbox
+            id="sharedWithClient"
+            name="sharedWithClient"
+            checked={formData.sharedWithClient || false}
+            onChange={handleChange}
+            label="Share this activity with the client portal"
+        />
+
         <div className="flex justify-end gap-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-600">Cancel</button>
-            <button type="submit" className="px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-md text-sm font-semibold hover:from-teal-700 hover:to-cyan-700">Save Activity</button>
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" variant="primary">Save Activity</Button>
         </div>
       </form>
     </Modal>

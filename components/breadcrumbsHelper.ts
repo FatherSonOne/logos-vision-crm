@@ -38,8 +38,8 @@ export const getBreadcrumbsForPage = (
       breadcrumbs.push({ label: 'Activities', page: 'activities' });
       break;
     
-    case 'cases':
     case 'case':
+    case 'cases':
       breadcrumbs.push({ label: 'Cases', page: 'cases' });
       break;
     

@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import { generateProjectPlan } from '../services/geminiService';
 import type { Client, AiProjectPlan } from '../types';
 import { SparklesIcon } from './icons';
+import { Button } from './ui/Button';
 
 interface ProjectPlannerModalProps {
   isOpen: boolean;
@@ -51,7 +52,7 @@ export const ProjectPlannerModal: React.FC<ProjectPlannerModalProps> = ({ isOpen
                     </label>
                     <textarea
                         rows={3}
-                        className="w-full p-2 bg-white/50 border border-white/30 rounded-md focus:ring-violet-500 focus:border-violet-500 dark:bg-black/30 dark:border-white/20"
+                        className="w-full p-2 bg-white/50 border border-white/30 rounded-md focus:ring-rose-500 focus:border-rose-500 dark:bg-black/30 dark:border-white/20"
                         placeholder="e.g., Organize a 5K charity run for the Animal Rescue Shelter to raise $10,000"
                         value={goal}
                         onChange={(e) => setGoal(e.target.value)}
@@ -64,19 +65,20 @@ export const ProjectPlannerModal: React.FC<ProjectPlannerModalProps> = ({ isOpen
                     <select
                         value={selectedClientId}
                         onChange={(e) => setSelectedClientId(e.target.value)}
-                        className="w-full p-2 bg-white/50 border border-white/30 rounded-md focus:ring-violet-500 focus:border-violet-500 dark:bg-black/30 dark:border-white/20"
+                        className="w-full p-2 bg-white/50 border border-white/30 rounded-md focus:ring-rose-500 focus:border-rose-500 dark:bg-black/30 dark:border-white/20"
                     >
                         {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
                     </select>
                 </div>
-                <button
+                <Button
                     onClick={handleGenerate}
                     disabled={isLoading}
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-4 py-2.5 rounded-md text-sm font-semibold hover:from-violet-700 hover:to-indigo-700 transition-colors disabled:opacity-50"
+                    variant="primary"
+                    className="w-full flex items-center justify-center gap-2"
                 >
                     <SparklesIcon />
                     {isLoading ? 'Generating Plan...' : 'Generate Plan'}
-                </button>
+                </Button>
 
                 {plan && (
                     <div className="mt-4 p-4 bg-white/50 dark:bg-black/20 rounded-lg border border-white/20 max-h-80 overflow-y-auto">
@@ -101,10 +103,10 @@ export const ProjectPlannerModal: React.FC<ProjectPlannerModalProps> = ({ isOpen
                     </div>
                 )}
                  <div className="flex justify-end gap-2 pt-4">
-                    <button type="button" onClick={handleClose} className="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-600">Cancel</button>
-                    <button type="button" onClick={handleCreateProject} disabled={!plan || !!plan.error} className="px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-md text-sm font-semibold hover:from-teal-700 hover:to-cyan-700 disabled:opacity-50">
+                    <Button variant="outline" onClick={handleClose}>Cancel</Button>
+                    <Button variant="primary" onClick={handleCreateProject} disabled={!plan || !!plan.error}>
                         Create Project
-                    </button>
+                    </Button>
                 </div>
             </div>
         </Modal>

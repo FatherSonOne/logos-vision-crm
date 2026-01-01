@@ -1,6 +1,6 @@
 import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
 import React, { useState, useEffect, useRef } from 'react';
-import { encode, decode, decodeAudioData } from '../utils/audio';
+import { encode, decode, decodeAudioData } from '../src/utils/audio';
 import { MicOnIcon, MicOffIcon } from './icons';
 
 // --- Type definitions for audio processing ---

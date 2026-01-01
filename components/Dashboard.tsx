@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import type { Project, Client, Activity, Page, TeamMember, Case, EnrichedTask } from '../types';
 import { ProjectStatus, ActivityType, ActivityStatus, TaskStatus } from '../types';
-import { getDeadlineStatus } from '../utils/dateHelpers';
+import { getDeadlineStatus } from '../src/utils/dateHelpers';
 import { generateDailyBriefing } from '../src/services/geminiService';
 import { Skeleton, CardSkeleton as StatCardSkeleton, ListSkeleton } from '../src/components/ui/Skeleton';
 import { Sparkline } from '../src/components/charts/Sparkline';
@@ -112,7 +112,7 @@ const DailyBriefing: React.FC<{
         );
         const myTasks = allTasks.filter(t => t.teamMemberId === currentUserId);
         
-        const summary = await generateDailyBriefing(userName, myTasks, cases, activities, projects, currentUserId);
+        const summary = await generateDailyBriefing(userName, myTasks, cases, activities);
         setBriefing(summary);
         setIsLoading(false);
     }, [userName, projects, cases, activities, currentUserId]);

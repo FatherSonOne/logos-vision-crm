@@ -37,3 +37,4 @@ dist-ssr
 *.zip
 *-backup.*
 .env*.local
+nul

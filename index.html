@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logos Vision</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Logos Vision" />
+    <meta name="theme-color" content="#4f46e5" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -122,26 +130,30 @@
             --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
         }
         
-        /* Dark Mode Color Overrides */
+        /* Dark Mode Color Overrides - Nothing/Pulse Matte Black Style */
         html.dark {
-            /* Surface Colors (Dark Mode) */
-            --color-surface-base: #0f172a;
-            --color-surface-elevated: rgba(30, 41, 59, 0.9);
-            --color-surface-overlay: rgba(51, 65, 85, 0.7);
-            
-            /* Text Colors (Dark Mode) */
-            --color-text-primary: #f1f5f9;
-            --color-text-secondary: #e2e8f0;
-            --color-text-tertiary: #cbd5e1;
-            --color-text-muted: #94a3b8;
-            
-            /* Border Colors (Dark Mode) */
-            --color-border-primary: rgba(51, 65, 85, 0.8);
-            --color-border-secondary: rgba(71, 85, 105, 0.6);
-            
-            /* Background Gradients */
-            --gradient-primary: linear-gradient(135deg, #020617 0%, #082f49 50%, #1e1b4b 100%);
-            --gradient-card: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.4) 100%);
+            /* Surface Colors (Dark Mode) - Pure Matte Black */
+            --color-surface-base: #000000;
+            --color-surface-elevated: #0a0a0a;
+            --color-surface-overlay: #0f0f0f;
+
+            /* Text Colors (Dark Mode) - High Contrast */
+            --color-text-primary: #ffffff;
+            --color-text-secondary: #b3b3b3;
+            --color-text-tertiary: #808080;
+            --color-text-muted: #4d4d4d;
+
+            /* Border Colors (Dark Mode) - Subtle Matte */
+            --color-border-primary: #1a1a1a;
+            --color-border-secondary: #2a2a2a;
+
+            /* Background - Solid Matte Black (no gradient) */
+            --gradient-primary: #000000;
+            --gradient-card: #0a0a0a;
+
+            /* Light Blue Accent (Nothing Brand) */
+            --color-accent-nothing: #7dd3fc;
+            --color-accent-nothing-hover: #a5f3fc;
         }
 
         /* Aero background - Using new color system */
@@ -152,10 +164,9 @@
              background-attachment: fixed;
         }
         body.dark-mode {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 25%, #1e293b 50%, #082f49 75%, #0f172a 100%);
-            background-size: 400% 400%;
-            animation: animatedGradient 30s ease infinite;
-            background-attachment: fixed;
+            background: #000000 !important;
+            background-size: auto;
+            animation: none;
         }
         
         /* Improve text readability over transparent backgrounds */
@@ -176,9 +187,11 @@
         }
         
         html.dark .acrylic-card {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(148, 163, 184, 0.15);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
         }
         
         /* Acrylic sidebar */
@@ -190,8 +203,10 @@
         }
         
         html.dark .acrylic-sidebar {
-            background: rgba(15, 23, 42, 0.7);
-            border-right: 1px solid rgba(71, 85, 105, 0.3);
+            background: #000000;
+            border-right: 1px solid #1a1a1a;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
         }
         
         /* Acrylic header */
@@ -203,8 +218,10 @@
         }
         
         html.dark .acrylic-header {
-            background: rgba(15, 23, 42, 0.75);
-            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+            background: #000000;
+            border-bottom: 1px solid #1a1a1a;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
         }
         
         /* Acrylic modal/dialog */
@@ -217,9 +234,11 @@
         }
         
         html.dark .acrylic-modal {
-            background: rgba(30, 41, 59, 0.85);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
         }
         
         /* Frosted glass button */
@@ -238,13 +257,14 @@
         }
         
         html.dark .frosted-btn {
-            background: rgba(51, 65, 85, 0.5);
-            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: #0f0f0f;
+            border: 1px solid #1a1a1a;
         }
-        
+
         html.dark .frosted-btn:hover {
-            background: rgba(51, 65, 85, 0.7);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            background: #1a1a1a;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border-color: #7dd3fc;
         }
 
         /* Custom Scrollbar for Aero Theme */
@@ -260,8 +280,17 @@
             background-clip: content-box;
         }
         
+        html.dark ::-webkit-scrollbar {
+            background-color: #000000;
+        }
+
         html.dark ::-webkit-scrollbar-thumb {
-             background-color: rgba(34, 211, 238, 0.4);
+            background-color: #1a1a1a;
+            border: 2px solid #000000;
+        }
+
+        html.dark ::-webkit-scrollbar-thumb:hover {
+            background-color: #2a2a2a;
         }
 
         /* Utility to hide scrollbar */
@@ -333,8 +362,8 @@
         }
         
         html.dark .card-lift:hover {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4),
-                        0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+            border-color: #2a2a2a;
         }
         
         /* Subtle card lift (less dramatic) */
@@ -351,8 +380,8 @@
         }
         
         html.dark .card-lift-subtle:hover {
-            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.3),
-                        0 8px 10px -5px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            border-color: #2a2a2a;
         }
         
         /* Interactive card (for clickable cards) */
@@ -370,8 +399,8 @@
         }
         
         html.dark .card-interactive:hover {
-            box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.5),
-                        0 15px 15px -5px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            border-color: #7dd3fc;
         }
         
         .card-interactive:active {
@@ -392,8 +421,9 @@
         }
         
         html.dark .card-glow:hover {
-            box-shadow: 0 20px 25px -5px rgba(34, 211, 238, 0.25),
-                        0 10px 10px -5px rgba(34, 211, 238, 0.15);
+            box-shadow: 0 0 20px rgba(125, 211, 252, 0.15),
+                        0 8px 16px rgba(0, 0, 0, 0.4);
+            border-color: #7dd3fc;
         }
         
         /* Scale and lift combo */
@@ -409,8 +439,8 @@
         }
         
         html.dark .card-scale-lift:hover {
-            box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.5),
-                        0 15px 15px -5px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            border-color: #2a2a2a;
         }
 
         /* Animate in utility */
@@ -702,16 +732,16 @@
           animation: slide-up-fade 0.4s ease-out forwards;
         }
         
-        /* Glow pulse for primary actions */
+        /* Glow pulse for primary actions - Light blue accent */
         @keyframes glow-pulse {
           0%, 100% {
-            box-shadow: 0 0 5px rgba(6, 182, 212, 0.5);
+            box-shadow: 0 0 5px rgba(125, 211, 252, 0.3);
           }
           50% {
-            box-shadow: 0 0 20px rgba(6, 182, 212, 0.8), 0 0 30px rgba(6, 182, 212, 0.4);
+            box-shadow: 0 0 15px rgba(125, 211, 252, 0.5), 0 0 25px rgba(125, 211, 252, 0.2);
           }
         }
-        
+
         .animate-glow-pulse {
           animation: glow-pulse 2s ease-in-out infinite;
         }
@@ -815,11 +845,15 @@
         }
         
         html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: rgba(148, 163, 184, 0.2);
+          background-color: #1a1a1a;
         }
-        
+
         html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: rgba(148, 163, 184, 0.4);
+          background-color: #2a2a2a;
+        }
+
+        html.dark .custom-scrollbar::-webkit-scrollbar-track {
+          background: #000000;
         }
         
         /* Smooth sidebar width transition */
@@ -930,25 +964,47 @@
     </script>
     <script>
         // Apply theme immediately on load to prevent FOUC (Flash of Unstyled Content)
+        // Uses new storage key: logos.theme.mode = 'light' | 'dark' | 'system'
         (function() {
-            const isDark = localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            
+            var STORAGE_KEY = 'logos.theme.mode';
+            var storedMode = null;
+
+            try {
+                storedMode = localStorage.getItem(STORAGE_KEY);
+                // Migration: check for old 'theme' key
+                if (!storedMode) {
+                    var oldTheme = localStorage.getItem('theme');
+                    if (oldTheme === 'dark' || oldTheme === 'light') {
+                        storedMode = oldTheme;
+                        localStorage.setItem(STORAGE_KEY, oldTheme);
+                        localStorage.removeItem('theme');
+                    }
+                }
+            } catch (e) {}
+
+            // Default to 'system' if no stored preference
+            var mode = storedMode || 'system';
+
+            // Resolve the actual theme based on mode
+            var isDark;
+            if (mode === 'system') {
+                isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            } else {
+                isDark = mode === 'dark';
+            }
+
+            // Set data-theme attribute (primary method for CSS)
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+
+            // Also set html.dark class for Tailwind compatibility
             if (isDark) {
                 document.documentElement.classList.add('dark');
             } else {
                 document.documentElement.classList.remove('dark');
             }
-            
-            // Wait for body to be available
-            if (document.body) {
-                applyBodyClasses(isDark);
-            } else {
-                document.addEventListener('DOMContentLoaded', function() {
-                    applyBodyClasses(isDark);
-                });
-            }
-            
-            function applyBodyClasses(isDark) {
+
+            // Wait for body to be available to set body classes
+            function applyBodyClasses() {
                 if (isDark) {
                     document.body.classList.add('dark-mode');
                     document.body.classList.remove('light-mode');
@@ -956,6 +1012,12 @@
                     document.body.classList.add('light-mode');
                     document.body.classList.remove('dark-mode');
                 }
+            }
+
+            if (document.body) {
+                applyBodyClasses();
+            } else {
+                document.addEventListener('DOMContentLoaded', applyBodyClasses);
             }
         })();
     </script>

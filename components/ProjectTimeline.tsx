@@ -13,6 +13,8 @@ const statusColors: { [key in ProjectStatus]: { bg: string; border: string } } =
     [ProjectStatus.InProgress]: { bg: 'bg-blue-500', border: 'border-blue-600' },
     [ProjectStatus.Completed]: { bg: 'bg-teal-500', border: 'border-teal-600' },
     [ProjectStatus.OnHold]: { bg: 'bg-rose-500', border: 'border-rose-600' },
+    [ProjectStatus.Active]: { bg: 'bg-emerald-500', border: 'border-emerald-600' },
+    [ProjectStatus.Cancelled]: { bg: 'bg-gray-500', border: 'border-gray-600' },
 };
 
 interface ProjectTimelineProps {

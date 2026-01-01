@@ -1,5 +1,12 @@
 import React from 'react';
 
+/**
+ * CMF Nothing Design System - EmptyState Component
+ * =================================================
+ * Empty state placeholder using CMF design tokens.
+ * No glassmorphism, clean matte aesthetic.
+ */
+
 interface EmptyStateProps {
   icon: React.ReactNode;
   title: string;
@@ -11,19 +18,50 @@ interface EmptyStateProps {
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, description, action }) => {
+  const [isHovered, setIsHovered] = React.useState(false);
+
   return (
-    <div className="text-center py-16 bg-white/30 dark:bg-black/20 backdrop-blur-xl rounded-lg border border-dashed border-white/20 dark:border-white/10">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500/30 to-sky-500/30 text-cyan-700 dark:from-cyan-500/20 dark:to-sky-500/20 dark:text-cyan-300">
+    <div
+      className="text-center py-16 rounded-lg border border-dashed"
+      style={{
+        backgroundColor: 'var(--cmf-surface)',
+        borderColor: 'var(--cmf-border-strong)',
+      }}
+    >
+      <div
+        className="mx-auto flex h-12 w-12 items-center justify-center rounded-full"
+        style={{
+          backgroundColor: 'var(--cmf-accent-muted)',
+          color: 'var(--cmf-accent)',
+        }}
+      >
         {icon}
       </div>
-      <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
-      <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 max-w-sm mx-auto">{description}</p>
+      <h3
+        className="mt-4 text-lg font-semibold"
+        style={{ color: 'var(--cmf-text)' }}
+      >
+        {title}
+      </h3>
+      <p
+        className="mt-2 text-sm max-w-sm mx-auto"
+        style={{ color: 'var(--cmf-text-muted)' }}
+      >
+        {description}
+      </p>
       {action && (
         <div className="mt-6">
           <button
             type="button"
             onClick={action.onClick}
-            className="inline-flex items-center rounded-md bg-gradient-to-b from-cyan-500 to-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:from-cyan-600 hover:to-sky-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 btn-hover-scale"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="inline-flex items-center rounded-md px-4 py-2 text-sm font-semibold shadow-sm transition-all duration-150"
+            style={{
+              backgroundColor: isHovered ? 'var(--cmf-accent-hover)' : 'var(--cmf-accent)',
+              color: 'var(--cmf-accent-text)',
+              boxShadow: 'var(--cmf-shadow-sm)',
+            }}
           >
             {action.label}
           </button>

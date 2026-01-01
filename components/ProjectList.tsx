@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { Project, Client, TeamMember } from '../types';
 import { ProjectStatus } from '../types';
 import { ProjectTimeline } from './ProjectTimeline';
-import { getDeadlineStatus } from '../utils/dateHelpers';
+import { getDeadlineStatus } from '../src/utils/dateHelpers';
 import { StatusBadge } from '../src/components/ui/StatusBadge';
 import { ClockIcon, BriefcaseIcon, PlusIcon, StarIcon, PinIcon } from './icons';
 import { EmptyState } from '../src/components/ui/EmptyState';

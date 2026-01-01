@@ -1,13 +1,26 @@
 import React from 'react';
 import type { Page } from '../types';
 import {
-  DashboardIcon, BuildingIcon, UsersIcon, FolderIcon, CaseIcon, ClipboardListIcon,
-  DonationIcon, HandHeartIcon, EventsIcon, MailCampaignIcon, GlobeIcon, HeartIcon,
-  CheckSquareIcon, CalendarIcon, DocumentsIcon, ReportsIcon, BriefcaseIcon,
-  ChatIcon, VideoIcon, MicIcon, SparklesIcon, FormGeneratorIcon, GrantWriterIcon,
-  LayoutIcon, UserCircleIcon
+  DashboardIcon, FolderIcon, CaseIcon, ClipboardListIcon,
+  HeartIcon, CheckSquareIcon, CalendarIcon, SettingsIcon,
+  DocumentsIcon, ReportsIcon, BriefcaseIcon, ImpactIcon,
+  ForgeIcon, UsersIcon, CloudIcon, LayoutIcon
 } from './icons';
 
+// Outreach Hub icon
+const OutreachHubIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+  </svg>
+);
+
+// Connect Hub icon - represents communication/sync hub
+const ConnectHubIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+  </svg>
+);
 
 // --- CONFIGURATION ---
 
@@ -28,11 +41,24 @@ export const mainNav: NavItemConfig = {
     icon: <DashboardIcon />
 };
 
+/**
+ * Streamlined Navigation Structure
+ * =================================
+ * Optimized for focused CRM workflow
+ *
+ * TABLED (removed from nav, to be developed later):
+ * - Households: will be moved into Case Management
+ * - Web Management: serves no purpose currently
+ * - Calendar Settings: moved to within Calendar or Settings
+ * - Analytics: moved into Outreach Hub as internal tab
+ * - Impact Reports: moved into Impact as internal tab
+ * - AI Suite: consolidated into single Forge entry
+ * - Client Suite: tabled for now
+ */
 export const navigationSections: NavSectionConfig[] = [
     {
-        title: 'CRM',
+        title: 'Manage',
         items: [
-            { pageId: 'organizations', label: 'Organizations', icon: <BuildingIcon /> },
             { pageId: 'contacts', label: 'Contacts', icon: <UsersIcon /> },
             { pageId: 'projects', label: 'Projects', icon: <FolderIcon /> },
             { pageId: 'case', label: 'Case Management', icon: <CaseIcon /> },
@@ -42,11 +68,8 @@ export const navigationSections: NavSectionConfig[] = [
     {
         title: 'Outreach',
         items: [
-            { pageId: 'donations', label: 'Donations', icon: <DonationIcon /> },
-            { pageId: 'volunteers', label: 'Volunteers', icon: <HandHeartIcon /> },
-            { pageId: 'events', label: 'Events', icon: <EventsIcon /> },
-            { pageId: 'email', label: 'Email Campaigns', icon: <MailCampaignIcon /> },
-            { pageId: 'web-management', label: 'Web Management', icon: <GlobeIcon /> },
+            // Outreach Hub now includes Analytics as internal tab
+            { pageId: 'outreach-hub', label: 'Outreach Hub', icon: <OutreachHubIcon /> },
             { pageId: 'charity', label: 'Charity Hub', icon: <HeartIcon /> },
         ]
     },
@@ -57,30 +80,31 @@ export const navigationSections: NavSectionConfig[] = [
             { pageId: 'calendar', label: 'Calendar', icon: <CalendarIcon /> },
             { pageId: 'documents', label: 'Documents', icon: <DocumentsIcon /> },
             { pageId: 'reports', label: 'Reports', icon: <ReportsIcon /> },
-            { pageId: 'team', label: 'Team Members', icon: <BriefcaseIcon /> },
+            // Impact now includes Impact Reports as internal tab
+            { pageId: 'impact', label: 'Impact', icon: <ImpactIcon /> },
+            { pageId: 'team', label: 'Team', icon: <BriefcaseIcon /> },
         ]
     },
     {
         title: 'Connect',
         items: [
-            { pageId: 'chat', label: 'Team Chat', icon: <ChatIcon /> },
-            { pageId: 'video', label: 'Video Conference', icon: <VideoIcon /> },
-            { pageId: 'live-chat', label: 'Live Chat', icon: <MicIcon /> },
+            // Connect Hub - central communication sync for Pulse & Entomate
+            { pageId: 'connect', label: 'Connect Hub', icon: <ConnectHubIcon /> },
         ]
     },
     {
-        title: 'AI Suite',
+        title: 'Forge',
         items: [
-            { pageId: 'ai-tools', label: 'AI Tools', icon: <SparklesIcon /> },
-            { pageId: 'form-generator', label: 'Form Generator', icon: <FormGeneratorIcon /> },
-            { pageId: 'grant-assistant', label: 'Grant Assistant', icon: <GrantWriterIcon /> },
+            // Consolidated AI tools: AI Tools, Form Generator, Grant Assistant
+            // Internal navigation within Forge component
+            { pageId: 'forge', label: 'AI Forge', icon: <ForgeIcon /> },
         ]
     },
     {
-        title: 'Client Suite',
+        title: 'System',
         items: [
-            { pageId: 'portal-builder', label: 'Portal Builder', icon: <LayoutIcon /> },
-            { pageId: 'client-portal', label: 'Client Portal', icon: <UserCircleIcon /> },
+            { pageId: 'settings', label: 'Settings', icon: <SettingsIcon /> },
+            { pageId: 'design-preview', label: 'Design Preview', icon: <LayoutIcon /> },
         ]
     }
 ];

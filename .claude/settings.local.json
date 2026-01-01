@@ -17,7 +17,15 @@
       "Bash(del:*)",
       "Bash(git commit:*)",
       "Bash(gh --version:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(git checkout:*)",
+      "Bash(findstr:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []

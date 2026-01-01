@@ -1,15 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 /**
- * Tabs Component - Organize content into switchable sections
- * 
- * Features:
- * - Beautiful animations with sliding indicator
- * - Keyboard navigation (arrow keys + Enter)
- * - Responsive design
- * - Dark mode support
- * - Badge support for counts
- * - Icon support
+ * CMF Nothing Design System - Tabs Component
+ * ==========================================
+ * Tab navigation using CMF design tokens.
+ * Clean, minimal aesthetic without gradients.
  */
 
 export interface Tab {
@@ -46,7 +41,7 @@ export const Tabs: React.FC<TabsProps> = ({
   const [internalActiveTab, setInternalActiveTab] = useState(
     defaultTab || tabs[0]?.id || ''
   );
-  
+
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalActiveTab;
   const setActiveTab = (tabId: string) => {
     if (controlledActiveTab === undefined) {
@@ -64,7 +59,7 @@ export const Tabs: React.FC<TabsProps> = ({
       const activeButton = tabsRef.current.querySelector(
         `[data-tab-id="${activeTab}"]`
       ) as HTMLElement;
-      
+
       if (activeButton) {
         setIndicatorStyle({
           left: activeButton.offsetLeft,
@@ -124,60 +119,60 @@ export const Tabs: React.FC<TabsProps> = ({
     lg: 'text-lg px-5 py-3'
   };
 
-  // Variant styles
-  const getTabButtonClasses = (tab: Tab) => {
+  // Variant styles using CMF tokens
+  const getTabButtonStyles = (tab: Tab): React.CSSProperties => {
     const isActive = activeTab === tab.id;
+
+    if (variant === 'pills') {
+      return {
+        backgroundColor: isActive ? 'var(--cmf-accent)' : 'transparent',
+        color: isActive ? 'var(--cmf-accent-text)' : 'var(--cmf-text-muted)',
+        borderRadius: 'var(--cmf-radius-md)',
+      };
+    } else if (variant === 'underline') {
+      return {
+        borderBottom: isActive ? '2px solid var(--cmf-accent)' : '2px solid transparent',
+        color: isActive ? 'var(--cmf-accent)' : 'var(--cmf-text-muted)',
+      };
+    } else {
+      return {
+        color: isActive ? 'var(--cmf-accent)' : 'var(--cmf-text-muted)',
+      };
+    }
+  };
+
+  const getTabButtonClasses = (tab: Tab) => {
     const baseClasses = `
       relative flex items-center gap-2 font-medium transition-all duration-200
       ${sizeClasses[size]}
       ${fullWidth ? 'flex-1 justify-center' : ''}
       ${tab.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
     `;
-
-    if (variant === 'pills') {
-      return `${baseClasses} rounded-lg
-        ${isActive 
-          ? 'bg-cyan-500 text-white shadow-md' 
-          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-        }
-      `;
-    } else if (variant === 'underline') {
-      return `${baseClasses} border-b-2
-        ${isActive 
-          ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400' 
-          : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-        }
-      `;
-    } else {
-      // Default variant
-      return `${baseClasses}
-        ${isActive 
-          ? 'text-cyan-600 dark:text-cyan-400' 
-          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-        }
-      `;
-    }
+    return baseClasses;
   };
-
-  const activeTabData = tabs.find(t => t.id === activeTab);
 
   return (
     <div className={`w-full ${className}`}>
       {/* Tab Headers */}
-      <div 
+      <div
         ref={tabsRef}
-        className={`
-          relative flex border-b border-slate-200 dark:border-slate-700
-          ${fullWidth ? 'w-full' : 'inline-flex'}
-          ${variant === 'pills' ? 'border-none gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg' : 'gap-1'}
-        `}
+        className={`relative flex ${fullWidth ? 'w-full' : 'inline-flex'} gap-1`}
+        style={{
+          borderBottom: variant === 'pills' ? 'none' : '1px solid var(--cmf-border)',
+          backgroundColor: variant === 'pills' ? 'var(--cmf-surface-2)' : 'transparent',
+          padding: variant === 'pills' ? '4px' : '0',
+          borderRadius: variant === 'pills' ? 'var(--cmf-radius-lg)' : '0',
+        }}
         role="tablist"
       >
         {/* Sliding indicator (for default variant) */}
         {variant === 'default' && (
           <div
-            className="absolute bottom-0 h-0.5 bg-cyan-500 transition-all duration-300 ease-out"
-            style={indicatorStyle}
+            className="absolute bottom-0 h-0.5 transition-all duration-300 ease-out"
+            style={{
+              ...indicatorStyle,
+              backgroundColor: 'var(--cmf-accent)',
+            }}
           />
         )}
 
@@ -193,6 +188,7 @@ export const Tabs: React.FC<TabsProps> = ({
             onClick={() => !tab.disabled && setActiveTab(tab.id)}
             onKeyDown={(e) => handleKeyDown(e, tab.id)}
             className={getTabButtonClasses(tab)}
+            style={getTabButtonStyles(tab)}
           >
             {tab.icon && (
               <span className="flex-shrink-0">
@@ -201,13 +197,17 @@ export const Tabs: React.FC<TabsProps> = ({
             )}
             <span>{tab.label}</span>
             {tab.badge !== undefined && (
-              <span className={`
-                flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-semibold
-                ${activeTab === tab.id
-                  ? 'bg-white/20 text-white'
-                  : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
-                }
-              `}>
+              <span
+                className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-semibold"
+                style={{
+                  backgroundColor: activeTab === tab.id
+                    ? 'rgba(255, 255, 255, 0.2)'
+                    : 'var(--cmf-surface-3)',
+                  color: activeTab === tab.id
+                    ? 'inherit'
+                    : 'var(--cmf-text-muted)',
+                }}
+              >
                 {tab.badge}
               </span>
             )}
@@ -224,9 +224,7 @@ export const Tabs: React.FC<TabsProps> = ({
             role="tabpanel"
             aria-labelledby={tab.id}
             hidden={activeTab !== tab.id}
-            className={`
-              ${activeTab === tab.id ? 'animate-fade-in' : ''}
-            `}
+            className={`${activeTab === tab.id ? 'animate-fade-in' : ''}`}
           >
             {activeTab === tab.id && tab.content}
           </div>

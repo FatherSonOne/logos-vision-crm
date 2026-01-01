@@ -11,6 +11,7 @@ function dbToEmailCampaign(dbCampaign: any): EmailCampaign {
     subjectLineB: dbCampaign.subject_line_b,
     body: dbCampaign.body,
     headerImageUrl: dbCampaign.header_image_url,
+    recipientSegment: dbCampaign.recipient_segment || 'All Contacts',
     recipientCount: dbCampaign.recipient_count || 0,
     sentDate: dbCampaign.sent_date,
     stats: dbCampaign.stats || { sent: 0, opened: 0, clicked: 0, unsubscribes: 0 }

@@ -1,6 +1,21 @@
 import React from 'react';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'outline';
+/**
+ * CMF Aurora Design System - Button Component
+ * ===========================================
+ * A button component with aurora-inspired styling and smooth animations.
+ *
+ * Variants:
+ * - primary: Uses aurora accent color with glow effect
+ * - secondary: Subtle surface-based styling
+ * - ghost: Transparent background, minimal hover
+ * - danger: Uses error color for destructive actions
+ * - success: Aurora green for positive actions
+ * - outline: Bordered, transparent background with aurora hover
+ * - aurora: Special gradient button with flowing colors
+ */
+
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'outline' | 'aurora';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -10,39 +25,82 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   fullWidth?: boolean;
+  glow?: boolean;
 }
 
-const variantClasses: Record<ButtonVariant, string> = {
-  primary:
-    'bg-rose-500 text-white hover:bg-rose-600 active:bg-rose-700 ' +
-    'dark:bg-rose-600 dark:hover:bg-rose-500 ' +
-    'shadow-sm hover:shadow-md focus-visible:ring-rose-500',
-  secondary:
-    'bg-slate-100 text-slate-900 hover:bg-slate-200 active:bg-slate-300 ' +
-    'dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600 ' +
-    'shadow-sm hover:shadow-md focus-visible:ring-slate-500',
-  ghost:
-    'bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200 ' +
-    'dark:text-slate-300 dark:hover:bg-slate-700 dark:active:bg-slate-600 ' +
-    'focus-visible:ring-slate-500',
-  danger:
-    'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 ' +
-    'dark:bg-red-600 dark:hover:bg-red-500 ' +
-    'shadow-sm hover:shadow-md focus-visible:ring-red-500',
-  success:
-    'bg-green-500 text-white hover:bg-green-600 active:bg-green-700 ' +
-    'dark:bg-green-600 dark:hover:bg-green-500 ' +
-    'shadow-sm hover:shadow-md focus-visible:ring-green-500',
-  outline:
-    'bg-transparent text-slate-700 border border-slate-300 hover:bg-slate-50 active:bg-slate-100 ' +
-    'dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-800 dark:active:bg-slate-700 ' +
-    'focus-visible:ring-slate-500',
+// CMF Aurora-based variant styles using CSS custom properties
+const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
+  primary: {
+    backgroundColor: 'var(--cmf-accent)',
+    color: 'var(--cmf-accent-text)',
+    borderColor: 'var(--cmf-accent)',
+  },
+  secondary: {
+    backgroundColor: 'var(--cmf-surface)',
+    color: 'var(--cmf-text)',
+    borderColor: 'var(--cmf-border-strong)',
+  },
+  ghost: {
+    backgroundColor: 'transparent',
+    color: 'var(--cmf-text-secondary)',
+    borderColor: 'transparent',
+  },
+  danger: {
+    backgroundColor: 'var(--cmf-error)',
+    color: '#FFFFFF',
+    borderColor: 'var(--cmf-error)',
+  },
+  success: {
+    backgroundColor: 'var(--cmf-success)',
+    color: '#0F172A',
+    borderColor: 'var(--cmf-success)',
+  },
+  outline: {
+    backgroundColor: 'transparent',
+    color: 'var(--cmf-accent)',
+    borderColor: 'var(--cmf-accent)',
+  },
+  aurora: {
+    background: 'linear-gradient(135deg, var(--aurora-teal), var(--aurora-cyan), var(--aurora-teal))',
+    backgroundSize: '200% 200%',
+    color: '#0F172A',
+    borderColor: 'transparent',
+  },
+};
+
+// Hover styles for each variant
+const variantHoverStyles: Record<ButtonVariant, React.CSSProperties> = {
+  primary: {
+    backgroundColor: 'var(--cmf-accent-hover)',
+    borderColor: 'var(--cmf-accent-hover)',
+  },
+  secondary: {
+    backgroundColor: 'var(--cmf-surface-2)',
+  },
+  ghost: {
+    backgroundColor: 'var(--cmf-hover-overlay)',
+    color: 'var(--cmf-text)',
+  },
+  danger: {
+    backgroundColor: 'var(--cmf-error-hover)',
+    borderColor: 'var(--cmf-error-hover)',
+  },
+  success: {
+    backgroundColor: 'var(--cmf-success-hover)',
+    borderColor: 'var(--cmf-success-hover)',
+  },
+  outline: {
+    backgroundColor: 'var(--cmf-accent-subtle)',
+  },
+  aurora: {
+    backgroundPosition: '100% 50%',
+  },
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5',
+  sm: 'h-8 px-3 text-[13px] gap-1.5',
   md: 'h-10 px-4 text-sm gap-2',
-  lg: 'h-12 px-6 text-base gap-2.5',
+  lg: 'h-12 px-6 text-[15px] gap-2.5',
 };
 
 const iconSizeClasses: Record<ButtonSize, string> = {
@@ -83,28 +141,66 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       leftIcon,
       rightIcon,
       fullWidth = false,
+      glow = false,
       disabled,
       className = '',
       children,
+      style,
+      onMouseEnter,
+      onMouseLeave,
       ...props
     },
     ref
   ) => {
     const isDisabled = disabled || isLoading;
+    const [isHovered, setIsHovered] = React.useState(false);
+
+    const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+      setIsHovered(true);
+      onMouseEnter?.(e);
+    };
+
+    const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+      setIsHovered(false);
+      onMouseLeave?.(e);
+    };
+
+    // Determine glow effect based on variant and glow prop
+    const shouldGlow = glow || variant === 'primary' || variant === 'aurora';
+    const glowShadow = shouldGlow
+      ? variant === 'aurora'
+        ? 'var(--aurora-glow-md)'
+        : 'var(--aurora-glow-sm)'
+      : undefined;
+    const hoverGlowShadow = shouldGlow ? 'var(--aurora-glow-md)' : undefined;
+
+    // Merge base styles with hover styles when hovered
+    const buttonStyle: React.CSSProperties = {
+      ...variantStyles[variant],
+      ...(isHovered && !isDisabled ? variantHoverStyles[variant] : {}),
+      border: variant === 'aurora' ? 'none' : '1px solid',
+      borderColor: variantStyles[variant].borderColor,
+      transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+      boxShadow: isHovered && !isDisabled ? hoverGlowShadow : glowShadow,
+      ...style,
+    };
 
     return (
       <button
         ref={ref}
         disabled={isDisabled}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        style={buttonStyle}
         className={`
-          inline-flex items-center justify-center font-medium rounded-lg
-          transition-all duration-200 ease-in-out
-          focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-          dark:focus-visible:ring-offset-slate-900
+          inline-flex items-center justify-center font-medium
+          rounded-[var(--cmf-radius-full)]
+          focus:outline-none aurora-focus
           disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none
-          ${variantClasses[variant]}
+          active:scale-[0.98] btn-press
           ${sizeClasses[size]}
           ${fullWidth ? 'w-full' : ''}
+          ${variant === 'aurora' ? 'aurora-border-animated' : ''}
           ${className}
         `.trim().replace(/\s+/g, ' ')}
         {...props}
@@ -112,13 +208,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading ? (
           <LoadingSpinner size={size} />
         ) : leftIcon ? (
-          <span className={iconSizeClasses[size]}>{leftIcon}</span>
+          <span className={`${iconSizeClasses[size]} transition-transform duration-200 group-hover:scale-110`}>{leftIcon}</span>
         ) : null}
 
         {children && <span>{children}</span>}
 
         {rightIcon && !isLoading && (
-          <span className={iconSizeClasses[size]}>{rightIcon}</span>
+          <span className={`${iconSizeClasses[size]} transition-transform duration-200 group-hover:scale-110`}>{rightIcon}</span>
         )}
       </button>
     );
@@ -133,29 +229,53 @@ export const IconButton = React.forwardRef<
     icon: React.ReactNode;
     'aria-label': string;
   }
->(({ variant = 'ghost', size = 'md', icon, className = '', ...props }, ref) => {
+>(({ variant = 'ghost', size = 'md', icon, className = '', style, onMouseEnter, onMouseLeave, disabled, ...props }, ref) => {
+  const [isHovered, setIsHovered] = React.useState(false);
+
   const iconOnlySizes: Record<ButtonSize, string> = {
     sm: 'h-8 w-8',
     md: 'h-10 w-10',
     lg: 'h-12 w-12',
   };
 
+  const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    setIsHovered(true);
+    onMouseEnter?.(e);
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    setIsHovered(false);
+    onMouseLeave?.(e);
+  };
+
+  const buttonStyle: React.CSSProperties = {
+    ...variantStyles[variant],
+    ...(isHovered && !disabled ? variantHoverStyles[variant] : {}),
+    border: '1px solid',
+    transition: 'all 150ms ease-out',
+    ...style,
+  };
+
   return (
     <button
       ref={ref}
+      disabled={disabled}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={buttonStyle}
       className={`
-        inline-flex items-center justify-center rounded-lg
-        transition-all duration-200 ease-in-out
+        inline-flex items-center justify-center
+        rounded-[var(--cmf-radius-full)]
         focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-        dark:focus-visible:ring-offset-slate-900
+        focus-visible:ring-[color:var(--cmf-accent)]
         disabled:opacity-50 disabled:cursor-not-allowed
-        ${variantClasses[variant]}
+        active:translate-y-px
         ${iconOnlySizes[size]}
         ${className}
       `.trim().replace(/\s+/g, ' ')}
       {...props}
     >
-      <span className={iconSizeClasses[size]}>{icon}</span>
+      <span className={`${iconSizeClasses[size]} flex items-center justify-center`}>{icon}</span>
     </button>
   );
 });
