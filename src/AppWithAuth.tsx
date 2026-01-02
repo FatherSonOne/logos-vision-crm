@@ -7,14 +7,16 @@ import { LandingPage } from './components/LandingPage';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsOfService } from './components/TermsOfService';
 import { googleDriveService } from './services/googleDriveService';
+import { calendarManager } from './services/calendar';
 import { supabase } from './services/supabaseClient';
 
 type PageView = 'landing' | 'login' | 'privacy' | 'terms' | 'app';
 
-// Auth callback handler for OAuth redirects
+// Auth callback handler for OAuth redirects (Google Drive, Calendar, etc.)
 const AuthCallback: React.FC = () => {
   const [message, setMessage] = useState('Processing authentication...');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -23,6 +25,8 @@ const AuthCallback: React.FC = () => {
       const state = urlParams.get('state');
       const errorParam = urlParams.get('error');
 
+      console.log('Auth callback - state:', state, 'code:', code ? 'present' : 'missing');
+
       // Handle OAuth errors
       if (errorParam) {
         setError(`Authentication failed: ${errorParam}`);
@@ -30,33 +34,57 @@ const AuthCallback: React.FC = () => {
         return;
       }
 
-      // Handle Google Drive OAuth callback
-      if (state === 'google_drive_connect' && code) {
-        setMessage('Connecting to Google Drive...');
-        try {
-          // Get current user
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await googleDriveService.init(user.id);
-            await googleDriveService.exchangeCodeForTokens(code);
-            setMessage('Google Drive connected successfully!');
-          } else {
-            setError('User not authenticated');
-          }
-        } catch (err) {
-          console.error('Google Drive OAuth error:', err);
-          setError(err instanceof Error ? err.message : 'Failed to connect Google Drive');
-        }
+      if (!code) {
+        // No code - might be Supabase auth callback with hash params
         setTimeout(() => { window.location.href = '/'; }, 2000);
         return;
       }
 
-      // Default: Supabase auth will handle via AuthContext listener
-      const timer = setTimeout(() => {
-        window.location.href = '/';
-      }, 3000);
+      // Handle Google Drive OAuth callback
+      if (state === 'google_drive_connect') {
+        setMessage('Connecting to Google Drive...');
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await googleDriveService.init(user.id);
+            await googleDriveService.exchangeCodeForTokens(code);
+            setSuccess(true);
+            setMessage('Google Drive connected successfully!');
+            // Redirect back to documents page
+            setTimeout(() => { window.location.href = '/?view=documents&gdrive=connected'; }, 2000);
+          } else {
+            setError('User not authenticated. Please sign in first.');
+          }
+        } catch (err) {
+          console.error('Google Drive OAuth error:', err);
+          setError(err instanceof Error ? err.message : 'Failed to connect Google Drive');
+          setTimeout(() => { window.location.href = '/'; }, 3000);
+        }
+        return;
+      }
 
-      return () => clearTimeout(timer);
+      // Handle Google Calendar OAuth callback (state contains random string from CalendarSettings)
+      if (code && !state?.startsWith('google_drive')) {
+        setMessage('Connecting to Google Calendar...');
+        try {
+          const credentials = await calendarManager.handleCallback('google', code, state || undefined);
+          // Also store in localStorage for CalendarSettings to pick up
+          localStorage.setItem('google_calendar_credentials', JSON.stringify(credentials));
+          setSuccess(true);
+          setMessage('Google Calendar connected successfully!');
+          // Redirect to calendar settings with success indicator
+          setTimeout(() => { window.location.href = '/?view=settings&tab=calendar&success=true'; }, 2000);
+        } catch (err) {
+          console.error('Google Calendar OAuth error:', err);
+          setError(err instanceof Error ? err.message : 'Failed to connect Google Calendar');
+          setTimeout(() => { window.location.href = '/'; }, 3000);
+        }
+        return;
+      }
+
+      // Default: Unknown state, redirect home
+      console.log('Unknown OAuth state, redirecting home');
+      setTimeout(() => { window.location.href = '/'; }, 2000);
     };
 
     handleCallback();
@@ -64,11 +92,27 @@ const AuthCallback: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900 flex items-center justify-center">
-      <div className="text-center">
+      <div className="text-center p-8 max-w-md">
         {error ? (
           <>
-            <div className="text-red-500 text-4xl mb-4">✕</div>
-            <p className="text-red-600 dark:text-red-400">{error}</p>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Connection Failed</h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-4">{error}</p>
+            <p className="text-sm text-slate-500">Redirecting...</p>
+          </>
+        ) : success ? (
+          <>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-green-600 dark:text-green-400 mb-2">Connected!</h2>
+            <p className="text-slate-600 dark:text-slate-400">{message}</p>
           </>
         ) : (
           <>

@@ -387,6 +387,20 @@ ALTER TABLE document_folders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE document_access_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE document_shares ENABLE ROW LEVEL SECURITY;
 ALTER TABLE document_acknowledgments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE google_drive_config ENABLE ROW LEVEL SECURITY;
+
+-- Google Drive Config: Users can only access their own config
+CREATE POLICY "Users can view own google drive config" ON google_drive_config
+    FOR SELECT USING (user_id = auth.uid());
+
+CREATE POLICY "Users can insert own google drive config" ON google_drive_config
+    FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can update own google drive config" ON google_drive_config
+    FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Users can delete own google drive config" ON google_drive_config
+    FOR DELETE USING (user_id = auth.uid());
 
 -- Documents: Users can see their own documents, team documents, and shared documents
 CREATE POLICY "Users can view accessible documents" ON documents
