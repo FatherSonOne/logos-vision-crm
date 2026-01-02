@@ -366,14 +366,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <h4 className="font-semibold text-white mb-4">Legal</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <button onClick={onShowPrivacyPolicy} className="hover:text-rose-400 transition-colors">
+                  <a href="/privacy" onClick={(e) => { e.preventDefault(); onShowPrivacyPolicy(); }} className="hover:text-rose-400 transition-colors">
                     Privacy Policy
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={onShowTermsOfService} className="hover:text-rose-400 transition-colors">
+                  <a href="/terms" onClick={(e) => { e.preventDefault(); onShowTermsOfService(); }} className="hover:text-rose-400 transition-colors">
                     Terms of Service
-                  </button>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -390,12 +390,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               &copy; {new Date().getFullYear()} Logos Vision CRM. All rights reserved.
             </p>
             <div className="flex items-center gap-6 text-sm">
-              <button onClick={onShowPrivacyPolicy} className="hover:text-rose-400 transition-colors">
+              <a href="/privacy" onClick={(e) => { e.preventDefault(); onShowPrivacyPolicy(); }} className="hover:text-rose-400 transition-colors">
                 Privacy Policy
-              </button>
-              <button onClick={onShowTermsOfService} className="hover:text-rose-400 transition-colors">
+              </a>
+              <a href="/terms" onClick={(e) => { e.preventDefault(); onShowTermsOfService(); }} className="hover:text-rose-400 transition-colors">
                 Terms of Service
-              </button>
+              </a>
             </div>
           </div>
         </div>

@@ -8,6 +8,18 @@
       "dest": "/assets/$1"
     },
     {
+      "src": "/privacy",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/terms",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/login",
+      "dest": "/index.html"
+    },
+    {
       "src": "/auth/callback",
       "dest": "/index.html"
     },
