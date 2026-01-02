@@ -5,9 +5,12 @@ interface LoginProps {
   onLogin: (email: string, password: string) => Promise<{ error: any }>;
   onSignUp?: (email: string, password: string, name: string) => Promise<{ error: any }>;
   onGoogleSignIn?: () => Promise<{ error: any }>;
+  onShowPrivacyPolicy?: () => void;
+  onShowTermsOfService?: () => void;
+  onBack?: () => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin, onSignUp, onGoogleSignIn }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, onSignUp, onGoogleSignIn, onShowPrivacyPolicy, onShowTermsOfService, onBack }) => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -74,6 +77,18 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onSignUp, onGoogleSignIn 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Back to Home Link */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="mb-4 text-sm text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Home
+          </button>
+        )}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8">
           {/* Logo */}
           <div className="flex justify-center mb-8">
@@ -252,6 +267,38 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onSignUp, onGoogleSignIn 
               </p>
             </div>
           )}
+
+          {/* Legal Links */}
+          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+              By signing in, you agree to our{' '}
+              {onShowTermsOfService ? (
+                <button
+                  onClick={onShowTermsOfService}
+                  className="text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none"
+                >
+                  Terms of Service
+                </button>
+              ) : (
+                <a href="/terms" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                  Terms of Service
+                </a>
+              )}
+              {' '}and{' '}
+              {onShowPrivacyPolicy ? (
+                <button
+                  onClick={onShowPrivacyPolicy}
+                  className="text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none"
+                >
+                  Privacy Policy
+                </button>
+              ) : (
+                <a href="/privacy" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                  Privacy Policy
+                </a>
+              )}
+            </p>
+          </div>
         </div>
       </div>
     </div>

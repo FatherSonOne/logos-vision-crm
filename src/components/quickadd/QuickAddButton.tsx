@@ -25,21 +25,25 @@ interface QuickAddButtonProps {
   id?: string;
 }
 
-// Calculate spiral position for each action item - spirals UP and to the LEFT
-const getSpiralPosition = (index: number, total: number, isOpen: boolean) => {
-  if (!isOpen) {
+// Calculate position for each action item - straight vertical stack
+const getSpiralPosition = (index: number, total: number, isOpen: boolean, isClosing: boolean) => {
+  if (!isOpen && !isClosing) {
     return { x: 0, y: 0, scale: 0, opacity: 0 };
   }
 
-  // Vertical stack going UP from the FAB button with slight curve to the left
+  if (isClosing) {
+    // Collapse downward into each other and fade out
+    // All items collapse toward the FAB position
+    return { x: 0, y: 0, scale: 0.5, opacity: 0 };
+  }
+
+  // Opening: Straight vertical stack going UP from the FAB button
   const baseDistance = 70; // Distance from FAB to first item
   const itemSpacing = 60; // Space between each item
-  const curveAmount = 15; // How much to curve left per item
 
   const y = baseDistance + (index * itemSpacing);
-  const x = -(index * curveAmount); // Curve slightly left as we go up
 
-  return { x, y, scale: 1, opacity: 1 };
+  return { x: 0, y, scale: 1, opacity: 1 };
 };
 
 export const QuickAddButton: React.FC<QuickAddButtonProps> = ({
@@ -48,29 +52,52 @@ export const QuickAddButton: React.FC<QuickAddButtonProps> = ({
   id,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Handle closing with animation
+  const handleClose = () => {
+    setIsClosing(true);
+    // Wait for collapse animation to complete before fully closing
+    setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+    }, 250); // Animation duration
+  };
+
+  const handleToggle = () => {
+    if (isOpen) {
+      handleClose();
+    } else {
+      setIsOpen(true);
+    }
+  };
 
   // Keyboard Shortcut + Click outside to close
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setIsOpen(prev => !prev);
+        if (isOpen && !isClosing) {
+          handleClose();
+        } else if (!isOpen) {
+          setIsOpen(true);
+        }
       }
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape' && isOpen && !isClosing) {
         e.preventDefault();
-        setIsOpen(false);
+        handleClose();
       }
     };
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (isOpen && containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+      if (isOpen && !isClosing && containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        handleClose();
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
-    if (isOpen) {
+    if (isOpen && !isClosing) {
       // Delay adding click listener to prevent immediate close
       setTimeout(() => {
         document.addEventListener('click', handleClickOutside);
@@ -81,7 +108,7 @@ export const QuickAddButton: React.FC<QuickAddButtonProps> = ({
       window.removeEventListener('keydown', handleKeyPress);
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, isClosing]);
 
   const positionClasses = {
     'bottom-right': 'bottom-6 right-6 lg:bottom-6 lg:right-6',
@@ -95,31 +122,40 @@ export const QuickAddButton: React.FC<QuickAddButtonProps> = ({
       id={id}
       className={`fixed ${positionClasses[position]} z-40 pb-safe`}
     >
-      {/* Spiral Action Items */}
+      {/* Action Items - Vertical Stack */}
       <div className="relative z-40">
         {actions.map((action, index) => {
-          const pos = getSpiralPosition(index, actions.length, isOpen);
-          const delay = isOpen ? index * 50 : (actions.length - index - 1) * 30;
+          const pos = getSpiralPosition(index, actions.length, isOpen, isClosing);
+          // Opening: stagger from bottom to top (first item appears first)
+          // Closing: stagger from top to bottom (top items collapse first, creating cascade effect)
+          const delay = isClosing
+            ? (actions.length - index - 1) * 40  // Top items collapse first
+            : index * 50;  // Bottom items appear first when opening
 
           return (
             <div
               key={action.id}
-              className="absolute bottom-0 right-0 transition-all duration-300 ease-out"
+              className={`absolute transition-all ease-out ${
+                isClosing ? 'duration-200' : 'duration-300'
+              }`}
               style={{
-                transform: `translate(${pos.x}px, ${-pos.y}px) scale(${pos.scale})`,
+                // Center the 48px icon button over the 64px FAB (offset by 8px)
+                bottom: 8,
+                right: 8,
+                transform: `translateY(${-pos.y}px) scale(${pos.scale})`,
                 opacity: pos.opacity,
                 transitionDelay: `${delay}ms`,
-                pointerEvents: isOpen ? 'auto' : 'none',
+                pointerEvents: isOpen && !isClosing ? 'auto' : 'none',
               }}
             >
               <button
                 onClick={() => {
                   console.log('Quick action used:', action.id);
                   action.onClick();
-                  setIsOpen(false);
+                  handleClose();
                 }}
                 className="group flex items-center gap-2 whitespace-nowrap"
-                tabIndex={isOpen ? 0 : -1}
+                tabIndex={isOpen && !isClosing ? 0 : -1}
               >
                 {/* Icon button */}
                 <div
@@ -128,8 +164,8 @@ export const QuickAddButton: React.FC<QuickAddButtonProps> = ({
                   {action.icon}
                 </div>
 
-                {/* Label tooltip - appears on hover, to the right of icon */}
-                <span className="px-3 py-1.5 bg-slate-900 dark:bg-slate-700 text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                {/* Label tooltip - appears on hover, to the left of icon */}
+                <span className="absolute right-full mr-3 px-3 py-1.5 bg-slate-900 dark:bg-slate-700 text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
                   {action.label}
                 </span>
               </button>
@@ -140,9 +176,10 @@ export const QuickAddButton: React.FC<QuickAddButtonProps> = ({
 
       {/* Main Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
+        disabled={isClosing}
         className={`group relative z-50 w-16 h-16 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-full shadow-2xl hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-110 ${
-          isOpen ? 'rotate-45' : ''
+          isOpen && !isClosing ? 'rotate-45' : ''
         }`}
         aria-label={isOpen ? "Close quick actions" : "Open quick actions"}
         aria-expanded={isOpen}

@@ -2,6 +2,8 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import type { Document as AppDocument, Client, Project, TeamMember } from '../types';
 import { DocumentCategory } from '../types';
 import { supabase } from '../services/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
+import { googleDriveService } from '../services/googleDriveService';
 import {
   FolderOpen, FileText, Upload, Search, Star, Clock, ChevronRight, ChevronDown,
   Download, Trash2, Edit3, Eye, MoreVertical, Grid, List, Filter, X, Check,
@@ -66,8 +68,9 @@ const systemFolders: Folder[] = [
   { id: 'template', name: 'Templates', parentId: null, isSystem: true },
 ];
 
-const connectedServicesMenu = [
-  { id: 'google-drive', name: 'Google Drive', icon: Cloud, connected: false },
+// Connected services - will be updated dynamically based on connection status
+const getConnectedServices = (isGoogleDriveConnected: boolean) => [
+  { id: 'google-drive', name: 'Google Drive', icon: Cloud, connected: isGoogleDriveConnected },
   { id: 'onedrive', name: 'OneDrive', icon: Cloud, connected: false },
   { id: 'dropbox', name: 'Dropbox', icon: Archive, connected: false },
 ];
@@ -78,6 +81,80 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
   projects,
   teamMembers,
 }) => {
+  // Auth
+  const { user } = useAuth();
+
+  // Google Drive connection state
+  const [isGoogleDriveConnected, setIsGoogleDriveConnected] = useState(false);
+  const [isConnectingGoogleDrive, setIsConnectingGoogleDrive] = useState(false);
+  const [isSyncingGoogleDrive, setIsSyncingGoogleDrive] = useState(false);
+
+  // Initialize Google Drive service
+  useEffect(() => {
+    const initGoogleDrive = async () => {
+      if (user?.id) {
+        const connected = await googleDriveService.init(user.id);
+        setIsGoogleDriveConnected(connected);
+      }
+    };
+    initGoogleDrive();
+  }, [user?.id]);
+
+  // Handle Google Drive OAuth callback
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+
+      if (code && state === 'google_drive_connect') {
+        setIsConnectingGoogleDrive(true);
+        try {
+          await googleDriveService.exchangeCodeForTokens(code);
+          setIsGoogleDriveConnected(true);
+          // Clean URL
+          window.history.replaceState({}, '', window.location.pathname);
+        } catch (error) {
+          console.error('Failed to connect Google Drive:', error);
+          alert('Failed to connect Google Drive. Please try again.');
+        } finally {
+          setIsConnectingGoogleDrive(false);
+        }
+      }
+    };
+    handleOAuthCallback();
+  }, []);
+
+  // Connect to Google Drive
+  const connectGoogleDrive = () => {
+    const authUrl = googleDriveService.getAuthUrl();
+    window.location.href = authUrl;
+  };
+
+  // Disconnect Google Drive
+  const disconnectGoogleDrive = async () => {
+    await googleDriveService.disconnect();
+    setIsGoogleDriveConnected(false);
+  };
+
+  // Sync with Google Drive
+  const syncGoogleDrive = async () => {
+    if (!isGoogleDriveConnected) return;
+    setIsSyncingGoogleDrive(true);
+    try {
+      const result = await googleDriveService.syncAll();
+      alert(`Synced ${result.synced} documents. ${result.errors.length > 0 ? `Errors: ${result.errors.length}` : ''}`);
+    } catch (error) {
+      console.error('Sync failed:', error);
+      alert('Sync failed. Please try again.');
+    } finally {
+      setIsSyncingGoogleDrive(false);
+    }
+  };
+
+  // Get connected services with current status
+  const connectedServicesMenu = getConnectedServices(isGoogleDriveConnected);
+
   // State
   const [activeFolder, setActiveFolder] = useState<string>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -363,16 +440,16 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
           .getPublicUrl(filePath);
 
         // Insert document record into database
+        // Using correct column names from schema: file_url, uploaded_by_id, uploaded_at
         const { error: dbError } = await supabase
           .from('documents')
           .insert({
             name: file.name,
             file_type: getFileType(file),
             category: uploadCategory,
-            size: formatFileSize(file.size),
-            url: urlData?.publicUrl || filePath,
-            uploaded_by_id: 'current-user', // Should be replaced with actual user ID
-            last_modified: new Date().toISOString(),
+            file_url: urlData?.publicUrl || filePath,
+            uploaded_by_id: user?.id || null,
+            uploaded_at: new Date().toISOString(),
           });
 
         if (dbError) {
@@ -577,20 +654,46 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
             {expandedSections.has('services') && (
               <div className="mt-1 space-y-0.5">
                 {connectedServicesMenu.map(service => (
-                  <button
-                    key={service.id}
-                    className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      <service.icon className="w-4 h-4" />
-                      {service.name}
-                    </span>
-                    {service.connected ? (
-                      <span className="w-2 h-2 bg-green-500 rounded-full" />
-                    ) : (
-                      <span className="text-xs text-slate-400">Connect</span>
+                  <div key={service.id} className="space-y-1">
+                    <button
+                      onClick={() => {
+                        if (service.id === 'google-drive') {
+                          if (service.connected) {
+                            if (confirm('Disconnect Google Drive?')) {
+                              disconnectGoogleDrive();
+                            }
+                          } else {
+                            connectGoogleDrive();
+                          }
+                        }
+                      }}
+                      disabled={isConnectingGoogleDrive}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <span className="flex items-center gap-2">
+                        <service.icon className="w-4 h-4" />
+                        {service.name}
+                      </span>
+                      {isConnectingGoogleDrive && service.id === 'google-drive' ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                      ) : service.connected ? (
+                        <span className="w-2 h-2 bg-green-500 rounded-full" title="Connected" />
+                      ) : (
+                        <span className="text-xs text-blue-500 hover:text-blue-600">Connect</span>
+                      )}
+                    </button>
+                    {/* Sync button for connected services */}
+                    {service.connected && service.id === 'google-drive' && (
+                      <button
+                        onClick={syncGoogleDrive}
+                        disabled={isSyncingGoogleDrive}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isSyncingGoogleDrive ? 'animate-spin' : ''}`} />
+                        {isSyncingGoogleDrive ? 'Syncing...' : 'Sync Now'}
+                      </button>
                     )}
-                  </button>
+                  </div>
                 ))}
               </div>
             )}

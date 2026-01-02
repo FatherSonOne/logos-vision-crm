@@ -26,7 +26,9 @@
       "Bash(git checkout:*)",
       "Bash(findstr:*)",
       "Bash(xargs:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(vercel env:*)",
+      "Bash(printf:*)"
     ],
     "deny": [],
     "ask": []

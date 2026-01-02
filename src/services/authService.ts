@@ -44,7 +44,7 @@ export const authService = {
         redirectTo,
         queryParams: provider === 'google' ? {
           access_type: 'offline',
-          prompt: 'consent',
+          prompt: 'select_account',  // Show Google account picker
         } : undefined
       }
     });

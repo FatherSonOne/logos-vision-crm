@@ -48,8 +48,15 @@ export interface DocumentShareOptions {
 // PULSE API CONFIGURATION
 // ============================================
 
-const PULSE_SUPABASE_URL = 'https://ucaeuszgoihoyrvhewxk.supabase.co';
-const PULSE_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjYWV1c3pnb2lob3lydmhld3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjg5ODYsImV4cCI6MjA4MDgwNDk4Nn0.0VGjpsPBYjyk6QTG5rAQX4_NcpfBTyR85ofE5jiHTKo';
+// Use environment variables for security - these should be set in .env.local
+const PULSE_SUPABASE_URL = import.meta.env.VITE_PULSE_SUPABASE_URL || '';
+const PULSE_SUPABASE_KEY = import.meta.env.VITE_PULSE_SUPABASE_ANON_KEY || import.meta.env.VITE_PULSE_SUPABASE_KEY || '';
+
+// Path to local Pulse directory for file system sync
+const PULSE_LOCAL_PATH = import.meta.env.VITE_PULSE_LOCAL_PATH || 'F:\\pulse';
+
+// Check if Pulse integration is configured
+const isPulseConfigured = () => Boolean(PULSE_SUPABASE_URL && PULSE_SUPABASE_KEY);
 
 // ============================================
 // SERVICE

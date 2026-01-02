@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { GlobalSearch } from './GlobalSearch';
 import type { Page } from '../types';
 import { Button } from './ui/Button';
-import { Badge } from './ui/Badge';
 import { ThemeToggle } from './ui/ThemeToggle';
 import { HelpToggle } from './ui/HelpToggle';
 import { InviteTeamModal } from './InviteTeamModal';
+import { UserAvatarMenu } from './UserAvatarMenu';
 import { UserPlus } from 'lucide-react';
 
 
@@ -27,15 +27,11 @@ interface HeaderProps {
     canGoBack?: boolean;
     canGoForward?: boolean;
     onStartTour?: () => void;
-    userEmail?: string;
-    onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
     onSearch,
     isSearching,
-    userEmail,
-    onLogout
 }) => {
     const [showInviteModal, setShowInviteModal] = useState(false);
 
@@ -85,22 +81,10 @@ export const Header: React.FC<HeaderProps> = ({
                         <UserPlus className="w-4 h-4" />
                         <span className="hidden sm:inline">Invite</span>
                     </Button>
-                    {userEmail && (
-                        <Badge variant="neutral" size="md">
-                            {userEmail}
-                        </Badge>
-                    )}
-                    {onLogout && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onLogout}
-                        >
-                            Logout
-                        </Button>
-                    )}
                     <HelpToggle />
                     <ThemeToggle size="sm" />
+                    {/* User Avatar Menu */}
+                    <UserAvatarMenu />
                 </div>
             </div>
         </header>
