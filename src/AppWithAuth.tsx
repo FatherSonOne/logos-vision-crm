@@ -203,8 +203,8 @@ const AuthenticatedApp: React.FC = () => {
         onLogin={signIn}
         onSignUp={(email, password, name) => signUp(email, password, { name })}
         onGoogleSignIn={() => signInWithOAuth('google')}
-        onShowPrivacyPolicy={() => setPageView('privacy')}
-        onShowTermsOfService={() => setPageView('terms')}
+        onShowPrivacyPolicy={() => { setPageView('privacy'); window.scrollTo(0, 0); }}
+        onShowTermsOfService={() => { setPageView('terms'); window.scrollTo(0, 0); }}
         onBack={() => {
           setPageView('landing');
           window.history.pushState({}, '', '/');
@@ -223,10 +223,12 @@ const AuthenticatedApp: React.FC = () => {
       onShowPrivacyPolicy={() => {
         setPageView('privacy');
         window.history.pushState({}, '', '/privacy');
+        window.scrollTo(0, 0);
       }}
       onShowTermsOfService={() => {
         setPageView('terms');
         window.history.pushState({}, '', '/terms');
+        window.scrollTo(0, 0);
       }}
     />
   );

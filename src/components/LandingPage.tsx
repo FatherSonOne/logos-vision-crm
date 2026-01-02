@@ -73,14 +73,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </span>
             </div>
             <div className="flex items-center gap-4">
-              <a href="#features" className="text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 text-sm font-medium">
+              <a href="#features" className="text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 text-sm font-medium hidden sm:block">
                 Features
               </a>
-              <a href="#about" className="text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 text-sm font-medium">
+              <a href="#about" className="text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 text-sm font-medium hidden sm:block">
                 About
               </a>
-              <a href="#contact" className="text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 text-sm font-medium">
+              <a href="#contact" className="text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 text-sm font-medium hidden sm:block">
                 Contact
+              </a>
+              <span className="hidden sm:block text-slate-300 dark:text-slate-600">|</span>
+              <a
+                href="/privacy"
+                onClick={(e) => { e.preventDefault(); onShowPrivacyPolicy(); }}
+                className="text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 text-xs font-medium"
+              >
+                Privacy
+              </a>
+              <a
+                href="/terms"
+                onClick={(e) => { e.preventDefault(); onShowTermsOfService(); }}
+                className="text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 text-xs font-medium"
+              >
+                Terms
               </a>
               <button
                 onClick={onGetStarted}
