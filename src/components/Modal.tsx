@@ -61,7 +61,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-center items-center"
+      className="fixed inset-0 z-50 flex justify-center items-center p-4"
       aria-modal="true"
       role="dialog"
     >
@@ -72,21 +72,24 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         onClick={onClose}
       />
 
-      {/* Modal content */}
+      {/* Modal content - with max-height and overflow handling */}
       <div
-        className={`relative w-full mx-4 p-6 rounded-lg transition-all duration-300 ease-out ${sizeClasses[size]} ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+        className={`relative w-full p-6 rounded-lg transition-all duration-300 ease-out ${sizeClasses[size]} ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
         style={{
           backgroundColor: 'var(--cmf-surface)',
           border: '1px solid var(--cmf-border)',
           boxShadow: 'var(--cmf-shadow-xl)',
+          maxHeight: 'calc(100vh - 4rem)',
+          display: 'flex',
+          flexDirection: 'column',
         }}
         onClick={(e) => e.stopPropagation()}
         onTransitionEnd={handleAnimationEnd}
       >
-        {/* Header */}
+        {/* Header - fixed at top */}
         <div
           className="flex justify-between items-center pb-4 mb-4"
-          style={{ borderBottom: '1px solid var(--cmf-divider)' }}
+          style={{ borderBottom: '1px solid var(--cmf-divider)', flexShrink: 0 }}
         >
           <h3
             className="text-xl font-semibold"
@@ -103,8 +106,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
           />
         </div>
 
-        {/* Content */}
-        <div>{children}</div>
+        {/* Content - scrollable when overflow */}
+        <div style={{ overflowY: 'auto', flex: 1, marginRight: '-0.5rem', paddingRight: '0.5rem' }}>{children}</div>
       </div>
     </div>
   );

@@ -1,7 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Shield, Cpu, Activity, Layout, HelpCircle, Layers, CheckCircle, Info, Sparkles, Eye, Download } from 'lucide-react';
+import { Shield, Cpu, Activity, Layout, HelpCircle, Layers, CheckCircle, Info, Sparkles, Eye, Download, Palette, Type, Monitor, Smartphone, Tablet, Maximize2 } from 'lucide-react';
 import { LogoSelector, LogoPreviewPanel, Logo, LogoVariant, logoVariants, aurora } from './Logo';
 import { useLogo } from '../contexts/LogoContext';
+import { useFont, type FontFamily, type FontSize, type FontConfig } from '../contexts/FontContext';
+import { PaletteSelectorCompact } from './PaletteSelectorCompact';
+import { BrandPaletteDisplay } from './BrandPaletteDisplay';
 
 interface DesignOption {
   id: string;
@@ -157,9 +160,9 @@ const LogoDownloader: React.FC<{ selectedLogo: LogoVariant }> = ({ selectedLogo 
   };
 
   return (
-    <div className="bg-slate-900/50 rounded-2xl border border-slate-700/50 p-8">
-      <h2 className="text-xl font-semibold text-slate-200 mb-6 flex items-center gap-2">
-        <Download className="w-5 h-5 text-cyan-400" />
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+      <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+        <Download className="w-5 h-5 text-indigo-600" />
         Download Logo as PNG
       </h2>
 
@@ -167,10 +170,10 @@ const LogoDownloader: React.FC<{ selectedLogo: LogoVariant }> = ({ selectedLogo 
         {/* Preview */}
         <div
           ref={svgRef}
-          className="w-48 h-48 flex items-center justify-center bg-slate-950 rounded-xl border border-slate-700/50 relative overflow-hidden"
+          className="w-48 h-48 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-200 relative overflow-hidden"
         >
           {/* Background glow effect */}
-          <div className="absolute inset-0 bg-gradient-radial from-teal-500/10 to-transparent rounded-xl" />
+          <div className="absolute inset-0 bg-gradient-radial from-indigo-500/5 to-transparent rounded-xl" />
           <div className="w-32 h-32 relative z-10">
             {logoVariants[selectedLogo]?.icon}
           </div>
@@ -179,7 +182,7 @@ const LogoDownloader: React.FC<{ selectedLogo: LogoVariant }> = ({ selectedLogo 
         {/* Controls */}
         <div className="flex-1 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-3">Select Size</label>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Select Size</label>
             <div className="flex flex-wrap gap-2">
               {sizes.map((size) => (
                 <button
@@ -188,8 +191,8 @@ const LogoDownloader: React.FC<{ selectedLogo: LogoVariant }> = ({ selectedLogo 
                   className={`
                     px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
                     ${selectedSize === size.value
-                      ? 'bg-teal-500 text-slate-900'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
                     }
                   `}
                 >
@@ -207,8 +210,8 @@ const LogoDownloader: React.FC<{ selectedLogo: LogoVariant }> = ({ selectedLogo 
                 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm
                 transition-all duration-200
                 ${downloading
-                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-900 hover:from-teal-400 hover:to-cyan-400 hover:shadow-lg hover:shadow-teal-500/25'
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-500 hover:to-blue-500 hover:shadow-lg hover:shadow-indigo-500/25'
                 }
               `}
             >
@@ -217,10 +220,261 @@ const LogoDownloader: React.FC<{ selectedLogo: LogoVariant }> = ({ selectedLogo 
             </button>
           </div>
 
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-gray-500">
             Downloads the "{logoVariants[selectedLogo]?.name}" logo as a transparent PNG file.
           </p>
         </div>
+      </div>
+    </div>
+  );
+};
+
+type FontFamily = 'inter' | 'system' | 'roboto' | 'open-sans' | 'poppins';
+type FontSize = 'small' | 'medium' | 'large';
+type ViewportSize = 'mobile' | 'tablet' | 'desktop' | 'full';
+
+interface FontConfig {
+  family: FontFamily;
+  size: FontSize;
+}
+
+const fontFamilies: { id: FontFamily; name: string; value: string }[] = [
+  { id: 'inter', name: 'Inter', value: "'Inter', system-ui, sans-serif" },
+  { id: 'system', name: 'System', value: "system-ui, -apple-system, sans-serif" },
+  { id: 'roboto', name: 'Roboto', value: "'Roboto', sans-serif" },
+  { id: 'open-sans', name: 'Open Sans', value: "'Open Sans', sans-serif" },
+  { id: 'poppins', name: 'Poppins', value: "'Poppins', sans-serif" },
+];
+
+const fontSizes: { id: FontSize; name: string; scale: number }[] = [
+  { id: 'small', name: 'Small (90%)', scale: 0.9 },
+  { id: 'medium', name: 'Medium (100%)', scale: 1.0 },
+  { id: 'large', name: 'Large (110%)', scale: 1.1 },
+];
+
+const viewportSizes: { id: ViewportSize; name: string; width: number; height: number; icon: React.ReactNode }[] = [
+  { id: 'mobile', name: 'Mobile', width: 375, height: 667, icon: <Smartphone className="w-4 h-4" /> },
+  { id: 'tablet', name: 'Tablet', width: 768, height: 1024, icon: <Tablet className="w-4 h-4" /> },
+  { id: 'desktop', name: 'Desktop', width: 1280, height: 720, icon: <Monitor className="w-4 h-4" /> },
+  { id: 'full', name: 'Full Screen', width: 0, height: 0, icon: <Maximize2 className="w-4 h-4" /> },
+];
+
+/**
+ * Font Selector Component
+ */
+const FontSelector: React.FC = () => {
+  const { fontConfig, setFontConfig } = useFont();
+
+  const fontFamilyMap: Record<FontFamily, string> = {
+    'inter': "'Inter', system-ui, sans-serif",
+    'system': "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    'roboto': "'Roboto', sans-serif",
+    'open-sans': "'Open Sans', sans-serif",
+    'poppins': "'Poppins', sans-serif",
+    'anthropic-serif': "'Crimson Pro', 'Georgia', serif",
+    'jetbrains-mono': "'JetBrains Mono', 'Courier New', monospace",
+    'fira-code': "'Fira Code', 'Courier New', monospace",
+    'source-code-pro': "'Source Code Pro', 'Courier New', monospace",
+    'ibm-plex-mono': "'IBM Plex Mono', 'Courier New', monospace",
+  };
+
+  const groupedFonts = fontFamilies.reduce((acc, font) => {
+    if (!acc[font.category]) {
+      acc[font.category] = [];
+    }
+    acc[font.category].push(font);
+    return acc;
+  }, {} as Record<string, typeof fontFamilies>);
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <Type className="w-5 h-5 text-indigo-600" />
+        Typography
+      </h2>
+
+      <div className="space-y-6">
+        {/* Font Family */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">Font Family</label>
+          <div className="space-y-3">
+            {Object.entries(groupedFonts).map(([category, fonts]) => (
+              <div key={category}>
+                <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">{category}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {fonts.map((font) => (
+                    <button
+                      key={font.id}
+                      onClick={() => setFontConfig({ ...fontConfig, family: font.id })}
+                      className={`
+                        px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 text-left
+                        ${fontConfig.family === font.id
+                          ? 'bg-indigo-600 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                        }
+                      `}
+                      style={fontConfig.family === font.id ? {} : { fontFamily: fontFamilyMap[font.id] }}
+                    >
+                      {font.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Font Size */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">Font Size</label>
+          <div className="flex gap-2">
+            {fontSizes.map((size) => (
+              <button
+                key={size.id}
+                onClick={() => setFontConfig({ ...fontConfig, size: size.id })}
+                className={`
+                  flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200
+                  ${fontConfig.size === size.id
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                  }
+                `}
+              >
+                {size.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Preview */}
+        <div className="pt-4 border-t border-gray-200">
+          <p className="text-xs text-gray-500 mb-2">Preview</p>
+          <div
+            className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+            style={{
+              fontFamily: fontFamilyMap[fontConfig.family] || 'Inter',
+              fontSize: `${(fontSizes.find(s => s.id === fontConfig.size)?.scale || 1) * 16}px`,
+            }}
+          >
+            <h3 className="font-bold text-lg mb-2">Heading Example</h3>
+            <p className="text-base mb-2">Body text example showing how the selected font and size look in practice.</p>
+            <p className="text-sm text-gray-600">Small text for labels and metadata.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Responsive Preview Component
+ */
+const ResponsivePreview: React.FC<{
+  viewportSize: ViewportSize;
+  onViewportChange: (size: ViewportSize) => void;
+  children: React.ReactNode;
+}> = ({ viewportSize, onViewportChange, children }) => {
+  const currentViewport = viewportSizes.find(v => v.id === viewportSize) || viewportSizes[2];
+
+  // Reset any global scaling on mount/unmount
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const appContainer = document.getElementById('root');
+    
+    // Always reset global scaling - we only scale the preview content, not the entire app
+    if (appContainer) {
+      appContainer.style.removeProperty('transform');
+      appContainer.style.removeProperty('width');
+      appContainer.style.removeProperty('transform-origin');
+    }
+    root.style.removeProperty('--viewport-scale');
+    root.style.removeProperty('--viewport-width');
+    root.removeAttribute('data-viewport-scale');
+    
+    return () => {
+      // Cleanup on unmount - ensure we reset everything
+      if (appContainer) {
+        appContainer.style.removeProperty('transform');
+        appContainer.style.removeProperty('width');
+        appContainer.style.removeProperty('transform-origin');
+      }
+      root.style.removeProperty('--viewport-scale');
+      root.style.removeProperty('--viewport-width');
+      root.removeAttribute('data-viewport-scale');
+    };
+  }, []);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+      <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-br from-gray-50 to-white">
+          <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <Monitor className="w-5 h-5 text-indigo-600" />
+            Responsive Preview
+          </h2>
+          <div className="flex items-center gap-2">
+            {viewportSizes.map((size) => (
+              <button
+                key={size.id}
+                onClick={() => onViewportChange(size.id)}
+                className={`
+                  flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200
+                  ${viewportSize === size.id
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }
+                `}
+                title={size.name}
+              >
+                {size.icon}
+                <span className="hidden sm:inline">{size.name}</span>
+              </button>
+            ))}
+            <button
+              onClick={() => {
+                // Force reset to desktop
+                onViewportChange('desktop');
+                const root = document.documentElement;
+                const appContainer = document.getElementById('root');
+                if (appContainer) {
+                  appContainer.style.removeProperty('transform');
+                  appContainer.style.removeProperty('width');
+                  appContainer.style.removeProperty('transform-origin');
+                }
+                root.style.removeProperty('--viewport-scale');
+                root.style.removeProperty('--viewport-width');
+                root.removeAttribute('data-viewport-scale');
+              }}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+              title="Reset to Desktop (Ctrl+Shift+R)"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 bg-gray-100 min-h-[600px]">
+        <div className="flex justify-center">
+          <div
+            className="bg-white rounded-lg shadow-lg transition-all duration-300 overflow-auto"
+            style={{
+              width: viewportSize === 'full' ? '100%' : `${currentViewport.width}px`,
+              maxWidth: '100%',
+              maxHeight: viewportSize === 'full' ? 'none' : '80vh',
+              height: viewportSize === 'full' ? 'auto' : `${currentViewport.height}px`,
+            }}
+          >
+            <div style={{ width: '100%', minHeight: '100%' }}>
+              {children}
+            </div>
+          </div>
+        </div>
+        {viewportSize !== 'full' && (
+          <p className="text-xs text-gray-500 text-center mt-2">
+            {currentViewport.name}: {currentViewport.width} × {currentViewport.height}px
+          </p>
+        )}
       </div>
     </div>
   );
@@ -400,6 +654,87 @@ export const DesignPreview: React.FC = () => {
   const [selectedOption, setSelectedOption] = useState<string>('prism');
   const [showHelp, setShowHelp] = useState<boolean>(true);
   const { selectedVariant, setSelectedVariant } = useLogo();
+  const { fontConfig } = useFont();
+  const [viewportSize, setViewportSize] = useState<ViewportSize>(() => {
+    // Reset to desktop on mount to prevent stuck states
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('logos-vision-viewport-size');
+      if (stored && ['mobile', 'tablet', 'desktop', 'full'].includes(stored)) {
+        return stored as ViewportSize;
+      }
+    }
+    return 'desktop';
+  });
+
+  // Reset any global scaling when component mounts
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const appContainer = document.getElementById('root');
+    
+    // Reset any global scaling
+    if (appContainer) {
+      appContainer.style.removeProperty('transform');
+      appContainer.style.removeProperty('width');
+      appContainer.style.removeProperty('transform-origin');
+    }
+    root.style.removeProperty('--viewport-scale');
+    root.style.removeProperty('--viewport-width');
+    root.removeAttribute('data-viewport-scale');
+    
+    // Save viewport size to localStorage
+    localStorage.setItem('logos-vision-viewport-size', viewportSize);
+    
+    // Add keyboard shortcut to reset (Ctrl+Shift+R or Cmd+Shift+R)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'R') {
+        e.preventDefault();
+        setViewportSize('desktop');
+        // Force reset
+        const rootEl = document.documentElement;
+        const appContainerEl = document.getElementById('root');
+        if (appContainerEl) {
+          appContainerEl.style.removeProperty('transform');
+          appContainerEl.style.removeProperty('width');
+          appContainerEl.style.removeProperty('transform-origin');
+        }
+        rootEl.style.removeProperty('--viewport-scale');
+        rootEl.style.removeProperty('--viewport-width');
+        rootEl.removeAttribute('data-viewport-scale');
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Expose reset function to window for console access
+    (window as any).resetViewport = () => {
+      setViewportSize('desktop');
+      const rootEl = document.documentElement;
+      const appContainerEl = document.getElementById('root');
+      if (appContainerEl) {
+        appContainerEl.style.removeProperty('transform');
+        appContainerEl.style.removeProperty('width');
+        appContainerEl.style.removeProperty('transform-origin');
+      }
+      rootEl.style.removeProperty('--viewport-scale');
+      rootEl.style.removeProperty('--viewport-width');
+      rootEl.removeAttribute('data-viewport-scale');
+      console.log('Viewport reset to desktop');
+    };
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      delete (window as any).resetViewport;
+      // Cleanup on unmount
+      if (appContainer) {
+        appContainer.style.removeProperty('transform');
+        appContainer.style.removeProperty('width');
+        appContainer.style.removeProperty('transform-origin');
+      }
+      root.style.removeProperty('--viewport-scale');
+      root.style.removeProperty('--viewport-width');
+      root.removeAttribute('data-viewport-scale');
+    };
+  }, [viewportSize]);
 
 
   const options: DesignOption[] = [
@@ -475,7 +810,7 @@ export const DesignPreview: React.FC = () => {
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
           <Layout className="w-6 h-6 text-indigo-600" />
-          Design Preview: {currentDesign.name}
+          Design Preview
         </h1>
         <div 
           className="flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-full border border-indigo-100 cursor-pointer hover:bg-indigo-100 transition-colors group relative"
@@ -500,182 +835,73 @@ export const DesignPreview: React.FC = () => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Options Selector */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
-          {/* Logo Selection Section */}
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">Logo & Icon</h2>
-            <LogoSelector currentVariant={selectedVariant} onSelect={setSelectedVariant} />
-          </div>
-          
-          {/* Design Theme Selection */}
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">Design Concepts</h2>
-            <div className="space-y-4">
-              {options.map(option => (
-                <div 
-                  key={option.id}
-                  onClick={() => setSelectedOption(option.id)}
-                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    selectedOption === option.id 
-                      ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200 ring-offset-2' 
-                      : 'border-gray-100 hover:border-indigo-200 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="p-2 bg-white rounded-lg shadow-sm border border-gray-100 text-gray-800">
-                      {option.icon}
-                    </div>
-                    {selectedOption === option.id && <CheckCircle className="w-5 h-5 text-indigo-600" />}
-                  </div>
-                  <h3 className="font-bold text-gray-900">{option.name}</h3>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">{option.description}</p>
-                  
-                  <div className="flex gap-2 mt-3">
-                    <div className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: option.colors.primary }} title="Primary"></div>
-                    <div className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: option.colors.secondary }} title="Secondary"></div>
-                    <div className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: option.colors.accent }} title="Accent"></div>
-                    <div className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: option.colors.background }} title="Background"></div>
-                  </div>
-                </div>
-              ))}
+        <div className="w-96 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+          {/* Brand Palette Selection Section */}
+          <div className="p-6 border-b border-gray-200 bg-gradient-to-br from-gray-50 to-white">
+            <div className="flex items-center gap-2 mb-4">
+              <Palette className="w-5 h-5 text-indigo-600" />
+              <h2 className="text-lg font-semibold text-gray-700">Brand Palette</h2>
             </div>
+            <PaletteSelectorCompact />
+          </div>
+
+          {/* Typography Section */}
+          <div className="p-6 border-b border-gray-200">
+            <FontSelector />
           </div>
         </div>
 
-        {/* Preview Area */}
-        <div className="flex-1 p-8 overflow-y-auto" style={{ backgroundColor: currentDesign.colors.background }}>
-          <div className="max-w-4xl mx-auto">
-            {/* Mock Navigation Header */}
-            <div 
-              className="rounded-xl shadow-lg p-4 mb-8 flex justify-between items-center relative group"
-              style={{ backgroundColor: currentDesign.colors.primary, color: currentDesign.colors.text }}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded bg-white/10 flex items-center justify-center backdrop-blur-sm">
-                 {/* Reusing the selected icon but smaller */}
-                 <div className="w-8 h-8 text-current">
-                   {currentDesign.icon}
-                 </div>
-                </div>
-                <div className="font-bold text-xl tracking-tight">LOGOS VISION</div>
-              </div>
-              
-              <div className="flex items-center gap-6 text-sm font-medium opacity-90">
-                {['Dashboard', 'Projects', 'Clients', 'Reports'].map(item => (
-                   <span key={item} className="cursor-pointer hover:opacity-100 hover:underline underline-offset-4 decoration-2 decoration-current">
-                     {item}
-                   </span>
-                ))}
-              </div>
-
-              {showHelp && (
-                 <div className="absolute -bottom-16 left-20 bg-slate-800 text-white text-xs p-3 rounded shadow-lg z-50 pointer-events-none">
-                    <div className="font-bold mb-1 text-yellow-400">Navigation Bar</div>
-                    Quickly access your key modules. This bar remains visible everywhere.
-                    <div className="absolute -top-1 left-4 w-2 h-2 bg-slate-800 transform rotate-45"></div>
-                 </div>
-              )}
-            </div>
-
-            {/* Mock Content Grid */}
-            <div className="grid grid-cols-3 gap-6">
-              {/* Card 1 */}
-              <div 
-                className="col-span-2 rounded-xl p-6 shadow-md relative group border"
-                style={{ backgroundColor: '#FFFFFF', borderColor: currentDesign.colors.background === '#FFFFFF' ? '#E5E7EB' : 'transparent' }}
-              >
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-bold text-gray-800">Recent Activity</h3>
-                  <Activity className="w-5 h-5 text-gray-400" />
-                </div>
-                <div className="space-y-4">
-                   {[1, 2, 3].map(i => (
-                     <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                       <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
-                         US
-                       </div>
-                       <div className="flex-1">
-                         <div className="h-2 w-3/4 bg-gray-200 rounded mb-2"></div>
-                         <div className="h-2 w-1/2 bg-gray-100 rounded"></div>
-                       </div>
-                     </div>
-                   ))}
-                </div>
-
-                {showHelp && (
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800/90 text-white text-xs p-4 rounded-lg backdrop-blur-sm z-10 w-64 text-center pointer-events-none">
-                     <p className="font-bold text-lg mb-2">Activity Stream</p>
-                     <p>Monitor real-time updates from your team and partner apps. Click any item to jump to details.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Card 2 - Stats */}
-              <div 
-                className="rounded-xl p-6 shadow-md border relative group"
-                 style={{ backgroundColor: '#FFFFFF', borderColor: currentDesign.colors.background === '#FFFFFF' ? '#E5E7EB' : 'transparent' }}
-              >
-                 <div className="flex items-center gap-2 mb-4">
-                    <Shield className="w-5 h-5" style={{ color: currentDesign.colors.secondary }} />
-                    <span className="font-bold text-gray-700">System Health</span>
-                 </div>
-                 <div className="text-3xl font-bold mb-1" style={{ color: currentDesign.colors.primary }}>98%</div>
-                 <div className="text-xs text-gray-500">Operational uptime</div>
-                 
-                 <div className="mt-6 pt-6 border-t border-gray-100">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Cpu className="w-5 h-5" style={{ color: currentDesign.colors.accent }} />
-                        <span className="font-bold text-gray-700">Integrations</span>
+        {/* Main Preview Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto bg-gray-50">
+            <div className="p-8">
+              <div className="max-w-7xl mx-auto space-y-8">
+                {/* Responsive Preview Wrapper */}
+                <ResponsivePreview viewportSize={viewportSize} onViewportChange={setViewportSize}>
+                  <div
+                    style={{
+                      minHeight: '100%',
+                      padding: viewportSize === 'mobile' ? '1rem' : viewportSize === 'tablet' ? '1.5rem' : '2rem',
+                    }}
+                  >
+                    {/* Brand Palette Display */}
+                    <div className="mb-6">
+                      <BrandPaletteDisplay />
                     </div>
-                     <div className="flex gap-2">
-                        {['P', 'E', 'V', 'A'].map((l, i) => (
-                          <div key={i} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
-                               style={{ backgroundColor: i % 2 === 0 ? currentDesign.colors.secondary : currentDesign.colors.accent }}>
-                            {l}
+
+                    {/* Logo & Icon Section */}
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+                      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-gradient-to-br from-gray-50 to-white">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                            <h2 className="text-base sm:text-lg font-semibold text-gray-700">Logo & Icon</h2>
                           </div>
-                        ))}
-                     </div>
-                 </div>
+                          <button
+                            onClick={() => {
+                              alert('Guided Tour: This will walk you through the logo selection and customization options.');
+                            }}
+                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                          >
+                            <Info className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <span className="hidden sm:inline">Start Tour</span>
+                            <span className="sm:hidden">Tour</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-4 sm:p-6">
+                        <LogoSelector currentVariant={selectedVariant} onSelect={setSelectedVariant} />
+                      </div>
+                    </div>
 
-                 {showHelp && (
-                  <div className="absolute -right-4 top-10 w-48 bg-slate-800 text-white text-xs p-3 rounded shadow-lg z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="font-bold mb-1 text-green-400">System Status</div>
-                    Quick view of integration health with Pulse, Entomate, Visionboard, and Agentica.
-                    <div className="absolute top-4 -left-1 w-2 h-2 bg-slate-800 transform rotate-45"></div>
+                    {/* Logo Download Section */}
+                    <div>
+                      <LogoDownloader selectedLogo={selectedVariant} />
+                    </div>
                   </div>
-                )}
+                </ResponsivePreview>
               </div>
             </div>
-
-            {/* Instruction Banner */}
-            <div className="mt-8 p-6 rounded-xl bg-gradient-to-r from-gray-900 to-gray-800 text-white relative overflow-hidden group">
-               <div className="relative z-10">
-                 <h2 className="text-xl font-bold mb-2">Guided Workflows</h2>
-                 <p className="opacity-80 max-w-lg">
-                   Experience the new step-by-step interface. Each section now includes contextual hints to guide you through complex tasks.
-                 </p>
-                 <button 
-                   className="mt-4 px-4 py-2 rounded-lg font-medium text-sm transition-transform hover:scale-105 active:scale-95"
-                   style={{ backgroundColor: currentDesign.colors.accent, color: '#000' }}
-                 >
-                   Start Tour
-                 </button>
-               </div>
-               
-               {/* Decorative elements */}
-               <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
-               <div className="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-5 rounded-full transform -translate-x-1/2 translate-y-1/2"></div>
-
-               {showHelp && (
-                  <div className="absolute top-4 right-4 bg-white text-gray-900 text-xs p-3 rounded shadow-lg z-50 max-w-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="font-bold mb-1 flex items-center gap-1">
-                      <Layers className="w-3 h-3 text-indigo-600" /> Contextual Actions
-                    </div>
-                    Hovering over sections like this will now reveal specific actions available to you, reducing clutter until needed.
-                  </div>
-               )}
-            </div>
-            
           </div>
         </div>
       </div>

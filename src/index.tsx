@@ -5,6 +5,8 @@ import { ToastProvider } from './components/ui/Toast';
 import { CMFThemeProvider } from './contexts/CMFThemeContext';
 import { GuidedHelpProvider } from './contexts/GuidedHelpContext';
 import { LogoProvider } from './contexts/LogoContext';
+import { BrandPaletteProvider } from './contexts/BrandPaletteContext';
+import { FontProvider } from './contexts/FontContext';
 import { initializePWA } from './lib/pwa';
 import './styles/design-tokens.css';
 import '../index.css';
@@ -20,14 +22,18 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <CMFThemeProvider>
-      <LogoProvider>
-        <GuidedHelpProvider>
-          <ToastProvider>
-            <AppWithAuth />
-          </ToastProvider>
-        </GuidedHelpProvider>
-      </LogoProvider>
-    </CMFThemeProvider>
+    <FontProvider>
+      <BrandPaletteProvider>
+        <CMFThemeProvider>
+          <LogoProvider>
+            <GuidedHelpProvider>
+              <ToastProvider>
+                <AppWithAuth />
+              </ToastProvider>
+            </GuidedHelpProvider>
+          </LogoProvider>
+        </CMFThemeProvider>
+      </BrandPaletteProvider>
+    </FontProvider>
   </React.StrictMode>
 );

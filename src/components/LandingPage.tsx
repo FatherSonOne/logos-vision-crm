@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users, Calendar, FileText, BarChart3, Shield, Clock,
   CheckCircle, ArrowRight, Sparkles, Heart, Building2,
-  Mail, Phone, MapPin, ChevronRight
+  Mail, Phone, MapPin, ChevronRight, ChevronLeft
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -10,6 +10,138 @@ interface LandingPageProps {
   onShowPrivacyPolicy: () => void;
   onShowTermsOfService: () => void;
 }
+
+// Screenshot Carousel Component
+const ScreenshotCarousel: React.FC = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState<boolean[]>([]);
+
+  // Screenshots from crm.logosvision.org - add your actual screenshot files to public/screenshots/
+  const screenshots = [
+    {
+      src: '/screenshots/dashboard-hero.png',
+      alt: 'Logos Vision CRM Dashboard',
+      fallback: 'https://crm.logosvision.org'
+    },
+    {
+      src: '/screenshots/projects-view.png',
+      alt: 'Projects Management View',
+      fallback: 'https://crm.logosvision.org'
+    },
+    {
+      src: '/screenshots/contacts-view.png',
+      alt: 'Contacts Management',
+      fallback: 'https://crm.logosvision.org'
+    }
+  ];
+
+  useEffect(() => {
+    // Check which images are loaded
+    const checkImages = async () => {
+      const loaded = await Promise.all(
+        screenshots.map(screenshot => {
+          return new Promise<boolean>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(false);
+            img.src = screenshot.src;
+          });
+        })
+      );
+      setImagesLoaded(loaded);
+    };
+    checkImages();
+  }, []);
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % screenshots.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + screenshots.length) % screenshots.length);
+  };
+
+  // Auto-advance slides
+  useEffect(() => {
+    const interval = setInterval(nextSlide, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentScreenshot = screenshots[currentIndex];
+  const imageExists = imagesLoaded[currentIndex] ?? true; // Default to true until checked
+
+  return (
+    <div className="relative group">
+      {/* Screenshot Image */}
+      {imageExists ? (
+        <img
+          src={currentScreenshot.src}
+          alt={currentScreenshot.alt}
+          className="w-full h-auto min-h-[500px] object-cover"
+        />
+      ) : (
+        // Fallback: Show a placeholder with link to actual site
+        <div className="w-full h-[600px] bg-slate-700/50 flex flex-col items-center justify-center p-8">
+          <div className="text-center mb-6">
+            <Building2 className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-slate-200 mb-2">Live Preview</h3>
+            <p className="text-slate-400 mb-4">View the actual Logos Vision CRM</p>
+            <a
+              href="https://crm.logosvision.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium transition-colors"
+            >
+              Visit crm.logosvision.org
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+          <p className="text-xs text-slate-500 text-center max-w-md">
+            To add screenshots, place image files in <code className="bg-slate-800 px-2 py-1 rounded">public/screenshots/</code> with names matching the screenshot paths above.
+          </p>
+        </div>
+      )}
+
+      {/* Navigation Arrows */}
+      {screenshots.length > 1 && (
+        <>
+          <button
+            onClick={prevSlide}
+            className="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-900/80 hover:bg-slate-900 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Previous screenshot"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-900/80 hover:bg-slate-900 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Next screenshot"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </>
+      )}
+
+      {/* Dots Indicator */}
+      {screenshots.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          {screenshots.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                index === currentIndex
+                  ? 'bg-cyan-400 w-6'
+                  : 'bg-slate-600 hover:bg-slate-500'
+              }`}
+              aria-label={`Go to screenshot ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onGetStarted,
@@ -145,43 +277,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
 
-          {/* App Preview */}
+          {/* App Preview - Real Screenshots from crm.logosvision.org */}
           <div className="mt-16 relative">
             <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-slate-900 to-transparent z-10 pointer-events-none h-32 bottom-0 top-auto" />
             <div className="bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
+              {/* Browser Chrome */}
               <div className="flex items-center gap-2 px-4 py-3 bg-slate-800 border-b border-slate-700">
                 <div className="w-3 h-3 rounded-full bg-red-500" />
                 <div className="w-3 h-3 rounded-full bg-yellow-500" />
                 <div className="w-3 h-3 rounded-full bg-green-500" />
                 <span className="ml-4 text-sm text-slate-400">crm.logosvision.org</span>
               </div>
-              <div className="p-8 bg-gradient-to-br from-slate-800 to-slate-900">
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="col-span-1 space-y-3">
-                    <div className="h-8 bg-slate-700/50 rounded-lg" />
-                    <div className="h-6 bg-slate-700/30 rounded w-3/4" />
-                    <div className="h-6 bg-slate-700/30 rounded w-1/2" />
-                    <div className="h-6 bg-rose-500/30 rounded w-2/3" />
-                    <div className="h-6 bg-slate-700/30 rounded w-3/4" />
-                  </div>
-                  <div className="col-span-3 bg-slate-700/20 rounded-xl p-4">
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      <div className="bg-gradient-to-br from-rose-500/20 to-pink-500/20 rounded-lg p-4">
-                        <div className="h-4 bg-rose-400/30 rounded w-1/2 mb-2" />
-                        <div className="h-8 bg-rose-400/50 rounded w-3/4" />
-                      </div>
-                      <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-lg p-4">
-                        <div className="h-4 bg-blue-400/30 rounded w-1/2 mb-2" />
-                        <div className="h-8 bg-blue-400/50 rounded w-3/4" />
-                      </div>
-                      <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg p-4">
-                        <div className="h-4 bg-green-400/30 rounded w-1/2 mb-2" />
-                        <div className="h-8 bg-green-400/50 rounded w-3/4" />
-                      </div>
-                    </div>
-                    <div className="bg-slate-700/30 rounded-lg p-4 h-32" />
-                  </div>
-                </div>
+              
+              {/* Real Screenshot Display - Multiple screenshots in a carousel */}
+              <div className="relative bg-slate-800 overflow-hidden">
+                <ScreenshotCarousel />
               </div>
             </div>
           </div>

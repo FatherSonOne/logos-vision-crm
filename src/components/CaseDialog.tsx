@@ -309,7 +309,6 @@ const getPriorityStyles = (priority: CasePriority, isSelected: boolean) => {
     [CasePriority.Low]: { bg: 'transparent', activeBg: 'var(--cmf-success-muted)', text: 'var(--cmf-success)' },
     [CasePriority.Medium]: { bg: 'transparent', activeBg: 'var(--cmf-warning-muted)', text: 'var(--cmf-warning)' },
     [CasePriority.High]: { bg: 'transparent', activeBg: 'var(--cmf-error-muted)', text: 'var(--cmf-error)' },
-    [CasePriority.Urgent]: { bg: 'transparent', activeBg: '#ff000025', text: '#ff4444' },
   };
   const config = configs[priority];
   return {

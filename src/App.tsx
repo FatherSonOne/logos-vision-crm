@@ -71,7 +71,7 @@ import { TouchpointTracker } from './components/TouchpointTracker';
 import { Settings } from './components/Settings';
 import { OutreachHub } from './components/OutreachHub';
 import { ConnectHub } from './components/ConnectHub';
-import { LogoShowcase } from './components/DesignPreview';
+import { DesignPreview } from './components/DesignPreview';
 import { QuickActions, useQuickActions } from './components/QuickActions';
 import { ErrorBoundary, PageErrorBoundary, LoadingState } from './components/ErrorBoundary';
 import { useToast } from './components/ui/Toast';
@@ -790,9 +790,17 @@ useEffect(() => {
   // toggleTheme removed - now handled by ThemeToggle component
 
   const handleSelectProject = useCallback((id: string) => {
+    // Set the project ID first
     setSelectedProjectId(id);
-    navigateToPage('projects');
-  }, [navigateToPage]);
+    // Find the project name for recent items
+    const project = projects.find(p => p.id === id);
+    // Navigate with detail context to prevent clearing the selection
+    setCurrentPage('projects');
+    // Add to recent items with detail context
+    if (project) {
+      addToRecentItems('projects', { id, label: project.name });
+    }
+  }, [projects, addToRecentItems]);
   
   const handleBackToList = useCallback(() => {
     setSelectedProjectId(null);
@@ -1908,7 +1916,7 @@ useEffect(() => {
       case 'settings':
           return <Settings />;
       case 'design-preview':
-          return <LogoShowcase />;
+          return <DesignPreview />;
       default:
         return <Dashboard 
                   projects={projects} 

@@ -113,6 +113,57 @@ function getFaviconSVG(variant: LogoVariant): string {
       <circle cx="12" cy="12" r="4" stroke="${cyan}" stroke-width="0.75" fill="none" opacity="0.5"/>
       <circle cx="12" cy="12" r="2" fill="#020617"/>
       <circle cx="12" cy="12" r="1" fill="${cyan}"/>
+    </svg>`,
+    'team-compass': `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" fill="#020617"/>
+      <circle cx="12" cy="12" r="10" stroke="${cyan}" stroke-width="1.5"/>
+      <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="${cyan}" stroke-width="1.5"/>
+      <circle cx="12" cy="12" r="2" fill="${cyan}"/>
+      <circle cx="12" cy="4" r="1.5" fill="${cyan}" fill-opacity="0.6"/>
+      <circle cx="20" cy="12" r="1.5" fill="${cyan}" fill-opacity="0.6"/>
+      <circle cx="12" cy="20" r="1.5" fill="${cyan}" fill-opacity="0.6"/>
+      <circle cx="4" cy="12" r="1.5" fill="${cyan}" fill-opacity="0.6"/>
+    </svg>`,
+    'unified-vision': `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" fill="#020617"/>
+      <circle cx="12" cy="12" r="8" fill="${cyan}" fill-opacity="0.1"/>
+      <circle cx="12" cy="12" r="4" fill="${cyan}" fill-opacity="0.2"/>
+      <circle cx="12" cy="12" r="2" fill="${cyan}"/>
+      <circle cx="4" cy="4" r="2" fill="${cyan}" fill-opacity="0.4"/>
+      <circle cx="20" cy="4" r="2" fill="${cyan}" fill-opacity="0.4"/>
+      <circle cx="4" cy="20" r="2" fill="${cyan}" fill-opacity="0.4"/>
+      <circle cx="20" cy="20" r="2" fill="${cyan}" fill-opacity="0.4"/>
+    </svg>`,
+    'strategic-alignment': `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" fill="#020617"/>
+      <rect x="3" y="3" width="18" height="4" rx="1" fill="${cyan}" fill-opacity="0.2"/>
+      <rect x="3" y="10" width="18" height="4" rx="1" fill="${cyan}" fill-opacity="0.3"/>
+      <rect x="3" y="17" width="18" height="4" rx="1" fill="${cyan}" fill-opacity="0.4"/>
+      <circle cx="12" cy="12" r="2" fill="${cyan}"/>
+    </svg>`,
+    'collaborative-hub': `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" fill="#020617"/>
+      <circle cx="12" cy="12" r="5" fill="${cyan}" fill-opacity="0.2"/>
+      <circle cx="12" cy="12" r="3" fill="${cyan}" fill-opacity="0.4"/>
+      <circle cx="12" cy="12" r="1.5" fill="${cyan}"/>
+      <circle cx="12" cy="4" r="2" fill="${cyan}" fill-opacity="0.5"/>
+      <circle cx="20" cy="12" r="2" fill="${cyan}" fill-opacity="0.5"/>
+      <circle cx="12" cy="20" r="2" fill="${cyan}" fill-opacity="0.5"/>
+      <circle cx="4" cy="12" r="2" fill="${cyan}" fill-opacity="0.5"/>
+    </svg>`,
+    'organized-layers': `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" fill="#020617"/>
+      <path d="M12 2L4 8L12 14L20 8L12 2Z" fill="${cyan}" fill-opacity="0.15"/>
+      <path d="M12 8L6 12L12 16L18 12L12 8Z" fill="${cyan}" fill-opacity="0.25"/>
+      <circle cx="12" cy="13" r="1" fill="${cyan}"/>
+    </svg>`,
+    'shared-horizon': `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" fill="#020617"/>
+      <path d="M2 16L22 16" stroke="${cyan}" stroke-width="1.5"/>
+      <circle cx="6" cy="12" r="2" fill="${cyan}" fill-opacity="0.4"/>
+      <circle cx="12" cy="10" r="2" fill="${cyan}" fill-opacity="0.5"/>
+      <circle cx="18" cy="12" r="2" fill="${cyan}" fill-opacity="0.4"/>
+      <circle cx="12" cy="16" r="1.5" fill="${cyan}"/>
     </svg>`
   };
 

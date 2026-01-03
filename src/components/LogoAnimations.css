@@ -1,0 +1,186 @@
+/* Logo Animations - Applied to all logos */
+.logo-quantum-ripple,
+.logo-wave-convergence,
+.logo-probability-field,
+.logo-nested-horizons,
+.logo-interference-bloom,
+.logo-singularity-lens,
+.logo-team-compass,
+.logo-unified-vision,
+.logo-strategic-alignment,
+.logo-collaborative-hub,
+.logo-organized-layers,
+.logo-shared-horizon {
+  animation: logo-float 6s ease-in-out infinite;
+}
+
+@keyframes logo-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Probability Field - Rotating orbits */
+.logo-probability-field ellipse {
+  animation: orbit-rotate 8s linear infinite;
+}
+.logo-probability-field ellipse:nth-child(1) { animation-duration: 8s; }
+.logo-probability-field ellipse:nth-child(2) { animation-duration: 10s; animation-direction: reverse; }
+.logo-probability-field ellipse:nth-child(3) { animation-duration: 12s; }
+.logo-probability-field circle {
+  animation: particle-pulse 2s ease-in-out infinite;
+}
+.logo-probability-field circle:nth-child(4) { animation-delay: 0s; }
+.logo-probability-field circle:nth-child(5) { animation-delay: 0.5s; }
+.logo-probability-field circle:nth-child(6) { animation-delay: 1s; }
+
+@keyframes orbit-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes particle-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+/* Nested Horizons - Depth animation */
+.logo-nested-horizons path {
+  animation: horizon-fade 4s ease-in-out infinite;
+}
+.logo-nested-horizons path:nth-child(1) { animation-delay: 0s; }
+.logo-nested-horizons path:nth-child(2) { animation-delay: 0.5s; }
+.logo-nested-horizons path:nth-child(3) { animation-delay: 1s; }
+.logo-nested-horizons path:nth-child(4) { animation-delay: 1.5s; }
+.logo-nested-horizons path:nth-child(5) { animation-delay: 2s; }
+
+@keyframes horizon-fade {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Interference Bloom - Pulsing circles */
+.logo-interference-bloom circle {
+  animation: bloom-pulse 3s ease-in-out infinite;
+}
+.logo-interference-bloom circle:nth-child(1) { animation-delay: 0s; }
+.logo-interference-bloom circle:nth-child(2) { animation-delay: 1s; }
+.logo-interference-bloom circle:nth-child(3) { animation-delay: 2s; }
+
+@keyframes bloom-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+/* Singularity Lens - Light rays */
+.logo-singularity-lens path {
+  animation: light-ray 4s ease-in-out infinite;
+}
+.logo-singularity-lens path:nth-child(1) { animation-delay: 0s; }
+.logo-singularity-lens path:nth-child(2) { animation-delay: 0.5s; }
+.logo-singularity-lens path:nth-child(3) { animation-delay: 1s; }
+.logo-singularity-lens path:nth-child(4) { animation-delay: 1.5s; }
+
+@keyframes light-ray {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Team Compass - Rotating */
+.logo-team-compass {
+  animation: compass-rotate 10s linear infinite, logo-float 6s ease-in-out infinite;
+}
+
+@keyframes compass-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Unified Vision - Converging */
+.logo-unified-vision path {
+  animation: converge-pulse 3s ease-in-out infinite;
+}
+.logo-unified-vision circle:not(:first-child) {
+  animation: node-pulse 2s ease-in-out infinite;
+}
+.logo-unified-vision circle:nth-child(5) { animation-delay: 0s; }
+.logo-unified-vision circle:nth-child(6) { animation-delay: 0.5s; }
+.logo-unified-vision circle:nth-child(7) { animation-delay: 1s; }
+.logo-unified-vision circle:nth-child(8) { animation-delay: 1.5s; }
+
+@keyframes converge-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes node-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
+/* Strategic Alignment - Layered pulse */
+.logo-strategic-alignment rect {
+  animation: layer-pulse 2s ease-in-out infinite;
+}
+.logo-strategic-alignment rect:nth-child(1) { animation-delay: 0s; }
+.logo-strategic-alignment rect:nth-child(2) { animation-delay: 0.3s; }
+.logo-strategic-alignment rect:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes layer-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* Collaborative Hub - Connection pulse */
+.logo-collaborative-hub circle {
+  animation: hub-pulse 2s ease-in-out infinite;
+}
+.logo-collaborative-hub circle:nth-child(1) { animation-delay: 0s; }
+.logo-collaborative-hub circle:nth-child(2) { animation-delay: 0.2s; }
+.logo-collaborative-hub circle:nth-child(3) { animation-delay: 0.4s; }
+.logo-collaborative-hub path {
+  animation: connection-flow 3s ease-in-out infinite;
+}
+
+@keyframes hub-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.15); }
+}
+
+@keyframes connection-flow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Organized Layers - Flow animation */
+.logo-organized-layers path {
+  animation: layer-flow 3s ease-in-out infinite;
+}
+.logo-organized-layers path:nth-child(1) { animation-delay: 0s; }
+.logo-organized-layers path:nth-child(2) { animation-delay: 0.5s; }
+.logo-organized-layers path:nth-child(3) { animation-delay: 1s; }
+
+@keyframes layer-flow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+/* Shared Horizon - Team movement */
+.logo-shared-horizon circle {
+  animation: team-move 3s ease-in-out infinite;
+}
+.logo-shared-horizon circle:nth-child(2) { animation-delay: 0s; }
+.logo-shared-horizon circle:nth-child(3) { animation-delay: 0.3s; }
+.logo-shared-horizon circle:nth-child(4) { animation-delay: 0.6s; }
+.logo-shared-horizon path {
+  animation: vision-ray 2s ease-in-out infinite;
+}
+
+@keyframes team-move {
+  0%, 100% { transform: translateY(0px); opacity: 0.4; }
+  50% { transform: translateY(-2px); opacity: 0.7; }
+}
+
+@keyframes vision-ray {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
