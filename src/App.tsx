@@ -76,6 +76,17 @@ import { QuickActions, useQuickActions } from './components/QuickActions';
 import { ErrorBoundary, PageErrorBoundary, LoadingState } from './components/ErrorBoundary';
 import { useToast } from './components/ui/Toast';
 import { GuidedTour } from './components/GuidedTour';
+import { OnboardingFlow, useOnboarding } from '../components/OnboardingFlow';
+import {
+  BottomNav,
+  FloatingActionButton,
+  useIsMobile,
+  HomeIcon as MobileHomeIcon,
+  ContactsIcon as MobileContactsIcon,
+  DonationsIcon as MobileDonationsIcon,
+  TasksIcon as MobileTasksIcon,
+  MoreIcon as MobileMoreIcon
+} from '../components/MobileOptimized';
 import { getTourStepsForPage } from './components/ui/PageTourSteps';
 import { QuickAddButton, QuickAction } from './components/quickadd/QuickAddButton';
 import { ProjectPlannerModal } from './components/ProjectPlannerModal';
@@ -418,6 +429,46 @@ useEffect(() => {
 
   // Quick Actions Command Palette
   const quickActionsState = useQuickActions();
+
+  // Onboarding state
+  const { isComplete: isOnboardingComplete, complete: completeOnboarding } = useOnboarding();
+
+  // Mobile detection
+  const isMobile = useIsMobile();
+
+  // Mobile navigation items
+  const mobileNavItems = [
+    { id: 'dashboard', label: 'Home', icon: <MobileHomeIcon /> },
+    { id: 'contacts', label: 'Contacts', icon: <MobileContactsIcon /> },
+    { id: 'donations', label: 'Donate', icon: <MobileDonationsIcon /> },
+    { id: 'tasks', label: 'Tasks', icon: <MobileTasksIcon />, badge: tasks.filter(t => t.status !== 'done').length },
+    { id: 'menu', label: 'More', icon: <MobileMoreIcon /> },
+  ];
+
+  // Mobile FAB actions
+  const mobileFabActions = [
+    {
+      id: 'add-contact',
+      label: 'Add Contact',
+      icon: <MobileContactsIcon />,
+      color: 'bg-blue-500',
+      onClick: () => setIsAddContactDialogOpen(true)
+    },
+    {
+      id: 'add-donation',
+      label: 'Log Donation',
+      icon: <MobileDonationsIcon />,
+      color: 'bg-green-500',
+      onClick: () => navigateToPage('donations')
+    },
+    {
+      id: 'add-task',
+      label: 'New Task',
+      icon: <MobileTasksIcon />,
+      color: 'bg-purple-500',
+      onClick: () => navigateToPage('tasks')
+    },
+  ];
   
   // Theme is now managed by ThemeToggle component and theme.ts module
   // No need for theme state here - theme initialization happens in index.html
@@ -1900,7 +1951,7 @@ useEffect(() => {
             canGoForward={canGoForward}
           />
           <main
-            className="flex-1 p-6 sm:p-8 overflow-y-auto"
+            className="flex-1 p-6 sm:p-8 overflow-y-auto bg-ambient-gradient"
             style={{ backgroundColor: 'var(--cmf-bg)' }}
           >
               <div key={currentPage} className="page-content-wrapper">
@@ -2009,6 +2060,33 @@ useEffect(() => {
             onCreateProject={() => navigateToPage('projects')}
             onAiAssist={() => setIsAiChatOpen(true)}
         />
+
+        {/* Onboarding Flow for new users */}
+        <OnboardingFlow
+          userName={teamMembers.find(m => m.id === currentUserId)?.name?.split(' ')[0]}
+          onComplete={completeOnboarding}
+          onStartTour={() => setIsTourOpen(true)}
+          onSkip={completeOnboarding}
+        />
+
+        {/* Mobile Navigation */}
+        {isMobile && (
+          <>
+            <FloatingActionButton actions={mobileFabActions} />
+            <BottomNav
+              items={mobileNavItems}
+              activeId={currentPage === 'menu' ? 'menu' : currentPage}
+              onNavigate={(id) => {
+                if (id === 'menu') {
+                  // Could open a menu drawer or navigate to settings
+                  navigateToPage('settings');
+                } else {
+                  navigateToPage(id as Page);
+                }
+              }}
+            />
+          </>
+        )}
       </div>
   );
 };

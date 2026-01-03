@@ -170,9 +170,9 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
 
     return (
         <div className="fixed inset-0 z-[10000]">
-            {/* Backdrop with spotlight cutout */}
+            {/* Backdrop with spotlight cutout - reduced opacity for better visibility */}
             <div
-                className="absolute inset-0 bg-black/70 dark:bg-black/90 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/40 dark:bg-black/50"
                 style={{
                     clipPath: `path("M0,0H${window.innerWidth}V${window.innerHeight}H0V0ZM${left - 8},${top - 8}a8,8 0 0 1 8,-8h${width}a8,8 0 0 1 8,8v${height}a8,8 0 0 1 -8,8h-${width}a8,8 0 0 1 -8,-8Z")`,
                     transition: 'clip-path 0.4s cubic-bezier(0.4, 0, 0.2, 1)'

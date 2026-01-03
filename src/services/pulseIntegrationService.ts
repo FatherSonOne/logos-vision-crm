@@ -444,16 +444,13 @@ class PulseIntegrationService {
 
   // Open Pulse app in new window
   openPulseApp(): void {
-    // This would open the Pulse app URL
-    // For development, we could open localhost or the deployed URL
-    window.open('http://localhost:5174', '_blank', 'width=1200,height=800');
+    window.open('https://pulse.logosvision.org', '_blank', 'width=1200,height=800');
   }
 
   // Generate meeting room URL
   generateMeetingUrl(projectId?: string): string {
     const roomId = projectId || `meeting-${Date.now()}`;
-    // This would generate a Pulse meeting room URL
-    return `http://localhost:5174/meeting/${roomId}`;
+    return `https://pulse.logosvision.org/meeting/${roomId}`;
   }
 }
 

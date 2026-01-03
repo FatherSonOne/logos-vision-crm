@@ -195,12 +195,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={`
           inline-flex items-center justify-center font-medium
           rounded-[var(--cmf-radius-full)]
-          focus:outline-none aurora-focus
+          focus:outline-none aurora-focus focus-pulse
           disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none
-          active:scale-[0.98] btn-press
+          active:scale-[0.98] btn-press btn-ripple-effect btn-glow-hover
           ${sizeClasses[size]}
           ${fullWidth ? 'w-full' : ''}
-          ${variant === 'aurora' ? 'aurora-border-animated' : ''}
+          ${variant === 'aurora' ? 'aurora-border-animated btn-aurora-enhanced' : ''}
           ${className}
         `.trim().replace(/\s+/g, ' ')}
         {...props}
@@ -267,9 +267,9 @@ export const IconButton = React.forwardRef<
         inline-flex items-center justify-center
         rounded-[var(--cmf-radius-full)]
         focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-        focus-visible:ring-[color:var(--cmf-accent)]
+        focus-visible:ring-[color:var(--cmf-accent)] focus-pulse
         disabled:opacity-50 disabled:cursor-not-allowed
-        active:translate-y-px
+        active:translate-y-px btn-ripple-effect icon-hover-bounce
         ${iconOnlySizes[size]}
         ${className}
       `.trim().replace(/\s+/g, ' ')}

@@ -99,6 +99,7 @@ export const Card: React.FC<CardProps> = ({
       }}
       className={`
         ${paddingClasses[padding]}
+        ${isClickable ? 'card-glow-hover' : ''}
         ${className}
       `.trim().replace(/\s+/g, ' ')}
       role={onClick ? 'button' : undefined}
@@ -249,7 +250,7 @@ export const StatCard: React.FC<StatCardProps> = ({
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`p-6 ${className}`.trim()}
+      className={`p-6 stat-card-hover ${className}`.trim()}
       style={{
         backgroundColor: 'var(--cmf-surface)',
         border: '1px solid var(--cmf-border)',

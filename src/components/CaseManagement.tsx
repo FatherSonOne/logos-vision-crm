@@ -486,17 +486,28 @@ export const CaseManagement: React.FC<CaseManagementProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowTemplates(true)}
-            className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2"
+            className="px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors"
+            style={{
+              backgroundColor: 'var(--cmf-surface-elevated)',
+              color: 'var(--cmf-text)',
+              border: '1px solid var(--cmf-border)',
+            }}
           >
             <FileText className="w-4 h-4" />
-            Templates
+            <span>Templates</span>
           </button>
           <button
             onClick={() => setShowCreateDialog(true)}
-            className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 flex items-center gap-2"
+            className="px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors"
+            style={{
+              backgroundColor: 'var(--cmf-accent)',
+              color: 'white',
+            }}
           >
-            <PlusIcon size="sm" />
-            New Case
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>New Case</span>
           </button>
         </div>
       </div>

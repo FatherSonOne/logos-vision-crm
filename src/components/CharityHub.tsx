@@ -29,6 +29,7 @@ import {
   Quote,
 } from 'lucide-react';
 import type { Donation, Volunteer, Client } from '../types';
+import { DonorJourneyTracker } from '../../components/DonorJourneyTracker';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -424,6 +425,7 @@ const CharityHub: React.FC<CharityHubProps> = ({
   const [selectedCharity, setSelectedCharity] = useState<Charity | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeTab, setActiveTab] = useState<'charities' | 'donor-journey'>('charities');
 
   // Calculate metrics from real data
   const metrics = useMemo(() => {
@@ -535,7 +537,42 @@ const CharityHub: React.FC<CharityHubProps> = ({
         </button>
       </div>
 
-      {/* AI Insights */}
+      {/* Tab Navigation */}
+      <div className="flex border-b border-gray-200 dark:border-slate-700">
+        <button
+          onClick={() => setActiveTab('charities')}
+          className={`px-6 py-3 text-sm font-medium transition-colors ${
+            activeTab === 'charities'
+              ? 'text-rose-600 border-b-2 border-rose-500'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Building className="w-4 h-4" />
+            Partner Charities
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('donor-journey')}
+          className={`px-6 py-3 text-sm font-medium transition-colors ${
+            activeTab === 'donor-journey'
+              ? 'text-rose-600 border-b-2 border-rose-500'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4" />
+            Donor Journey
+          </div>
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'donor-journey' ? (
+        <DonorJourneyTracker />
+      ) : (
+        <>
+        {/* AI Insights */}
       {insights.length > 0 && (
         <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-700/30 p-4">
           <div className="flex items-start gap-3">
@@ -635,6 +672,8 @@ const CharityHub: React.FC<CharityHubProps> = ({
           <p className="text-lg">No charities match your filters</p>
           <p className="text-sm mt-1">Try adjusting your search or filters</p>
         </div>
+      )}
+      </>
       )}
 
       {/* Detail Modal */}

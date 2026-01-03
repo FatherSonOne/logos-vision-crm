@@ -5,7 +5,7 @@ import {
   DonationIcon, HandHeartIcon, EventsIcon, MailCampaignIcon, GlobeIcon, HeartIcon,
   CheckSquareIcon, CalendarIcon, DocumentsIcon, ReportsIcon, BriefcaseIcon,
   ChatIcon, VideoIcon, MicIcon, SparklesIcon, FormGeneratorIcon, GrantWriterIcon,
-  LayoutIcon, UserCircleIcon
+  LayoutIcon, UserCircleIcon, FileHubIcon
 } from './icons';
 
 
@@ -55,7 +55,7 @@ export const navigationSections: NavSectionConfig[] = [
         items: [
             { pageId: 'tasks', label: 'Tasks', icon: <CheckSquareIcon /> },
             { pageId: 'calendar', label: 'Calendar', icon: <CalendarIcon /> },
-            { pageId: 'documents', label: 'Documents', icon: <DocumentsIcon /> },
+            { pageId: 'documents', label: 'FileHub', icon: <FileHubIcon /> },
             { pageId: 'reports', label: 'Reports', icon: <ReportsIcon /> },
             { pageId: 'team', label: 'Team Members', icon: <BriefcaseIcon /> },
         ]

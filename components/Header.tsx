@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import type { Page } from '../types';
 import { MoonIcon, SunIcon, QuestionMarkCircleIcon, SearchIcon } from './icons';
+import { NotificationCenter, sampleNotifications, type Notification } from './NotificationCenter';
 
 interface HeaderProps {
     onSearch: (query: string, includeWeb: boolean) => void;
@@ -16,19 +17,51 @@ interface HeaderProps {
     onOpenKeyboardShortcuts: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ 
-    onSearch, 
-    isSearching, 
-    theme, 
-    onToggleTheme, 
-    openTabs, 
-    currentPage, 
-    onNavigate, 
+export const Header: React.FC<HeaderProps> = ({
+    onSearch,
+    isSearching,
+    theme,
+    onToggleTheme,
+    openTabs,
+    currentPage,
+    onNavigate,
     onCloseTab,
     onStartTour,
     onOpenGlobalSearch,
     onOpenKeyboardShortcuts
 }) => {
+    // Notification state management
+    const [notifications, setNotifications] = useState<Notification[]>(sampleNotifications);
+
+    const handleMarkAsRead = useCallback((id: string) => {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    }, []);
+
+    const handleMarkAllAsRead = useCallback(() => {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    }, []);
+
+    const handleDismiss = useCallback((id: string) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+    }, []);
+
+    const handleClearAll = useCallback(() => {
+        setNotifications([]);
+    }, []);
+
+    const handleNotificationAction = useCallback((notification: Notification) => {
+        // Mark as read when taking action
+        handleMarkAsRead(notification.id);
+        // Navigate to the action URL if provided
+        if (notification.actionUrl) {
+            // Extract page from URL (e.g., '/donations/1' -> 'donations')
+            const page = notification.actionUrl.split('/')[1];
+            if (page) {
+                onNavigate(page as Page);
+            }
+        }
+    }, [handleMarkAsRead, onNavigate]);
+
     return (
         <header className="bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl border-b border-white/20 dark:border-white/10 px-6 pt-6 pb-2 flex flex-col z-10 flex-shrink-0">
             {/* Top row for search and theme toggle - Increased spacing */}
@@ -52,6 +85,15 @@ export const Header: React.FC<HeaderProps> = ({
                     </button>
                 </div>
                 <div className="flex-1 flex justify-end items-center gap-3">
+                    {/* Notification Center */}
+                    <NotificationCenter
+                        notifications={notifications}
+                        onMarkAsRead={handleMarkAsRead}
+                        onMarkAllAsRead={handleMarkAllAsRead}
+                        onDismiss={handleDismiss}
+                        onClearAll={handleClearAll}
+                        onAction={handleNotificationAction}
+                    />
                     <button
                         onClick={onOpenKeyboardShortcuts}
                         className="p-2.5 rounded-full text-slate-700 dark:text-slate-200 bg-gradient-to-b from-white/50 to-white/20 dark:from-white/20 dark:to-transparent border border-white/30 dark:border-white/10 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"

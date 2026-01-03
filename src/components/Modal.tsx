@@ -65,10 +65,10 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
       aria-modal="true"
       role="dialog"
     >
-      {/* Overlay */}
+      {/* Overlay - darker backdrop for better contrast */}
       <div
-        className={`absolute inset-0 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+        className={`absolute inset-0 transition-opacity duration-300 backdrop-blur-sm ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}
         onClick={onClose}
       />
 

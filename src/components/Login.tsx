@@ -255,19 +255,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onSignUp, onGoogleSignIn,
             </div>
           )}
 
-          {/* Demo Account Info */}
-          {mode === 'login' && !isDevelopmentMode && (
-            <div className="mt-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-              <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mb-2">
-                Demo Account:
-              </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                Email: demo@logosvision.com<br />
-                Password: demo123
-              </p>
-            </div>
-          )}
-
           {/* Legal Links */}
           <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
             <p className="text-xs text-slate-500 dark:text-slate-400 text-center">

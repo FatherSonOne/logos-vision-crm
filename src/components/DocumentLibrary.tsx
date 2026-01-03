@@ -3,12 +3,14 @@ import type { Document as AppDocument, Client, Project, TeamMember } from '../ty
 import { DocumentCategory } from '../types';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { googleDriveService } from '../services/googleDriveService';
+import { googleDriveService, GoogleDriveFile } from '../services/googleDriveService';
+import { GoogleDriveBrowser } from './GoogleDriveBrowser';
 import {
   FolderOpen, FileText, Upload, Search, Star, Clock, ChevronRight, ChevronDown,
   Download, Trash2, Edit3, Eye, MoreVertical, Grid, List, Filter, X, Check,
   Cloud, Settings, Plus, FolderPlus, Link2, ExternalLink, RefreshCw, Archive,
-  FileImage, FileSpreadsheet, Presentation, File, HardDrive, Users, Loader2
+  FileImage, FileSpreadsheet, Presentation, File, HardDrive, Users, Loader2,
+  Copy, AlertCircle
 } from 'lucide-react';
 
 interface DocumentLibraryProps {
@@ -179,8 +181,24 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
 
+  // New FileHub states
+  const [showGoogleDriveBrowser, setShowGoogleDriveBrowser] = useState(false);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [renameDocument, setRenameDocument] = useState<AppDocument | null>(null);
+  const [newDocumentName, setNewDocumentName] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [storageUsed, setStorageUsed] = useState<number>(0);
+  const [storageLimit] = useState<number>(10 * 1024 * 1024 * 1024); // 10 GB
+
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Show notification helper
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 4000);
+  };
 
   // Load saved state from localStorage
   useEffect(() => {
@@ -408,12 +426,17 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
     selectedFiles.forEach(f => { newProgress[f.name] = 0; });
     setUploadProgress(newProgress);
 
+    // Track success/failure separately from progress state
+    const uploadResults: { [key: string]: 'success' | 'error' } = {};
+    let successCount = 0;
+    let errorCount = 0;
+
     try {
       for (const file of selectedFiles) {
         // Create a unique file path
         const timestamp = Date.now();
         const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const filePath = `documents/${timestamp}_${safeName}`;
+        const filePath = `documents/${uploadCategory}/${timestamp}_${safeName}`;
 
         // Update progress to show upload started
         setUploadProgress(prev => ({ ...prev, [file.name]: 10 }));
@@ -428,7 +451,9 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
 
         if (uploadError) {
           console.error('Upload error for', file.name, uploadError);
-          setUploadProgress(prev => ({ ...prev, [file.name]: -1 })); // -1 indicates error
+          setUploadProgress(prev => ({ ...prev, [file.name]: -1 }));
+          uploadResults[file.name] = 'error';
+          errorCount++;
           continue;
         }
 
@@ -440,14 +465,17 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
           .getPublicUrl(filePath);
 
         // Insert document record into database
-        // Using correct column names from schema: file_url, uploaded_by_id, uploaded_at
         const { error: dbError } = await supabase
           .from('documents')
           .insert({
             name: file.name,
             file_type: getFileType(file),
+            file_size: file.size,
+            mime_type: file.type,
             category: uploadCategory,
+            file_path: filePath,
             file_url: urlData?.publicUrl || filePath,
+            storage_provider: 'supabase',
             uploaded_by_id: user?.id || null,
             uploaded_at: new Date().toISOString(),
           });
@@ -455,26 +483,37 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
         if (dbError) {
           console.error('Database error for', file.name, dbError);
           setUploadProgress(prev => ({ ...prev, [file.name]: -1 }));
+          uploadResults[file.name] = 'error';
+          errorCount++;
           continue;
         }
 
         setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
+        uploadResults[file.name] = 'success';
+        successCount++;
       }
 
-      // Check if all files uploaded successfully
-      const allSuccessful = Object.values(uploadProgress).every(p => p === 100);
-      if (allSuccessful) {
+      // Show result notification and close modal after a delay
+      if (successCount > 0) {
         setTimeout(() => {
           setShowUploadModal(false);
           setSelectedFiles([]);
           setUploadProgress({});
-          // Trigger a refresh of documents - parent component should handle this
+          // Trigger a refresh of documents
           window.dispatchEvent(new CustomEvent('documents-updated'));
-        }, 1000);
+
+          if (errorCount > 0) {
+            showNotification('success', `Uploaded ${successCount} file(s). ${errorCount} failed.`);
+          } else {
+            showNotification('success', `Successfully uploaded ${successCount} file(s)`);
+          }
+        }, 800);
+      } else if (errorCount > 0) {
+        showNotification('error', `Failed to upload ${errorCount} file(s). Please try again.`);
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('An error occurred during upload. Please try again.');
+      showNotification('error', 'An error occurred during upload. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -496,6 +535,212 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
       setShowNewFolderDialog(false);
     }
   }, [newFolderName]);
+
+  // ========================================
+  // Document Actions
+  // ========================================
+
+  // Download document
+  const handleDownload = useCallback(async (doc: AppDocument) => {
+    try {
+      // Get file URL from the document - we need to fetch from database
+      const { data, error } = await supabase
+        .from('documents')
+        .select('file_url, file_path, storage_provider, google_drive_id')
+        .eq('id', doc.id)
+        .single();
+
+      if (error || !data) {
+        showNotification('error', 'Failed to get document information');
+        return;
+      }
+
+      if (data.storage_provider === 'google_drive' && data.google_drive_id) {
+        // Download from Google Drive
+        const blob = await googleDriveService.downloadFile(data.google_drive_id);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else if (data.file_url) {
+        // Download from Supabase or direct URL
+        const response = await fetch(data.file_url);
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        showNotification('error', 'No download URL available');
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      showNotification('error', 'Failed to download document');
+    }
+  }, []);
+
+  // Open rename dialog
+  const openRenameDialog = useCallback((doc: AppDocument) => {
+    setRenameDocument(doc);
+    setNewDocumentName(doc.name);
+    setShowRenameDialog(true);
+    setContextMenu(null);
+  }, []);
+
+  // Rename document
+  const handleRename = useCallback(async () => {
+    if (!renameDocument || !newDocumentName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('documents')
+        .update({
+          name: newDocumentName.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', renameDocument.id);
+
+      if (error) throw error;
+
+      setShowRenameDialog(false);
+      setRenameDocument(null);
+      setNewDocumentName('');
+      showNotification('success', 'Document renamed successfully');
+      window.dispatchEvent(new CustomEvent('documents-updated'));
+    } catch (error) {
+      console.error('Rename failed:', error);
+      showNotification('error', 'Failed to rename document');
+    }
+  }, [renameDocument, newDocumentName]);
+
+  // Delete document
+  const handleDelete = useCallback(async (doc: AppDocument) => {
+    if (!confirm(`Are you sure you want to delete "${doc.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Soft delete by updating status
+      const { error } = await supabase
+        .from('documents')
+        .update({
+          status: 'deleted',
+          deleted_at: new Date().toISOString()
+        })
+        .eq('id', doc.id);
+
+      if (error) throw error;
+
+      showNotification('success', 'Document deleted successfully');
+      window.dispatchEvent(new CustomEvent('documents-updated'));
+    } catch (error) {
+      console.error('Delete failed:', error);
+      showNotification('error', 'Failed to delete document');
+    } finally {
+      setIsDeleting(false);
+      setContextMenu(null);
+    }
+  }, []);
+
+  // Copy document link
+  const handleCopyLink = useCallback(async (doc: AppDocument) => {
+    try {
+      const { data } = await supabase
+        .from('documents')
+        .select('file_url')
+        .eq('id', doc.id)
+        .single();
+
+      if (data?.file_url) {
+        await navigator.clipboard.writeText(data.file_url);
+        showNotification('success', 'Link copied to clipboard');
+      } else {
+        showNotification('error', 'No link available');
+      }
+    } catch (error) {
+      showNotification('error', 'Failed to copy link');
+    }
+    setContextMenu(null);
+  }, []);
+
+  // Bulk download
+  const handleBulkDownload = useCallback(async () => {
+    for (const docId of selectedDocuments) {
+      const doc = documents.find(d => d.id === docId);
+      if (doc) {
+        await handleDownload(doc);
+      }
+    }
+    setSelectedDocuments(new Set());
+  }, [selectedDocuments, documents, handleDownload]);
+
+  // Bulk delete
+  const handleBulkDelete = useCallback(async () => {
+    if (!confirm(`Are you sure you want to delete ${selectedDocuments.size} document(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('documents')
+        .update({
+          status: 'deleted',
+          deleted_at: new Date().toISOString()
+        })
+        .in('id', Array.from(selectedDocuments));
+
+      if (error) throw error;
+
+      showNotification('success', `Deleted ${selectedDocuments.size} document(s)`);
+      setSelectedDocuments(new Set());
+      window.dispatchEvent(new CustomEvent('documents-updated'));
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+      showNotification('error', 'Failed to delete documents');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [selectedDocuments]);
+
+  // Import file from Google Drive (link only)
+  const handleImportFromDrive = useCallback(async (driveFile: GoogleDriveFile) => {
+    try {
+      // Create a document record that links to the Google Drive file
+      const { error } = await supabase
+        .from('documents')
+        .insert({
+          name: driveFile.name,
+          file_type: driveFile.mimeType,
+          file_size: driveFile.size,
+          mime_type: driveFile.mimeType,
+          category: 'Internal',
+          file_url: driveFile.webViewLink || `https://drive.google.com/file/d/${driveFile.id}/view`,
+          google_drive_id: driveFile.id,
+          storage_provider: 'google_drive',
+          uploaded_by_id: user?.id || null,
+          uploaded_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      showNotification('success', `Linked "${driveFile.name}" from Google Drive`);
+      setShowGoogleDriveBrowser(false);
+      window.dispatchEvent(new CustomEvent('documents-updated'));
+    } catch (error) {
+      console.error('Import failed:', error);
+      showNotification('error', 'Failed to link file from Google Drive');
+    }
+  }, [user?.id]);
 
   // Close context menu on click outside
   useEffect(() => {
@@ -523,8 +768,8 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
       <div className="w-64 flex-shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
         <div className="p-4 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <FolderOpen className="w-5 h-5 text-rose-500" />
-            Documents
+            <HardDrive className="w-5 h-5 text-rose-500" />
+            FileHub
           </h2>
         </div>
 
@@ -682,16 +927,25 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
                         <span className="text-xs text-blue-500 hover:text-blue-600">Connect</span>
                       )}
                     </button>
-                    {/* Sync button for connected services */}
+                    {/* Actions for connected Google Drive */}
                     {service.connected && service.id === 'google-drive' && (
-                      <button
-                        onClick={syncGoogleDrive}
-                        disabled={isSyncingGoogleDrive}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        <RefreshCw className={`w-3 h-3 ${isSyncingGoogleDrive ? 'animate-spin' : ''}`} />
-                        {isSyncingGoogleDrive ? 'Syncing...' : 'Sync Now'}
-                      </button>
+                      <div className="space-y-1">
+                        <button
+                          onClick={() => setShowGoogleDriveBrowser(true)}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium"
+                        >
+                          <FolderOpen className="w-3 h-3" />
+                          Browse Files
+                        </button>
+                        <button
+                          onClick={syncGoogleDrive}
+                          disabled={isSyncingGoogleDrive}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${isSyncingGoogleDrive ? 'animate-spin' : ''}`} />
+                          {isSyncingGoogleDrive ? 'Syncing...' : 'Sync Now'}
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -802,7 +1056,10 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
                 {selectedDocuments.size} document{selectedDocuments.size !== 1 ? 's' : ''} selected
               </span>
               <div className="flex items-center gap-2">
-                <button className="px-3 py-1.5 text-sm text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg transition-colors flex items-center gap-1">
+                <button
+                  onClick={handleBulkDownload}
+                  className="px-3 py-1.5 text-sm text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg transition-colors flex items-center gap-1"
+                >
                   <Download className="w-4 h-4" />
                   Download
                 </button>
@@ -810,9 +1067,13 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
                   <FolderOpen className="w-4 h-4" />
                   Move to
                 </button>
-                <button className="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors flex items-center gap-1">
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={isDeleting}
+                  className="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50"
+                >
                   <Trash2 className="w-4 h-4" />
-                  Delete
+                  {isDeleting ? 'Deleting...' : 'Delete'}
                 </button>
                 <button
                   onClick={() => setSelectedDocuments(new Set())}
@@ -1061,11 +1322,17 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
             top: Math.min(contextMenu.y, window.innerHeight - 300),
           }}
         >
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+          <button
+            onClick={() => { handleDocumentClick(contextMenu.doc); setContextMenu(null); }}
+            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+          >
             <Eye className="w-4 h-4" />
             Preview
           </button>
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+          <button
+            onClick={() => { handleDownload(contextMenu.doc); setContextMenu(null); }}
+            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+          >
             <Download className="w-4 h-4" />
             Download
           </button>
@@ -1077,7 +1344,10 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
             {favorites.has(contextMenu.doc.id) ? 'Remove from Favorites' : 'Add to Favorites'}
           </button>
           <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+          <button
+            onClick={() => openRenameDialog(contextMenu.doc)}
+            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+          >
             <Edit3 className="w-4 h-4" />
             Rename
           </button>
@@ -1085,14 +1355,21 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
             <FolderOpen className="w-4 h-4" />
             Move to Folder
           </button>
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
-            <Link2 className="w-4 h-4" />
+          <button
+            onClick={() => handleCopyLink(contextMenu.doc)}
+            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+          >
+            <Copy className="w-4 h-4" />
             Copy Link
           </button>
           <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+          <button
+            onClick={() => handleDelete(contextMenu.doc)}
+            disabled={isDeleting}
+            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
+          >
             <Trash2 className="w-4 h-4" />
-            Delete
+            {isDeleting ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       )}
@@ -1374,6 +1651,73 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Rename Dialog */}
+      {showRenameDialog && renameDocument && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowRenameDialog(false)}>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Rename Document</h3>
+            <input
+              type="text"
+              value={newDocumentName}
+              onChange={(e) => setNewDocumentName(e.target.value)}
+              placeholder="Document name"
+              className="w-full px-4 py-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+            />
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => { setShowRenameDialog(false); setRenameDocument(null); }}
+                className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRename}
+                disabled={!newDocumentName.trim() || newDocumentName === renameDocument.name}
+                className="px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:bg-slate-300 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Google Drive Browser Modal */}
+      {showGoogleDriveBrowser && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowGoogleDriveBrowser(false)}>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <GoogleDriveBrowser
+              onImportFile={handleImportFromDrive}
+              onClose={() => setShowGoogleDriveBrowser(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Notification Toast */}
+      {notification && (
+        <div className={`fixed bottom-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg ${
+          notification.type === 'success'
+            ? 'bg-green-500 text-white'
+            : 'bg-red-500 text-white'
+        }`}>
+          {notification.type === 'success' ? (
+            <Check className="w-5 h-5" />
+          ) : (
+            <AlertCircle className="w-5 h-5" />
+          )}
+          <span className="text-sm font-medium">{notification.message}</span>
+          <button
+            onClick={() => setNotification(null)}
+            className="ml-2 p-1 hover:bg-white/20 rounded"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

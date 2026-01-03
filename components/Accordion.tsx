@@ -134,9 +134,15 @@ const AccordionItemComponent: React.FC<AccordionItemComponentProps> = ({
   const [contentHeight, setContentHeight] = useState<number>(0);
 
   // Measure content height for smooth animation
+  // Using requestAnimationFrame to batch DOM reads and avoid layout thrashing
   useEffect(() => {
     if (contentRef.current) {
-      setContentHeight(contentRef.current.scrollHeight);
+      const frameId = requestAnimationFrame(() => {
+        if (contentRef.current) {
+          setContentHeight(contentRef.current.scrollHeight);
+        }
+      });
+      return () => cancelAnimationFrame(frameId);
     }
   }, [item.content, isExpanded]);
 

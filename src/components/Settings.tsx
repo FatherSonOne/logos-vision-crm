@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from './ui/Button';
 import { HighlightPicker } from './ui/HighlightPicker';
 import {
@@ -6,6 +6,9 @@ import {
 } from './icons';
 import type { ThemeMode } from '../theme/theme';
 import { getStoredThemeMode, setThemeMode, resolveTheme } from '../theme/theme';
+import { getUserSettings, saveUserSettings, defaultSettings, type UserSettings } from '../services/settingsService';
+import { DataImportExport } from '../../components/DataImportExport';
+import { PulseIntegrationSettings } from './PulseIntegrationSettings';
 
 interface SettingsProps {
     userEmail?: string;
@@ -63,11 +66,18 @@ const CogIcon = () => (
     </svg>
 );
 
+const PulseIcon = () => (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+    </svg>
+);
+
 const sections: SettingsSection[] = [
     { id: 'account', label: 'Account', icon: <UserIcon />, color: 'blue' },
     { id: 'general', label: 'General', icon: <SettingsIcon />, color: 'gray' },
     { id: 'appearance', label: 'Appearance', icon: <SunIcon />, color: 'purple' },
     { id: 'ai-search', label: 'AI & Search', icon: <SearchIcon />, color: 'cyan' },
+    { id: 'pulse', label: 'Pulse', icon: <PulseIcon />, color: 'emerald' },
     { id: 'integrations', label: 'Integrations', icon: <LinkIcon />, color: 'green' },
     { id: 'connectors', label: 'Connectors', icon: <CloudIcon />, color: 'indigo' },
     { id: 'notifications', label: 'Notifications', icon: <BellIcon />, color: 'yellow' },
@@ -93,6 +103,10 @@ export const Settings: React.FC<SettingsProps> = ({
     const [activeSection, setActiveSection] = useState('account');
     const [searchQuery, setSearchQuery] = useState('');
     const [themeMode, setThemeModeState] = useState<ThemeMode>(() => getStoredThemeMode());
+    const [loading, setLoading] = useState(true);
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const [showImportDialog, setShowImportDialog] = useState(false);
+    const [importEntityType, setImportEntityType] = useState<'contacts' | 'donations'>('contacts');
 
     // Handle theme mode changes
     const handleThemeModeChange = (mode: ThemeMode) => {
@@ -100,86 +114,63 @@ export const Settings: React.FC<SettingsProps> = ({
         setThemeMode(mode);
     };
 
-    const [settings, setSettings] = useState(() => {
-        // Load settings from localStorage
-        const loadSetting = (key: string, defaultValue: any) => {
-            const saved = localStorage.getItem(key);
-            if (saved === null) return defaultValue;
+    // Extended settings state that includes both persisted and local-only settings
+    const [settings, setSettings] = useState(() => ({
+        // Start with defaults, will be updated once loaded from Supabase
+        ...defaultSettings,
+        organizationName: organizationName,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        themeMode: getStoredThemeMode() as 'system' | 'light' | 'dark',
+        // Local-only settings (not persisted to Supabase)
+        supabaseConnected: true,
+        googleConnected: false,
+        pulseConnected: false,
+        googleCalendarSync: false,
+        googleDriveSync: false,
+        outlookSync: false,
+        oneDriveSync: false,
+        dropboxSync: false,
+        soundNotifications: false,
+        notificationFrequency: 'realtime',
+        taskReminders: true,
+        donationAlerts: true,
+        pledgeReminders: true,
+        weeklyDigest: true,
+        defaultCampaign: '',
+        enableAnonymous: true,
+        requireNotes: false,
+        autoThankYou: true,
+        thankYouDelay: 1,
+        defaultView: 'month',
+        weekStartsOn: 'sunday',
+        showWeekends: true,
+        workingHoursStart: '09:00',
+        workingHoursEnd: '17:00',
+        lastBackup: null as string | null,
+    }));
+
+    // Load settings from Supabase on mount
+    useEffect(() => {
+        const loadSettings = async () => {
             try {
-                return JSON.parse(saved);
-            } catch {
-                return saved;
+                setLoading(true);
+                const savedSettings = await getUserSettings();
+                setSettings(prev => ({
+                    ...prev,
+                    ...savedSettings,
+                    // Keep local-only settings from previous state
+                    supabaseConnected: prev.supabaseConnected,
+                    googleConnected: prev.googleConnected,
+                    pulseConnected: prev.pulseConnected,
+                }));
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+            } finally {
+                setLoading(false);
             }
         };
-
-        return {
-            // Account
-            displayName: loadSetting('displayName', ''),
-            profilePicture: loadSetting('profilePicture', ''),
-            // General
-            organizationName: organizationName,
-            fiscalYearStart: loadSetting('fiscalYearStart', 'january'),
-            currency: loadSetting('currency', 'USD'),
-            dateFormat: loadSetting('dateFormat', 'MM/DD/YYYY'),
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            language: loadSetting('language', 'en'),
-            // Appearance
-            themeMode: getStoredThemeMode(),
-            accentColor: loadSetting('accentColor', 'rose'),
-            fontSize: loadSetting('fontSize', 'normal'),
-            compactMode: loadSetting('compactMode', false),
-            showAnimations: loadSetting('showAnimations', true),
-            // AI & Search
-            webSearchEnabled: loadSetting('webSearchEnabled', true),
-            searchResultLimit: loadSetting('searchResultLimit', 10),
-            aiResearchMode: loadSetting('aiResearchMode', false),
-            defaultAiModel: loadSetting('defaultAiModel', 'gemini'),
-            researchDepth: loadSetting('researchDepth', 'normal'),
-            // Integrations
-            supabaseConnected: true,
-            googleConnected: loadSetting('googleConnected', false),
-            pulseConnected: loadSetting('pulseConnected', false),
-            // Connectors
-            googleCalendarSync: loadSetting('googleCalendarSync', false),
-            googleDriveSync: loadSetting('googleDriveSync', false),
-            outlookSync: loadSetting('outlookSync', false),
-            oneDriveSync: loadSetting('oneDriveSync', false),
-            dropboxSync: loadSetting('dropboxSync', false),
-            // Notifications
-            emailNotifications: loadSetting('emailNotifications', true),
-            inAppNotifications: loadSetting('inAppNotifications', true),
-            soundNotifications: loadSetting('soundNotifications', false),
-            notificationFrequency: loadSetting('notificationFrequency', 'realtime'),
-            taskReminders: loadSetting('taskReminders', true),
-            donationAlerts: loadSetting('donationAlerts', true),
-            pledgeReminders: loadSetting('pledgeReminders', true),
-            weeklyDigest: loadSetting('weeklyDigest', true),
-            // Privacy & Security
-            dataVisibility: loadSetting('dataVisibility', 'private'),
-            twoFactorEnabled: loadSetting('twoFactorEnabled', false),
-            activityLogging: loadSetting('activityLogging', true),
-            // Donations (keeping for compatibility)
-            defaultCampaign: loadSetting('defaultCampaign', ''),
-            enableAnonymous: loadSetting('enableAnonymous', true),
-            requireNotes: loadSetting('requireNotes', false),
-            autoThankYou: loadSetting('autoThankYou', true),
-            thankYouDelay: loadSetting('thankYouDelay', 1),
-            // Calendar
-            defaultView: loadSetting('defaultView', 'month'),
-            weekStartsOn: loadSetting('weekStartsOn', 'sunday'),
-            showWeekends: loadSetting('showWeekends', true),
-            workingHoursStart: loadSetting('workingHoursStart', '09:00'),
-            workingHoursEnd: loadSetting('workingHoursEnd', '17:00'),
-            // Backup
-            autoBackup: loadSetting('autoBackup', false),
-            backupFrequency: loadSetting('backupFrequency', 'weekly'),
-            lastBackup: loadSetting('lastBackup', null),
-            // Advanced
-            developerMode: loadSetting('developerMode', false),
-            debugLogging: loadSetting('debugLogging', false),
-            experimentalFeatures: loadSetting('experimentalFeatures', false),
-        };
-    });
+        loadSettings();
+    }, []);
 
     const [hasChanges, setHasChanges] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -218,23 +209,68 @@ export const Settings: React.FC<SettingsProps> = ({
 
     const handleSave = async () => {
         setSaving(true);
+        setSaveError(null);
 
-        // Save all settings to localStorage
-        Object.entries(settings).forEach(([key, value]) => {
-            if (key !== 'themeMode') { // themeMode is managed separately
-                localStorage.setItem(key, JSON.stringify(value));
-            }
-        });
+        try {
+            // Extract only the settings that should be persisted to Supabase
+            const settingsToSave: UserSettings = {
+                displayName: settings.displayName,
+                profilePicture: settings.profilePicture,
+                organizationName: settings.organizationName,
+                fiscalYearStart: settings.fiscalYearStart,
+                currency: settings.currency,
+                dateFormat: settings.dateFormat,
+                timezone: settings.timezone,
+                language: settings.language,
+                themeMode: settings.themeMode,
+                accentColor: settings.accentColor,
+                fontSize: settings.fontSize,
+                compactMode: settings.compactMode,
+                showAnimations: settings.showAnimations,
+                webSearchEnabled: settings.webSearchEnabled,
+                searchResultLimit: settings.searchResultLimit,
+                aiResearchMode: settings.aiResearchMode,
+                defaultAiModel: settings.defaultAiModel,
+                researchDepth: settings.researchDepth,
+                emailNotifications: settings.emailNotifications,
+                inAppNotifications: settings.inAppNotifications,
+                notificationSound: settings.soundNotifications,
+                notificationFrequency: settings.notificationFrequency,
+                notifyNewDonations: settings.donationAlerts,
+                notifyTaskReminders: settings.taskReminders,
+                notifyTeamUpdates: true,
+                notifySystemAlerts: true,
+                dataVisibility: settings.dataVisibility,
+                activityLogging: settings.activityLogging,
+                twoFactorEnabled: settings.twoFactorEnabled,
+                developerMode: settings.developerMode,
+                debugLogging: settings.debugLogging,
+                experimentalFeatures: settings.experimentalFeatures,
+                autoBackup: settings.autoBackup,
+                backupFrequency: settings.backupFrequency,
+            };
 
-        // Simulate API save delay
-        await new Promise(resolve => setTimeout(resolve, 800));
+            // Save to Supabase (falls back to localStorage if not authenticated)
+            await saveUserSettings(settingsToSave);
 
-        setSaving(false);
-        setSaved(true);
-        setHasChanges(false);
+            setSaved(true);
+            setHasChanges(false);
 
-        // Auto-hide saved notification
-        setTimeout(() => setSaved(false), 3000);
+            // Auto-hide saved notification
+            setTimeout(() => setSaved(false), 3000);
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+            setSaveError('Failed to save settings. Please try again.');
+            // Still mark as saved since localStorage fallback should work
+            setSaved(true);
+            setHasChanges(false);
+            setTimeout(() => {
+                setSaved(false);
+                setSaveError(null);
+            }, 5000);
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleReset = () => {
@@ -618,6 +654,34 @@ export const Settings: React.FC<SettingsProps> = ({
                     </div>
                 );
 
+            case 'pulse':
+                return (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between mb-2">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    Pulse Integration
+                                </h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Connect with Pulse for unified communication across all channels
+                                </p>
+                            </div>
+                            <a
+                                href="https://pulse.logosvision.org"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                </svg>
+                                Open Pulse
+                            </a>
+                        </div>
+                        <PulseIntegrationSettings />
+                    </div>
+                );
+
             case 'integrations':
                 return (
                     <div className="space-y-6">
@@ -647,7 +711,12 @@ export const Settings: React.FC<SettingsProps> = ({
                                     name="Pulse"
                                     description="Communication and messaging platform"
                                     connected={settings.pulseConnected}
-                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>}
+                                    icon={
+                                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                                            <path d="M2 12h4l2-6 3 12 2-6h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <circle cx="20" cy="12" r="2" fill="currentColor" opacity="0.6"/>
+                                        </svg>
+                                    }
                                     onConnect={() => updateSetting('pulseConnected', !settings.pulseConnected)}
                                 />
                                 <IntegrationCard
@@ -978,7 +1047,28 @@ export const Settings: React.FC<SettingsProps> = ({
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                                         Import contacts and donations from CSV files
                                     </p>
-                                    <Button variant="outline" size="sm">Import Data</Button>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setImportEntityType('contacts');
+                                                setShowImportDialog(true);
+                                            }}
+                                        >
+                                            Import Contacts
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setImportEntityType('donations');
+                                                setShowImportDialog(true);
+                                            }}
+                                        >
+                                            Import Donations
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1075,6 +1165,18 @@ export const Settings: React.FC<SettingsProps> = ({
         }
     };
 
+    // Show loading indicator while settings are being fetched
+    if (loading) {
+        return (
+            <div className="h-full flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500 mx-auto mb-4"></div>
+                    <p className="text-gray-500 dark:text-gray-400">Loading settings...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="h-full flex">
             {/* Sidebar */}
@@ -1147,7 +1249,7 @@ export const Settings: React.FC<SettingsProps> = ({
                     )}
 
                     {/* Saved notification */}
-                    {saved && (
+                    {saved && !saveError && (
                         <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-20">
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1155,8 +1257,44 @@ export const Settings: React.FC<SettingsProps> = ({
                             Settings saved successfully
                         </div>
                     )}
+
+                    {/* Error notification */}
+                    {saveError && (
+                        <div className="fixed bottom-4 right-4 bg-amber-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-20">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            {saveError}
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Import Data Dialog */}
+            {showImportDialog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="relative w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 rounded-xl shadow-2xl">
+                        <button
+                            onClick={() => setShowImportDialog(false)}
+                            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                        <DataImportExport
+                            entityType={importEntityType}
+                            onImportComplete={(result) => {
+                                console.log('Import complete:', result);
+                                setShowImportDialog(false);
+                            }}
+                            onExportComplete={(format) => {
+                                console.log('Export complete:', format);
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

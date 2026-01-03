@@ -7,6 +7,7 @@ import { GuidedHelpProvider } from './contexts/GuidedHelpContext';
 import { LogoProvider } from './contexts/LogoContext';
 import { initializePWA } from './lib/pwa';
 import './styles/design-tokens.css';
+import '../index.css';
 
 // Initialize PWA features (service worker, install prompt)
 initializePWA();

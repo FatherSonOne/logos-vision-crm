@@ -59,18 +59,24 @@ export const Tabs: React.FC<TabsProps> = ({
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
   // Update indicator position when active tab changes
+  // Using requestAnimationFrame to batch DOM reads and avoid layout thrashing
   useEffect(() => {
     if (tabsRef.current && variant !== 'pills') {
-      const activeButton = tabsRef.current.querySelector(
-        `[data-tab-id="${activeTab}"]`
-      ) as HTMLElement;
-      
-      if (activeButton) {
-        setIndicatorStyle({
-          left: activeButton.offsetLeft,
-          width: activeButton.offsetWidth
-        });
-      }
+      // Schedule DOM read for next animation frame to avoid blocking the main thread
+      const frameId = requestAnimationFrame(() => {
+        const activeButton = tabsRef.current?.querySelector(
+          `[data-tab-id="${activeTab}"]`
+        ) as HTMLElement;
+
+        if (activeButton) {
+          setIndicatorStyle({
+            left: activeButton.offsetLeft,
+            width: activeButton.offsetWidth
+          });
+        }
+      });
+
+      return () => cancelAnimationFrame(frameId);
     }
   }, [activeTab, variant, tabs]);
 

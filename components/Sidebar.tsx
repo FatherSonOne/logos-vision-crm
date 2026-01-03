@@ -15,7 +15,7 @@ interface NavItemProps {
 
 const NavItem: React.FC<NavItemProps> = ({ pageId, label, icon, currentPage, onNavigate, hasNotification, isCollapsed }) => {
     const isActive = currentPage === pageId;
-    
+
     return (
         <li className="relative group">
             <a
@@ -24,34 +24,34 @@ const NavItem: React.FC<NavItemProps> = ({ pageId, label, icon, currentPage, onN
                     e.preventDefault();
                     onNavigate(pageId);
                 }}
-                className={`relative flex items-center ${isCollapsed ? 'justify-center px-3' : 'px-4'} py-2.5 text-sm font-medium rounded-lg transition-all duration-200 text-shadow-strong ${
+                className={`relative flex items-center ${isCollapsed ? 'justify-center px-3' : 'px-4'} py-2.5 text-sm font-medium rounded-lg transition-all duration-200 text-shadow-strong nav-item-breathing ${
                     isActive
-                    ? 'font-semibold bg-white/30 dark:bg-white/20 text-slate-900 dark:text-white shadow-md' 
+                    ? 'font-semibold bg-white/30 dark:bg-white/20 text-slate-900 dark:text-white shadow-md'
                     : 'text-slate-800 hover:bg-white/20 dark:text-slate-100 dark:hover:bg-white/10 hover:shadow-sm'
                 }`}
                 title={isCollapsed ? label : undefined}
             >
                 {isActive && (
-                    <span className="absolute inset-y-0 left-0 w-1 bg-primary-500 rounded-r-full transition-all duration-300" aria-hidden="true"></span>
+                    <span className="absolute inset-y-0 left-0 w-1 rounded-r-full transition-all duration-300 active-indicator-animated" aria-hidden="true"></span>
                 )}
-                
+
                 <span className={`flex items-center ${isCollapsed ? '' : 'transition-transform duration-200 ease-in-out group-hover:translate-x-1'}`}>
-                    <span className={`w-5 h-5 flex items-center justify-center flex-shrink-0 ${isCollapsed ? '' : 'mr-3'}`}>
+                    <span className={`w-5 h-5 flex items-center justify-center flex-shrink-0 ${isCollapsed ? '' : 'mr-3'} icon-hover-bounce`}>
                         {icon}
                     </span>
                     {!isCollapsed && (
                         <span className="truncate">{label}</span>
                     )}
                 </span>
-                
+
                 {hasNotification && (
-                    <span 
-                        className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-3 top-1/2 -translate-y-1/2'} h-2 w-2 rounded-full bg-primary-500 animate-pulse`} 
+                    <span
+                        className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-3 top-1/2 -translate-y-1/2'} h-2 w-2 rounded-full bg-primary-500 animate-pulse`}
                         aria-label="New notification"
                     ></span>
                 )}
             </a>
-            
+
             {/* Tooltip when collapsed */}
             {isCollapsed && (
                 <div className="sidebar-tooltip absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-sm rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
@@ -72,7 +72,7 @@ const NavSection: React.FC<{title: string; children: React.ReactNode; isCollapse
         )}
         {isCollapsed && (
             <div className="px-3 mb-2">
-                <div className="h-px bg-slate-300 dark:bg-slate-700"></div>
+                <div className="aurora-divider"></div>
             </div>
         )}
         <ul className="space-y-1">

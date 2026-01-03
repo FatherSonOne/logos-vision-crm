@@ -25,6 +25,21 @@ export interface GoogleDriveFolder {
   parents?: string[];
 }
 
+export interface GoogleDrivePermission {
+  id: string;
+  type: 'user' | 'group' | 'domain' | 'anyone';
+  role: 'reader' | 'writer' | 'commenter' | 'owner';
+  emailAddress?: string;
+  displayName?: string;
+}
+
+export interface StorageQuota {
+  used: number;
+  limit: number;
+  usedInDrive: number;
+  usedInTrash: number;
+}
+
 export interface SyncResult {
   success: boolean;
   synced: number;
@@ -52,15 +67,26 @@ const GOOGLE_OAUTH_TOKEN = 'https://oauth2.googleapis.com/token';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '';
 
-// For localhost development, always use the current origin to avoid port mismatch issues
-// For production, use the configured redirect URI or derive from origin
+// Helper to get consistent redirect URI
+// IMPORTANT: This must match EXACTLY what's configured in Google Cloud Console
 const getRedirectUri = () => {
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    return `${window.location.origin}/auth/callback`;
+  // First, try to use the explicitly configured redirect URI from environment
+  const configuredUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
+  if (configuredUri) {
+    console.log('getRedirectUri - using configured URI:', configuredUri);
+    return configuredUri;
   }
-  return import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${window.location.origin}/auth/callback`;
+
+  // Fallback to dynamic origin-based URI
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    const uri = `${origin}/auth/callback`;
+    console.log('getRedirectUri - using dynamic URI:', uri);
+    return uri;
+  }
+
+  return 'http://localhost:5176/auth/callback';
 };
-const GOOGLE_REDIRECT_URI = getRedirectUri();
 
 class GoogleDriveService {
   private config: GoogleDriveConfig | null = null;
@@ -79,13 +105,13 @@ class GoogleDriveService {
       'https://www.googleapis.com/auth/drive.metadata.readonly', // Read metadata
     ];
 
-    // Get redirect URI fresh each time to ensure it matches current origin
-    const redirectUri = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-      ? `${window.location.origin}/auth/callback`
-      : (import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${window.location.origin}/auth/callback`);
+    // Use the same helper function to ensure redirect URI is consistent
+    // between auth URL generation and token exchange
+    const redirectUri = getRedirectUri();
 
     console.log('Google Drive OAuth - redirect_uri:', redirectUri);
     console.log('Google Drive OAuth - client_id:', GOOGLE_CLIENT_ID);
+    console.log('Google Drive OAuth - full URL will be generated with state: google_drive_connect');
 
     const params = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
@@ -97,13 +123,19 @@ class GoogleDriveService {
       state: 'google_drive_connect',
     });
 
-    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    console.log('Google Drive OAuth - full auth URL:', authUrl);
+
+    return authUrl;
   }
 
   /**
    * Exchange authorization code for tokens
    */
   async exchangeCodeForTokens(code: string): Promise<GoogleDriveConfig> {
+    const redirectUri = getRedirectUri();
+    console.log('Exchanging code with redirect_uri:', redirectUri);
+
     const response = await fetch(GOOGLE_OAUTH_TOKEN, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -112,7 +144,7 @@ class GoogleDriveService {
         client_secret: GOOGLE_CLIENT_SECRET,
         code,
         grant_type: 'authorization_code',
-        redirect_uri: GOOGLE_REDIRECT_URI,
+        redirect_uri: redirectUri,
       }),
     });
 
@@ -140,8 +172,12 @@ class GoogleDriveService {
    */
   async refreshAccessToken(): Promise<void> {
     if (!this.config?.refreshToken) {
-      throw new Error('No refresh token available');
+      // No refresh token - need to re-authenticate
+      this.config = null;
+      throw new Error('No refresh token available. Please reconnect Google Drive.');
     }
+
+    console.log('Attempting to refresh Google Drive access token...');
 
     const response = await fetch(GOOGLE_OAUTH_TOKEN, {
       method: 'POST',
@@ -155,10 +191,20 @@ class GoogleDriveService {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to refresh access token');
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Token refresh failed:', errorData);
+
+      // If refresh fails due to invalid grant, clear the config so user can re-auth
+      if (errorData.error === 'invalid_grant') {
+        console.log('Invalid grant - clearing config. User needs to reconnect.');
+        await this.disconnect();
+      }
+
+      throw new Error(`Failed to refresh access token: ${errorData.error_description || errorData.error || 'Unknown error'}`);
     }
 
     const data = await response.json();
+    console.log('Token refresh successful');
 
     this.config = {
       ...this.config,
@@ -519,6 +565,128 @@ class GoogleDriveService {
       this.config.rootFolderId = folderId;
       await this.saveConfig();
     }
+  }
+
+  // ========================================
+  // Search Operations
+  // ========================================
+
+  /**
+   * Search files in Google Drive
+   */
+  async searchFiles(query: string, folderId?: string): Promise<GoogleDriveFile[]> {
+    const searchTerms = query.trim().replace(/'/g, "\\'");
+
+    let q = `name contains '${searchTerms}' and trashed = false`;
+    if (folderId) {
+      q = `'${folderId}' in parents and ${q}`;
+    }
+
+    const params = new URLSearchParams({
+      q,
+      fields: 'files(id, name, mimeType, size, createdTime, modifiedTime, webViewLink, webContentLink, thumbnailLink, parents, shared)',
+      pageSize: '50',
+      orderBy: 'modifiedTime desc',
+    });
+
+    const result = await this.apiRequest<{ files: GoogleDriveFile[] }>(`/files?${params.toString()}`);
+    return result.files;
+  }
+
+  // ========================================
+  // Sharing Operations
+  // ========================================
+
+  /**
+   * Share file with another Google user
+   */
+  async shareFile(
+    fileId: string,
+    email: string,
+    role: 'reader' | 'writer' | 'commenter' = 'commenter'
+  ): Promise<GoogleDrivePermission> {
+    const token = await this.getValidToken();
+
+    const response = await fetch(`${GOOGLE_DRIVE_API}/files/${fileId}/permissions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'user',
+        role,
+        emailAddress: email,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || 'Failed to share file');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get sharing permissions for a file
+   */
+  async getFilePermissions(fileId: string): Promise<GoogleDrivePermission[]> {
+    const result = await this.apiRequest<{ permissions: GoogleDrivePermission[] }>(
+      `/files/${fileId}/permissions?fields=permissions(id,type,role,emailAddress,displayName)`
+    );
+    return result.permissions || [];
+  }
+
+  /**
+   * Remove sharing permission
+   */
+  async removePermission(fileId: string, permissionId: string): Promise<void> {
+    const token = await this.getValidToken();
+
+    const response = await fetch(
+      `${GOOGLE_DRIVE_API}/files/${fileId}/permissions/${permissionId}`,
+      {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!response.ok && response.status !== 204) {
+      throw new Error('Failed to remove permission');
+    }
+  }
+
+  // ========================================
+  // Storage & Quota
+  // ========================================
+
+  /**
+   * Get storage quota information
+   */
+  async getStorageQuota(): Promise<StorageQuota> {
+    const result = await this.apiRequest<{
+      storageQuota: {
+        usage: string;
+        limit: string;
+        usageInDrive: string;
+        usageInDriveTrash: string;
+      };
+    }>('/about?fields=storageQuota');
+
+    return {
+      used: parseInt(result.storageQuota.usage, 10),
+      limit: parseInt(result.storageQuota.limit, 10),
+      usedInDrive: parseInt(result.storageQuota.usageInDrive, 10),
+      usedInTrash: parseInt(result.storageQuota.usageInDriveTrash, 10),
+    };
+  }
+
+  /**
+   * Open file in Google Drive web viewer
+   */
+  getWebViewUrl(fileId: string): string {
+    return `https://drive.google.com/file/d/${fileId}/view`;
   }
 
   // ========================================

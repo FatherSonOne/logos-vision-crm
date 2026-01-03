@@ -28,7 +28,10 @@
       "Bash(xargs:*)",
       "Bash(git push:*)",
       "Bash(vercel env:*)",
-      "Bash(printf:*)"
+      "Bash(printf:*)",
+      "Bash(wc:*)",
+      "Bash(git config:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

@@ -17,6 +17,10 @@ import { ServiceImpactSummary } from './dashboard/ServiceImpactSummary';
 import { HouseholdStatsWidget } from './dashboard/HouseholdStatsWidget';
 import { DonorEngagementWidget } from './dashboard/DonorEngagementWidget';
 
+// New Tier 1 & 2 Components
+import { DashboardCustomizer, useDashboardPreferences } from '../../components/DashboardCustomizer';
+import { ActivityFeed as CollaborationActivityFeed, TeamPresenceBar } from '../../components/CollaborationFeatures';
+
 // Dashboard Role Types - Extended with specialized roles
 export type DashboardRole = 'fundraising' | 'programs' | 'leadership' | 'grants' | 'volunteers' | 'custom';
 
@@ -388,12 +392,16 @@ const DashboardRoleSelector: React.FC<{
 
 export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, activities, teamMembers, currentUserId, onSelectProject, setCurrentPage, onScheduleEvent }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
 
   // Dashboard configuration state with localStorage persistence
   const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig>(() => {
     const saved = localStorage.getItem('dashboardConfig');
     return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
   });
+
+  // Dashboard customizer preferences
+  const dashboardPreferences = useDashboardPreferences();
 
   // Save config to localStorage when it changes
   useEffect(() => {
@@ -522,7 +530,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, 
             {getRoleDescription(dashboardConfig.role)}
           </p>
         </div>
-        <DashboardRoleSelector currentRole={dashboardConfig.role} onRoleChange={handleRoleChange} />
+        <div className="flex items-center gap-3">
+          <DashboardRoleSelector currentRole={dashboardConfig.role} onRoleChange={handleRoleChange} />
+          <button
+            onClick={() => setIsCustomizerOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: 'var(--cmf-surface-2)',
+              color: 'var(--cmf-text-secondary)',
+              border: '1px solid var(--cmf-border)'
+            }}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Customize
+          </button>
+        </div>
       </div>
 
       <div id="dashboard-briefing">
@@ -743,7 +768,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, 
             </CardContent>
           </Card>
         )}
+
+        {/* Team Presence Bar - Collaboration Feature */}
+        <Card className="lg:col-span-1">
+          <CardTitle>Team Activity</CardTitle>
+          <CardContent>
+            <TeamPresenceBar teamMembers={teamMembers.map(tm => ({
+              ...tm,
+              isOnline: Math.random() > 0.5, // Simulated - would come from real-time presence
+              lastActive: '10 minutes ago'
+            }))} />
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Dashboard Customizer Modal */}
+      <DashboardCustomizer
+        isOpen={isCustomizerOpen}
+        onClose={() => setIsCustomizerOpen(false)}
+        preferences={dashboardPreferences.preferences}
+        onPreferencesChange={dashboardPreferences.updatePreferences}
+      />
     </div>
   );
 };

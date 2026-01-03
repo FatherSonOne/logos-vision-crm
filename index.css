@@ -336,3 +336,431 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.2);
 }
+
+/* ===========================
+   AMBIENT MOTION SYSTEM
+   Living, Breathing UI Effects
+   =========================== */
+
+/* --- LOGO ANIMATIONS --- */
+
+/* Glimmer sweep across the logo */
+@keyframes logo-glimmer-sweep {
+  0% {
+    transform: translateX(-100%) translateY(-100%);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%);
+  }
+}
+
+.logo-glimmer-overlay {
+  animation: logo-glimmer-sweep 6s ease-in-out infinite;
+  opacity: 0.8;
+}
+
+/* Corner circles breathing glow */
+@keyframes corner-breathe {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 0px currentColor);
+  }
+  50% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+}
+
+.logo-corner {
+  animation: corner-breathe 3s ease-in-out infinite;
+}
+
+/* Stagger the corner animations for a wave effect */
+.logo-corner-1 { animation-delay: 0s; }
+.logo-corner-2 { animation-delay: 0.5s; }
+.logo-corner-3 { animation-delay: 1s; }
+.logo-corner-4 { animation-delay: 1.5s; }
+.logo-corner-5 { animation-delay: 2s; }
+.logo-corner-6 { animation-delay: 2.5s; }
+.logo-corner-7 { animation-delay: 3s; }
+.logo-corner-8 { animation-delay: 3.5s; }
+
+/* Center pulse */
+@keyframes center-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.logo-center-path {
+  animation: center-pulse 3s ease-in-out infinite;
+}
+
+/* Ripple rings on hover */
+.logo-ripple-ring {
+  position: absolute;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.logo-ripple-ring-1 {
+  width: 24px;
+  height: 24px;
+  color: rgb(6 182 212 / 0.6);
+  border-width: 2px;
+}
+
+.logo-ripple-ring-2 {
+  width: 36px;
+  height: 36px;
+  color: rgb(6 182 212 / 0.5);
+  border-width: 2px;
+}
+
+.logo-ripple-ring-3 {
+  width: 48px;
+  height: 48px;
+  color: rgb(6 182 212 / 0.3);
+  border-width: 2px;
+}
+
+@keyframes ripple-expand {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.logo-ripple-active .logo-ripple-ring-1 {
+  animation: ripple-expand 1.2s ease-out infinite;
+}
+
+.logo-ripple-active .logo-ripple-ring-2 {
+  animation: ripple-expand 1.2s ease-out infinite 0.2s;
+}
+
+.logo-ripple-active .logo-ripple-ring-3 {
+  animation: ripple-expand 1.2s ease-out infinite 0.4s;
+}
+
+/* Logo text shimmer on hover */
+@keyframes text-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.group:hover .logo-text {
+  background: linear-gradient(
+    90deg,
+    currentColor 0%,
+    currentColor 40%,
+    rgb(6 182 212) 50%,
+    currentColor 60%,
+    currentColor 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: text-shimmer 2s ease-in-out;
+}
+
+/* --- SIDEBAR AMBIENT EFFECTS --- */
+
+/* Nav item glow on hover */
+@keyframes nav-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(6, 182, 212, 0);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.15);
+  }
+}
+
+.nav-item-breathing {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-item-breathing:hover {
+  animation: nav-glow 1.5s ease-in-out;
+}
+
+/* Active indicator shimmer */
+@keyframes indicator-shimmer {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 0% 200%;
+  }
+}
+
+.active-indicator-animated {
+  background: linear-gradient(
+    180deg,
+    rgb(6 182 212) 0%,
+    rgb(103 232 249) 50%,
+    rgb(6 182 212) 100%
+  );
+  background-size: 100% 200%;
+  animation: indicator-shimmer 2s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+}
+
+/* Sidebar section divider aurora */
+@keyframes aurora-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.aurora-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(6 182 212 / 0.3),
+    rgb(168 85 247 / 0.3),
+    rgb(6 182 212 / 0.3),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: aurora-shift 8s ease-in-out infinite;
+}
+
+/* --- CARD & WIDGET BREATHING --- */
+
+/* Subtle card breathing */
+@keyframes card-breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.003);
+  }
+}
+
+.card-breathing {
+  animation: card-breathe 5s ease-in-out infinite;
+}
+
+/* Card hover glow bloom */
+@keyframes glow-bloom {
+  0% {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 0 0 rgba(6, 182, 212, 0);
+  }
+  100% {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 20px rgba(6, 182, 212, 0.1);
+  }
+}
+
+.card-glow-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-glow-hover:hover {
+  transform: translateY(-3px);
+  animation: glow-bloom 0.3s ease-out forwards;
+}
+
+/* Stat card pulse on hover */
+@keyframes stat-pulse {
+  0%, 100% {
+    transform: scale(1.02);
+  }
+  50% {
+    transform: scale(1.025);
+  }
+}
+
+.stat-card-hover:hover {
+  animation: stat-pulse 0.8s ease-in-out;
+}
+
+/* --- BUTTON EFFECTS --- */
+
+/* Button ripple effect */
+@keyframes btn-ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.btn-ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple-effect::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+}
+
+.btn-ripple-effect:active::after {
+  animation: btn-ripple 0.6s ease-out;
+}
+
+/* Button glow ring on hover */
+@keyframes btn-glow-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(6, 182, 212, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
+  }
+}
+
+.btn-glow-hover:hover {
+  animation: btn-glow-ring 1s ease-out;
+}
+
+/* Enhanced aurora button animation */
+@keyframes aurora-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.btn-aurora-enhanced {
+  background-size: 200% 200%;
+  animation: aurora-flow 4s ease-in-out infinite;
+}
+
+/* --- INTERACTIVE ELEMENT EFFECTS --- */
+
+/* Focus ring pulse */
+@keyframes focus-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.3);
+  }
+}
+
+.focus-pulse:focus {
+  animation: focus-pulse 2s ease-in-out infinite;
+}
+
+/* Icon hover bounce */
+@keyframes icon-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.icon-hover-bounce:hover {
+  animation: icon-bounce 0.4s ease-in-out;
+}
+
+/* --- AMBIENT BACKGROUND EFFECTS --- */
+
+/* Subtle gradient shift for backgrounds */
+@keyframes bg-gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.bg-ambient-gradient {
+  background: linear-gradient(
+    135deg,
+    rgba(6, 182, 212, 0.03) 0%,
+    transparent 25%,
+    rgba(168, 85, 247, 0.03) 50%,
+    transparent 75%,
+    rgba(6, 182, 212, 0.03) 100%
+  );
+  background-size: 400% 400%;
+  animation: bg-gradient-shift 20s ease-in-out infinite;
+}
+
+/* Loading skeleton shimmer enhancement */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.06) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* --- UTILITY CLASSES --- */
+
+/* Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

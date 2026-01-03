@@ -1,5 +1,22 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { SearchIcon, CloseIcon, ClockIcon, ArrowRightIcon } from './icons';
+
+// Debounce hook for search input
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 /**
  * Global Search Component
@@ -58,6 +75,9 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
+  // Debounce search query to prevent excessive filtering on every keystroke
+  const debouncedSearchQuery = useDebounce(searchQuery, 150);
+
   // Load recent searches from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('recent-searches');
@@ -89,104 +109,107 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     localStorage.removeItem('recent-searches');
   };
 
-  // Search function with fuzzy matching
-  const searchInData = (data: any[], type: SearchResult['type'], fields: string[]): SearchResult[] => {
-    if (!searchQuery.trim()) return [];
-
-    const query = searchQuery.toLowerCase();
-    
-    return data
-      .filter(item => {
-        return fields.some(field => {
-          const value = item[field];
-          if (typeof value === 'string') {
-            return value.toLowerCase().includes(query);
-          }
-          return false;
-        });
-      })
-      .map(item => {
-        // Determine icon based on type
-        const icons = {
-          'organization': '🏢',
-          'project': '📁',
-          'volunteer': '🤝',
-          'team-member': '👤',
-          'case': '📋',
-          'donation': '💰',
-          'document': '📄',
-          'activity': '📊'
-        };
-
-        // Create result object
-        const result: SearchResult = {
-          id: item.id || String(Math.random()),
-          type,
-          title: item.name || item.title || item.subject || 'Untitled',
-          icon: icons[type],
-          data: item
-        };
-
-        // Add type-specific metadata
-        switch (type) {
-          case 'organization':
-            result.subtitle = item.type || 'Organization';
-            result.metadata = item.location;
-            break;
-          case 'project':
-            result.subtitle = item.clientName || 'Project';
-            result.metadata = item.status;
-            break;
-          case 'volunteer':
-            result.subtitle = item.email;
-            result.metadata = `${item.hoursLogged || 0} hours`;
-            break;
-          case 'team-member':
-            result.subtitle = item.role;
-            result.metadata = item.email;
-            break;
-          case 'case':
-            result.subtitle = item.clientName;
-            result.metadata = item.status;
-            break;
-          case 'donation':
-            result.subtitle = item.donorName;
-            result.metadata = `$${item.amount || 0}`;
-            break;
-          case 'document':
-            result.subtitle = item.category;
-            result.metadata = item.uploadDate;
-            break;
-          case 'activity':
-            result.subtitle = item.type;
-            result.metadata = item.date;
-            break;
-        }
-
-        return result;
-      });
+  // Icon mapping for result types
+  const typeIcons: Record<SearchResult['type'], string> = {
+    'organization': '🏢',
+    'project': '📁',
+    'volunteer': '🤝',
+    'team-member': '👤',
+    'case': '📋',
+    'donation': '💰',
+    'document': '📄',
+    'activity': '📊'
   };
 
-  // Perform search across all data sources
-  const searchResults: SearchResult[] = [
-    ...searchInData(organizations, 'organization', ['name', 'type', 'location', 'description']),
-    ...searchInData(projects, 'project', ['name', 'description', 'clientName', 'status']),
-    ...searchInData(volunteers, 'volunteer', ['name', 'email', 'skills', 'interests']),
-    ...searchInData(teamMembers, 'team-member', ['name', 'email', 'role', 'department']),
-    ...searchInData(cases, 'case', ['subject', 'description', 'clientName', 'status']),
-    ...searchInData(donations, 'donation', ['donorName', 'campaign', 'method']),
-    ...searchInData(documents, 'document', ['name', 'category', 'tags']),
-    ...searchInData(activities, 'activity', ['title', 'description', 'type'])
-  ].slice(0, 20); // Limit to 20 results
+  // Memoized search results - only recalculates when debounced query or data changes
+  const searchResults = useMemo((): SearchResult[] => {
+    if (!debouncedSearchQuery.trim()) return [];
 
-  // Group results by type
-  const groupedResults = searchResults.reduce((acc, result) => {
+    const query = debouncedSearchQuery.toLowerCase();
+
+    // Search function with fuzzy matching
+    const searchInData = (data: any[], type: SearchResult['type'], fields: string[]): SearchResult[] => {
+      return data
+        .filter(item => {
+          return fields.some(field => {
+            const value = item[field];
+            if (typeof value === 'string') {
+              return value.toLowerCase().includes(query);
+            }
+            return false;
+          });
+        })
+        .map(item => {
+          // Create result object
+          const result: SearchResult = {
+            id: item.id || String(Math.random()),
+            type,
+            title: item.name || item.title || item.subject || 'Untitled',
+            icon: typeIcons[type],
+            data: item
+          };
+
+          // Add type-specific metadata
+          switch (type) {
+            case 'organization':
+              result.subtitle = item.type || 'Organization';
+              result.metadata = item.location;
+              break;
+            case 'project':
+              result.subtitle = item.clientName || 'Project';
+              result.metadata = item.status;
+              break;
+            case 'volunteer':
+              result.subtitle = item.email;
+              result.metadata = `${item.hoursLogged || 0} hours`;
+              break;
+            case 'team-member':
+              result.subtitle = item.role;
+              result.metadata = item.email;
+              break;
+            case 'case':
+              result.subtitle = item.clientName;
+              result.metadata = item.status;
+              break;
+            case 'donation':
+              result.subtitle = item.donorName;
+              result.metadata = `$${item.amount || 0}`;
+              break;
+            case 'document':
+              result.subtitle = item.category;
+              result.metadata = item.uploadDate;
+              break;
+            case 'activity':
+              result.subtitle = item.type;
+              result.metadata = item.date;
+              break;
+          }
+
+          return result;
+        });
+    };
+
+    // Perform search across all data sources
+    return [
+      ...searchInData(organizations, 'organization', ['name', 'type', 'location', 'description']),
+      ...searchInData(projects, 'project', ['name', 'description', 'clientName', 'status']),
+      ...searchInData(volunteers, 'volunteer', ['name', 'email', 'skills', 'interests']),
+      ...searchInData(teamMembers, 'team-member', ['name', 'email', 'role', 'department']),
+      ...searchInData(cases, 'case', ['subject', 'description', 'clientName', 'status']),
+      ...searchInData(donations, 'donation', ['donorName', 'campaign', 'method']),
+      ...searchInData(documents, 'document', ['name', 'category', 'tags']),
+      ...searchInData(activities, 'activity', ['title', 'description', 'type'])
+    ].slice(0, 20); // Limit to 20 results
+  }, [debouncedSearchQuery, organizations, projects, volunteers, teamMembers, cases, donations, documents, activities]);
+
+  // Group results by type - also memoized
+  const groupedResults = useMemo(() => searchResults.reduce((acc, result) => {
     if (!acc[result.type]) {
       acc[result.type] = [];
     }
     acc[result.type].push(result);
     return acc;
-  }, {} as Record<string, SearchResult[]>);
+  }, {} as Record<string, SearchResult[]>), [searchResults]);
 
   // Type labels for display
   const typeLabels: Record<SearchResult['type'], string> = {
@@ -255,7 +278,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   if (!isOpen) return null;
 
   const showRecentSearches = !searchQuery.trim() && recentSearches.length > 0;
-  const showNoResults = searchQuery.trim() && searchResults.length === 0;
+  const showNoResults = debouncedSearchQuery.trim() && searchResults.length === 0;
 
   return (
     <div 
@@ -338,7 +361,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
           {/* Search Results */}
           {searchResults.length > 0 && (
             <div className="py-2">
-              {Object.entries(groupedResults).map(([type, results]) => (
+              {Object.entries(groupedResults).map(([type, results]: [string, SearchResult[]]) => (
                 <div key={type} className="mb-4">
                   <div className="px-4 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     {typeLabels[type as SearchResult['type']]} ({results.length})
