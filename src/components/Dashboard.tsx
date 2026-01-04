@@ -18,6 +18,10 @@ import { ServiceImpactSummary } from './dashboard/ServiceImpactSummary';
 import { HouseholdStatsWidget } from './dashboard/HouseholdStatsWidget';
 import { DonorEngagementWidget } from './dashboard/DonorEngagementWidget';
 import { SentimentHealthWidget } from './dashboard/SentimentHealthWidget';
+import { OpportunityScoutWidget } from './dashboard/OpportunityScoutWidget';
+import { MeetingPrepWidget } from './dashboard/MeetingPrepWidget';
+import { ProjectRiskRadarWidget } from './dashboard/ProjectRiskRadarWidget';
+import { ResourceAllocatorWidget } from './dashboard/ResourceAllocatorWidget';
 
 // New Tier 1 & 2 Components
 import { DashboardCustomizer, useDashboardPreferences } from '../../components/DashboardCustomizer';
@@ -55,6 +59,10 @@ const WIDGET_DEFINITIONS: WidgetMeta[] = [
   { id: 'pledges', title: 'Pledge Fulfillment', roles: ['fundraising', 'leadership', 'grants'] },
   { id: 'engagement', title: 'Donor Engagement', roles: ['fundraising'] },
   { id: 'sentiment', title: 'Sentiment Health', roles: ['fundraising', 'leadership'] },
+  { id: 'opportunities', title: 'Opportunity Scout', roles: ['fundraising', 'leadership'] },
+  { id: 'meeting-prep', title: 'Meeting Prep', roles: ['fundraising', 'programs', 'leadership', 'grants', 'volunteers'] },
+  { id: 'project-risk', title: 'Project Risk Radar', roles: ['programs', 'leadership', 'grants'] },
+  { id: 'resource-allocator', title: 'Resource Allocator', roles: ['leadership', 'programs'] },
   { id: 'service-impact', title: 'Service Impact', roles: ['programs', 'leadership', 'grants'] },
   { id: 'household', title: 'Household Stats', roles: ['fundraising', 'leadership'] },
   { id: 'projects-deadline', title: 'Projects Nearing Deadline', roles: ['programs', 'leadership', 'grants'] },
@@ -926,6 +934,62 @@ export const Dashboard: React.FC<DashboardProps> = ({
             >
               <div className="h-[400px]">
                 <SentimentHealthWidget clients={clients} activities={activities} />
+              </div>
+            </CollapsibleWidget>
+          )}
+
+          {/* Opportunity Scout - Fundraising & Leadership */}
+          {isWidgetVisible('opportunities') && (
+            <CollapsibleWidget
+              id="opportunities"
+              title="Opportunity Scout"
+              isCollapsed={isWidgetCollapsed('opportunities')}
+              onToggle={() => toggleWidgetCollapse('opportunities')}
+            >
+               <div className="h-[400px]">
+                <OpportunityScoutWidget clients={clients} donations={donations} />
+              </div>
+            </CollapsibleWidget>
+          )}
+
+          {/* Meeting Prep - All Roles */}
+          {isWidgetVisible('meeting-prep') && (
+            <CollapsibleWidget
+              id="meeting-prep"
+              title="Meeting Prep Assistant"
+              isCollapsed={isWidgetCollapsed('meeting-prep')}
+              onToggle={() => toggleWidgetCollapse('meeting-prep')}
+            >
+               <div className="h-[400px]">
+                <MeetingPrepWidget activities={activities} clients={clients} />
+              </div>
+            </CollapsibleWidget>
+          )}
+
+          {/* Project Risk Radar - Programs & Leadership */}
+          {isWidgetVisible('project-risk') && (
+            <CollapsibleWidget
+              id="project-risk"
+              title="Project Risk Radar"
+              isCollapsed={isWidgetCollapsed('project-risk')}
+              onToggle={() => toggleWidgetCollapse('project-risk')}
+            >
+               <div className="h-[400px]">
+                <ProjectRiskRadarWidget projects={projects} cases={cases} />
+              </div>
+            </CollapsibleWidget>
+          )}
+
+          {/* Resource Allocator - Leadership & Programs */}
+          {isWidgetVisible('resource-allocator') && (
+            <CollapsibleWidget
+              id="resource-allocator"
+              title="Resource Allocator"
+              isCollapsed={isWidgetCollapsed('resource-allocator')}
+              onToggle={() => toggleWidgetCollapse('resource-allocator')}
+            >
+               <div className="h-[400px]">
+                <ResourceAllocatorWidget teamMembers={teamMembers} projects={projects} />
               </div>
             </CollapsibleWidget>
           )}

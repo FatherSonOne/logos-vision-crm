@@ -1576,3 +1576,103 @@ export async function analyzeSentiment(
     };
   }
 }
+
+// --- Opportunity Scout ---
+
+export async function generateOpportunityPitch(
+  clientName: string,
+  opportunityType: 'high_capacity_low_engagement' | 'lapsed_major_donor' | 'rising_star',
+  details: string
+): Promise<{ subject: string; pitch: string; suggestedAction: string }> {
+  if (!import.meta.env.VITE_API_KEY) {
+    return {
+      subject: "Connect with " + clientName,
+      pitch: "Please configure the AI service to generate a personalized pitch.",
+      suggestedAction: "Call to catch up"
+    };
+  }
+
+  const prompt = `
+    Generate a concise outreach strategy for a donor opportunity.
+    
+    Donor: ${clientName}
+    Opportunity Type: ${opportunityType.replace(/_/g, ' ')}
+    Context: ${details}
+    
+    Output JSON with:
+    1. subject: A catchy email subject line.
+    2. pitch: A 2-sentence conversational opener.
+    3. suggestedAction: One concrete next step (e.g., "Invite to Gala", "Schedule coffee").
+  `;
+
+  try {
+    const ai = await getAI();
+    const model = ai.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = result.response.text();
+    return JSON.parse(response);
+  } catch (error) {
+    console.error("Error generating pitch:", error);
+    return {
+      subject: "Error generating pitch",
+      pitch: "Could not generate pitch due to an error.",
+      suggestedAction: "Review donor profile"
+    };
+  }
+}
+
+// --- Meeting Prep ---
+
+export async function generateMeetingPrep(
+  attendeeName: string,
+  meetingTitle: string,
+  lastInteractions: string[]
+): Promise<{ talkingPoints: string[]; recentContext: string; openQuestions: string[] }> {
+  if (!import.meta.env.VITE_API_KEY) {
+    return {
+      talkingPoints: ["Ask about their recent project", "Discuss partnership opportunities"],
+      recentContext: "AI service unavailable for full context analysis.",
+      openQuestions: ["How is the family?", "Any updates on the timeline?"]
+    };
+  }
+
+  const prompt = `
+    Prepare a "Meeting Cheat Sheet" for a meeting with ${attendeeName}.
+    Meeting Title: "${meetingTitle}"
+    
+    Recent Interactions/Context:
+    ${lastInteractions.join('\n')}
+
+    Output JSON with:
+    1. talkingPoints: 3 bullet points for conversation starters or agenda items.
+    2. recentContext: A 1-sentence summary of the last interaction to refresh memory.
+    3. openQuestions: 2 strategic open-ended questions to ask.
+  `;
+
+  try {
+    const ai = await getAI();
+    const model = ai.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = result.response.text();
+    return JSON.parse(response);
+  } catch (error) {
+    console.error("Error generating meeting prep:", error);
+    return {
+      talkingPoints: ["Review agenda"],
+      recentContext: "Could not analyze context.",
+      openQuestions: []
+    };
+  }
+}

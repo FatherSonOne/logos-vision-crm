@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Dashboard Customizer Component
@@ -279,9 +280,9 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
     { id: 'ai', label: 'AI Features' },
   ];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-2xl max-h-[85vh] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-2xl max-h-[85vh] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col m-4">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
@@ -466,6 +467,9 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
       </div>
     </div>
   );
+
+  // Use portal to render at document body level
+  return createPortal(modalContent, document.body);
 };
 
 // Hook to use dashboard preferences
