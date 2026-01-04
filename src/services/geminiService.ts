@@ -1471,3 +1471,108 @@ export async function generateDailyBriefing(data: BriefingData): Promise<DailyBr
     };
   }
 }
+
+// --- Sentiment Analysis ---
+
+export interface SentimentAnalysisResult {
+  clientId: string;
+  clientName: string;
+  sentimentScore: number; // 0-100
+  sentimentLabel: 'Positive' | 'Neutral' | 'Negative' | 'At Risk';
+  summary: string;
+  keyConcerns?: string[];
+  trend: 'improving' | 'declining' | 'stable';
+}
+
+const sentimentAnalysisSchema = {
+  type: Type.OBJECT,
+  properties: {
+    sentimentScore: { type: Type.NUMBER, description: 'Score from 0 (Negative) to 100 (Positive)' },
+    sentimentLabel: { type: Type.STRING, enum: ['Positive', 'Neutral', 'Negative', 'At Risk'] },
+    summary: { type: Type.STRING, description: 'Brief explanation of the sentiment assessment.' },
+    keyConcerns: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Specific issues or concerns identified.' },
+    trend: { type: Type.STRING, enum: ['improving', 'declining', 'stable'], description: 'Assessment of sentiment trend over time.' }
+  },
+  required: ['sentimentScore', 'sentimentLabel', 'summary', 'trend']
+};
+
+export async function analyzeSentiment(
+  clientName: string,
+  clientId: string,
+  activities: { date: string; type: string; notes?: string; title: string }[]
+): Promise<SentimentAnalysisResult> {
+  if (!import.meta.env.VITE_API_KEY) {
+    return {
+      clientId,
+      clientName,
+      sentimentScore: 75,
+      sentimentLabel: 'Neutral',
+      summary: 'AI service unavailable.',
+      trend: 'stable'
+    };
+  }
+
+  // Filter out activities with no content
+  const relevantActivities = activities.filter(a => a.notes || a.title);
+  if (relevantActivities.length === 0) {
+      return {
+          clientId,
+          clientName,
+          sentimentScore: 50,
+          sentimentLabel: 'Neutral',
+          summary: 'Not enough activity data to analyze.',
+          trend: 'stable'
+      };
+  }
+
+  const activityText = relevantActivities
+    .map(a => `[${a.date}] ${a.type}: ${a.title} - ${a.notes || ''}`)
+    .join('\n');
+
+  const prompt = `
+    Analyze the sentiment of the following recent interactions with client "${clientName}".
+    Goal: Assess the health of the relationship and identify any risks of churn or dissatisfaction.
+    
+    Interactions:
+    ${activityText}
+
+    Instructions:
+    1. Determine a Sentiment Score (0-100). <40 is Negative, 40-60 Neutral, >60 Positive.
+    2. If there are explicit complaints or signs of withdrawal, mark as "At Risk".
+    3. Determine the Trend (improving, declining, stable) based on the timeline.
+    4. Provide a 1-sentence summary and list key concerns if any.
+    
+    Return valid JSON matching the schema.
+  `;
+
+  try {
+    const ai = await getAI();
+    const model = ai.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: sentimentAnalysisSchema,
+      }
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = result.response.text();
+    const data = JSON.parse(response);
+    
+    return {
+      clientId,
+      clientName,
+      ...data
+    };
+  } catch (error) {
+    console.error("Error analyzing sentiment:", error);
+    return {
+      clientId,
+      clientName,
+      sentimentScore: 50,
+      sentimentLabel: 'Neutral',
+      summary: 'Error analyzing sentiment.',
+      trend: 'stable'
+    };
+  }
+}

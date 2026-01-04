@@ -17,8 +17,10 @@ interface GuidedTourProps {
 export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, pageName }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+    const [targetElement, setTargetElement] = useState<Element | null>(null);
     const [isAnimating, setIsAnimating] = useState(false);
     const stepRef = useRef<HTMLDivElement>(null);
+    const originalStylesRef = useRef<Map<Element, { zIndex: string; position: string; outline: string }>>(new Map());
 
     // Find next valid step (skip steps with missing selectors)
     const findNextValidStep = useCallback((startIndex: number, direction: 'forward' | 'backward'): number => {
@@ -36,25 +38,61 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
         return -1; // No valid step found
     }, [steps]);
 
+    // Cleanup function to restore element styles
+    const cleanupTargetElement = useCallback(() => {
+        originalStylesRef.current.forEach((styles, element) => {
+            if (element instanceof HTMLElement) {
+                element.style.zIndex = styles.zIndex;
+                element.style.position = styles.position;
+                element.style.outline = styles.outline;
+                element.classList.remove('tour-highlight');
+            }
+        });
+        originalStylesRef.current.clear();
+    }, []);
+
+    // Highlight target element by elevating it above the overlay
+    const highlightTargetElement = useCallback((element: Element) => {
+        if (element instanceof HTMLElement) {
+            // Store original styles
+            originalStylesRef.current.set(element, {
+                zIndex: element.style.zIndex,
+                position: element.style.position,
+                outline: element.style.outline
+            });
+
+            // Elevate element above overlay (z-index 10000)
+            const currentPosition = window.getComputedStyle(element).position;
+            if (currentPosition === 'static') {
+                element.style.position = 'relative';
+            }
+            element.style.zIndex = '10002';
+            element.style.outline = '3px solid #7dd3fc';
+            element.classList.add('tour-highlight');
+        }
+    }, []);
+
     useEffect(() => {
         if (isOpen && steps.length > 0) {
             const step = steps[currentStep];
             if (step) {
-                const targetElement = document.querySelector(step.selector);
-                if (targetElement) {
-                    setIsAnimating(true);
-                    const rect = targetElement.getBoundingClientRect();
-                    setTargetRect(rect);
-                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                const element = document.querySelector(step.selector);
+                if (element) {
+                    // Cleanup previous target
+                    cleanupTargetElement();
 
-                    // Add highlight ring to target element
-                    targetElement.classList.add('tour-highlight');
+                    setIsAnimating(true);
+                    const rect = element.getBoundingClientRect();
+                    setTargetRect(rect);
+                    setTargetElement(element);
+
+                    // Scroll element into view
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+
+                    // Highlight the element by elevating it
+                    highlightTargetElement(element);
 
                     setTimeout(() => setIsAnimating(false), 300);
-
-                    return () => {
-                        targetElement.classList.remove('tour-highlight');
-                    };
                 } else {
                     console.warn(`Tour step selector not found: ${step.selector}`);
                     // Try to find next valid step
@@ -67,7 +105,13 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
                 }
             }
         }
-    }, [isOpen, currentStep, steps, onClose, findNextValidStep]);
+
+        return () => {
+            if (!isOpen) {
+                cleanupTargetElement();
+            }
+        };
+    }, [isOpen, currentStep, steps, onClose, findNextValidStep, cleanupTargetElement, highlightTargetElement]);
 
     useEffect(() => {
         // Reset step to first valid step when tour is opened
@@ -85,6 +129,15 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
             return () => clearTimeout(timer);
         }
     }, [isOpen, steps, findNextValidStep]);
+
+    // Cleanup on close
+    useEffect(() => {
+        if (!isOpen) {
+            cleanupTargetElement();
+            setTargetElement(null);
+            setTargetRect(null);
+        }
+    }, [isOpen, cleanupTargetElement]);
 
     // Handle keyboard navigation
     useEffect(() => {
@@ -104,49 +157,23 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, currentStep, steps.length]);
 
-    if (!isOpen || !targetRect || steps.length === 0) return null;
+    // Handle window resize to update target rect
+    useEffect(() => {
+        if (!isOpen || !targetElement) return;
 
-    const step = steps[currentStep];
-    if (!step) return null;
+        const handleResize = () => {
+            const rect = targetElement.getBoundingClientRect();
+            setTargetRect(rect);
+        };
 
-    const { top, left, width, height } = targetRect;
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('scroll', handleResize, true);
 
-    let tooltipStyle: React.CSSProperties = {
-        position: 'absolute',
-        zIndex: 10001,
-        transition: 'top 0.3s ease-in-out, left 0.3s ease-in-out',
-    };
-    
-    // Position tooltip
-    if (step.position === 'top') {
-        tooltipStyle = {
-            ...tooltipStyle,
-            top: `${top - 10}px`,
-            left: `${left + width / 2}px`,
-            transform: 'translate(-50%, -100%)'
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('scroll', handleResize, true);
         };
-    } else if (step.position === 'left') {
-        tooltipStyle = {
-            ...tooltipStyle,
-            top: `${top + height / 2}px`,
-            left: `${left - 10}px`,
-            transform: 'translate(-100%, -50%)'
-        };
-    } else if (step.position === 'right') {
-        tooltipStyle = {
-            ...tooltipStyle,
-            top: `${top + height / 2}px`,
-            left: `${left + width + 10}px`,
-            transform: 'translateY(-50%)'
-        };
-    } else { // bottom is default
-        tooltipStyle = {
-            ...tooltipStyle,
-            top: `${top + height + 10}px`,
-            left: `${left + width / 2}px`,
-            transform: 'translateX(-50%)'
-        };
-    }
+    }, [isOpen, targetElement]);
 
     const nextStep = () => {
         const nextValid = findNextValidStep(currentStep + 1, 'forward');
@@ -164,31 +191,148 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
         }
     };
 
+    if (!isOpen || !targetRect || steps.length === 0) return null;
+
+    const step = steps[currentStep];
+    if (!step) return null;
+
+    const { top, left, width, height } = targetRect;
+
+    // Calculate tooltip position
+    let tooltipStyle: React.CSSProperties = {
+        position: 'fixed',
+        zIndex: 10003,
+        transition: 'top 0.3s ease-in-out, left 0.3s ease-in-out',
+    };
+
+    const padding = 16; // Space between target and tooltip
+    const tooltipWidth = 320;
+    const tooltipHeight = 280; // Estimated height
+
+    // Position tooltip based on step.position, with viewport boundary checks
+    if (step.position === 'top') {
+        let tooltipTop = top - padding;
+        let tooltipLeft = left + width / 2;
+        // Check if tooltip would go off-screen at top
+        if (tooltipTop - tooltipHeight < 0) {
+            // Switch to bottom
+            tooltipTop = top + height + padding;
+            tooltipStyle = {
+                ...tooltipStyle,
+                top: `${tooltipTop}px`,
+                left: `${tooltipLeft}px`,
+                transform: 'translateX(-50%)'
+            };
+        } else {
+            tooltipStyle = {
+                ...tooltipStyle,
+                top: `${tooltipTop}px`,
+                left: `${tooltipLeft}px`,
+                transform: 'translate(-50%, -100%)'
+            };
+        }
+    } else if (step.position === 'left') {
+        let tooltipTop = top + height / 2;
+        let tooltipLeft = left - padding;
+        // Check if tooltip would go off-screen at left
+        if (tooltipLeft - tooltipWidth < 0) {
+            // Switch to right
+            tooltipLeft = left + width + padding;
+            tooltipStyle = {
+                ...tooltipStyle,
+                top: `${tooltipTop}px`,
+                left: `${tooltipLeft}px`,
+                transform: 'translateY(-50%)'
+            };
+        } else {
+            tooltipStyle = {
+                ...tooltipStyle,
+                top: `${tooltipTop}px`,
+                left: `${tooltipLeft}px`,
+                transform: 'translate(-100%, -50%)'
+            };
+        }
+    } else if (step.position === 'right') {
+        let tooltipTop = top + height / 2;
+        let tooltipLeft = left + width + padding;
+        // Check if tooltip would go off-screen at right
+        if (tooltipLeft + tooltipWidth > window.innerWidth) {
+            // Switch to left
+            tooltipLeft = left - padding;
+            tooltipStyle = {
+                ...tooltipStyle,
+                top: `${tooltipTop}px`,
+                left: `${tooltipLeft}px`,
+                transform: 'translate(-100%, -50%)'
+            };
+        } else {
+            tooltipStyle = {
+                ...tooltipStyle,
+                top: `${tooltipTop}px`,
+                left: `${tooltipLeft}px`,
+                transform: 'translateY(-50%)'
+            };
+        }
+    } else { // bottom is default
+        let tooltipTop = top + height + padding;
+        let tooltipLeft = left + width / 2;
+        // Check if tooltip would go off-screen at bottom
+        if (tooltipTop + tooltipHeight > window.innerHeight) {
+            // Switch to top
+            tooltipTop = top - padding;
+            tooltipStyle = {
+                ...tooltipStyle,
+                top: `${tooltipTop}px`,
+                left: `${tooltipLeft}px`,
+                transform: 'translate(-50%, -100%)'
+            };
+        } else {
+            tooltipStyle = {
+                ...tooltipStyle,
+                top: `${tooltipTop}px`,
+                left: `${tooltipLeft}px`,
+                transform: 'translateX(-50%)'
+            };
+        }
+    }
+
     // Calculate valid step count for progress display
     const validStepsCount = steps.filter(s => document.querySelector(s.selector)).length;
     const currentValidIndex = steps.slice(0, currentStep + 1).filter(s => document.querySelector(s.selector)).length;
 
     return (
-        <div className="fixed inset-0 z-[10000]">
-            {/* Backdrop with spotlight cutout - reduced opacity for better visibility */}
+        <div className="fixed inset-0 z-[10000] pointer-events-none">
+            {/* Semi-transparent overlay - pointer events enabled so clicking closes the tour */}
             <div
-                className="absolute inset-0 bg-black/40 dark:bg-black/50"
-                style={{
-                    clipPath: `path("M0,0H${window.innerWidth}V${window.innerHeight}H0V0ZM${left - 8},${top - 8}a8,8 0 0 1 8,-8h${width}a8,8 0 0 1 8,8v${height}a8,8 0 0 1 -8,8h-${width}a8,8 0 0 1 -8,-8Z")`,
-                    transition: 'clip-path 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
+                className="absolute inset-0 bg-black/60 dark:bg-black/70 pointer-events-auto"
                 onClick={onClose}
             />
 
-            {/* Spotlight ring around target - Nothing style light blue */}
+            {/* Spotlight cutout - creates a "hole" in the overlay to reveal the target */}
             <div
-                className="absolute pointer-events-none rounded-lg ring-2 ring-[#7dd3fc] dark:ring-[#7dd3fc] shadow-[0_0_20px_rgba(125,211,252,0.4)]"
+                className="absolute pointer-events-none"
                 style={{
-                    top: `${top - 4}px`,
-                    left: `${left - 4}px`,
-                    width: `${width + 8}px`,
-                    height: `${height + 8}px`,
-                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                    top: `${top - 8}px`,
+                    left: `${left - 8}px`,
+                    width: `${width + 16}px`,
+                    height: `${height + 16}px`,
+                    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
+                    borderRadius: '12px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+            />
+
+            {/* Spotlight ring around target - Nothing style light blue glow */}
+            <div
+                className="absolute pointer-events-none rounded-xl"
+                style={{
+                    top: `${top - 6}px`,
+                    left: `${left - 6}px`,
+                    width: `${width + 12}px`,
+                    height: `${height + 12}px`,
+                    border: '3px solid #7dd3fc',
+                    boxShadow: '0 0 30px rgba(125, 211, 252, 0.5), inset 0 0 20px rgba(125, 211, 252, 0.1)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
             />
 
@@ -200,34 +344,35 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
                     bg-white dark:bg-[#0a0a0a] p-5 rounded-xl shadow-2xl w-80
                     text-slate-900 dark:text-white
                     border border-slate-200 dark:border-[#1a1a1a]
-                    dark:shadow-[0_0_30px_rgba(125,211,252,0.1)]
+                    dark:shadow-[0_0_30px_rgba(125,211,252,0.15)]
                     transition-all duration-300
+                    pointer-events-auto
                     ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
                 `}
             >
                 {/* Page indicator */}
                 {pageName && (
-                    <div className="text-xs font-medium text-[#0ea5e9] dark:text-[#7dd3fc] mb-2 uppercase tracking-wide">
+                    <div className="text-xs font-semibold text-[#0ea5e9] dark:text-[#7dd3fc] mb-2 uppercase tracking-wider">
                         {pageName.replace('-', ' ')} Guide
                     </div>
                 )}
 
                 {/* Title with icon */}
                 <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-sky-100 dark:bg-[#7dd3fc]/20 text-[#0ea5e9] dark:text-[#7dd3fc] text-sm">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-sky-100 dark:bg-[#7dd3fc]/20 text-[#0ea5e9] dark:text-[#7dd3fc] text-sm font-bold">
                         {currentValidIndex}
                     </span>
                     {step.title}
                 </h3>
 
                 {/* Content */}
-                <p className="text-sm text-slate-600 dark:text-[#b3b3b3] leading-relaxed">
+                <p className="text-sm text-slate-600 dark:text-[#b3b3b3] leading-relaxed mb-4">
                     {step.content}
                 </p>
 
                 {/* Progress bar - Nothing style */}
-                <div className="mt-4 mb-3">
-                    <div className="h-1 bg-slate-200 dark:bg-[#1a1a1a] rounded-full overflow-hidden">
+                <div className="mb-4">
+                    <div className="h-1.5 bg-slate-200 dark:bg-[#1a1a1a] rounded-full overflow-hidden">
                         <div
                             className="h-full bg-gradient-to-r from-[#0ea5e9] to-[#06b6d4] dark:from-[#7dd3fc] dark:to-[#a5f3fc] rounded-full transition-all duration-300"
                             style={{ width: `${(currentValidIndex / validStepsCount) * 100}%` }}
@@ -237,7 +382,7 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
 
                 {/* Navigation buttons */}
                 <div className="flex justify-between items-center">
-                    <span className="text-xs text-slate-400 dark:text-[#4d4d4d]">
+                    <span className="text-xs text-slate-400 dark:text-[#4d4d4d] font-medium">
                         {currentValidIndex} of {validStepsCount}
                     </span>
                     <div className="flex items-center gap-2">
@@ -257,7 +402,7 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
                         </button>
                         <button
                             onClick={nextStep}
-                            className="text-sm font-semibold px-4 py-1.5 bg-gradient-to-r from-[#0ea5e9] to-[#06b6d4] hover:from-[#0284c7] hover:to-[#0891b2] text-white rounded-lg transition-all shadow-md hover:shadow-lg dark:shadow-[0_0_15px_rgba(125,211,252,0.2)]"
+                            className="text-sm font-semibold px-4 py-1.5 bg-gradient-to-r from-[#0ea5e9] to-[#06b6d4] hover:from-[#0284c7] hover:to-[#0891b2] text-white rounded-lg transition-all shadow-md hover:shadow-lg dark:shadow-[0_0_15px_rgba(125,211,252,0.3)]"
                         >
                             {findNextValidStep(currentStep + 1, 'forward') < 0 ? 'Finish' : 'Next'}
                         </button>

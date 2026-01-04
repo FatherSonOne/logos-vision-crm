@@ -17,6 +17,7 @@ import { PledgeFulfillmentWidget } from './dashboard/PledgeFulfillmentWidget';
 import { ServiceImpactSummary } from './dashboard/ServiceImpactSummary';
 import { HouseholdStatsWidget } from './dashboard/HouseholdStatsWidget';
 import { DonorEngagementWidget } from './dashboard/DonorEngagementWidget';
+import { SentimentHealthWidget } from './dashboard/SentimentHealthWidget';
 
 // New Tier 1 & 2 Components
 import { DashboardCustomizer, useDashboardPreferences } from '../../components/DashboardCustomizer';
@@ -53,6 +54,7 @@ const WIDGET_DEFINITIONS: WidgetMeta[] = [
   { id: 'lapsed', title: 'Lapsed Donors', roles: ['fundraising'] },
   { id: 'pledges', title: 'Pledge Fulfillment', roles: ['fundraising', 'leadership', 'grants'] },
   { id: 'engagement', title: 'Donor Engagement', roles: ['fundraising'] },
+  { id: 'sentiment', title: 'Sentiment Health', roles: ['fundraising', 'leadership'] },
   { id: 'service-impact', title: 'Service Impact', roles: ['programs', 'leadership', 'grants'] },
   { id: 'household', title: 'Household Stats', roles: ['fundraising', 'leadership'] },
   { id: 'projects-deadline', title: 'Projects Nearing Deadline', roles: ['programs', 'leadership', 'grants'] },
@@ -911,6 +913,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
               onToggle={() => toggleWidgetCollapse('engagement')}
             >
               <DonorEngagementWidget />
+            </CollapsibleWidget>
+          )}
+
+          {/* Sentiment Health - Fundraising & Leadership */}
+          {isWidgetVisible('sentiment') && (
+            <CollapsibleWidget
+              id="sentiment"
+              title="Sentiment Health"
+              isCollapsed={isWidgetCollapsed('sentiment')}
+              onToggle={() => toggleWidgetCollapse('sentiment')}
+            >
+              <div className="h-[400px]">
+                <SentimentHealthWidget clients={clients} activities={activities} />
+              </div>
             </CollapsibleWidget>
           )}
 
