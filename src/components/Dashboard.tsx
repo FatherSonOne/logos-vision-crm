@@ -1,10 +1,11 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import type { Project, Client, Activity, Page, TeamMember, Case, EnrichedTask } from '../types';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import type { Project, Client, Activity, Page, TeamMember, Case, EnrichedTask, Donation, Document as AppDocument } from '../types';
 import { ProjectStatus, ActivityType, ActivityStatus, TaskStatus } from '../types';
 import { getDeadlineStatus } from '../utils/dateHelpers';
-import { generateDailyBriefing } from '../services/geminiService';
+import { generateDailyBriefing, type DailyBriefingResult, type BriefingData } from '../services/geminiService';
 import { Skeleton, CardSkeleton as StatCardSkeleton, ListSkeleton } from './ui/Skeleton';
 import { useDonationSummary } from '../hooks/useDonationSummary';
+import { Sparkles, CheckCircle, Calendar, Trophy, AlertCircle, RefreshCw, Quote, ArrowRight, Sun, FileText, DollarSign } from 'lucide-react';
 
 // Design System Components
 import { StatCard, Card, CardTitle, CardContent, Badge } from './ui';
@@ -123,63 +124,218 @@ interface DashboardProps {
   cases: Case[];
   activities: Activity[];
   teamMembers: TeamMember[];
+  documents?: AppDocument[];
+  donations?: Donation[];
   currentUserId: string;
   onSelectProject: (id: string) => void;
   setCurrentPage: (page: Page) => void;
   onScheduleEvent: () => void;
 }
 
-const DailyBriefing: React.FC<{
-    userName: string;
-    projects: Project[];
-    cases: Case[];
-    activities: Activity[];
-    currentUserId: string;
-}> = ({ userName, projects, cases, activities, currentUserId }) => {
-    const [briefing, setBriefing] = useState('');
+interface EnhancedHeroWidgetProps extends BriefingData {
+  onNavigate: (page: Page, id?: string, type?: string) => void;
+}
+
+const EnhancedHeroWidget: React.FC<EnhancedHeroWidgetProps> = ({ onNavigate, ...data }) => {
+    const [briefing, setBriefing] = useState<DailyBriefingResult | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const getBriefing = useCallback(async () => {
         setIsLoading(true);
-
-        const allTasks: EnrichedTask[] = projects.flatMap(p => 
-            p.tasks.map(t => ({...t, projectName: p.name, projectId: p.id}))
-        );
-        const myTasks = allTasks.filter(t => t.teamMemberId === currentUserId);
-        
-        const summary = await generateDailyBriefing(userName, myTasks, cases, activities);
-        setBriefing(summary);
+        // Pre-enrich tasks with project info if needed, though geminiService does some filtering
+        // We pass the data directly as geminiService expects BriefingData
+        const result = await generateDailyBriefing(data);
+        setBriefing(result);
         setIsLoading(false);
-    }, [userName, projects, cases, activities, currentUserId]);
+    }, [data.projects, data.cases, data.activities, data.tasks, data.donations, data.documents]);
 
     useEffect(() => {
         getBriefing();
     }, [getBriefing]);
 
+    const handleActionClick = (item: { relatedId?: string, relatedType?: string }) => {
+        if (item.relatedType && item.relatedId) {
+            let page: Page | null = null;
+            switch (item.relatedType) {
+                case 'task': page = 'tasks'; break;
+                case 'project': page = 'projects'; break; // Special handling might be needed for selection
+                case 'case': page = 'case'; break;
+                case 'activity': page = 'activities'; break;
+                case 'document': page = 'documents'; break;
+                case 'donation': page = 'donations'; break;
+            }
+            if (page) {
+                onNavigate(page, item.relatedId, item.relatedType);
+            }
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white shadow-xl p-8 min-h-[300px] animate-pulse">
+                <div className="absolute top-0 right-0 p-12 opacity-10">
+                    <Sparkles size={120} />
+                </div>
+                <div className="space-y-4 max-w-2xl relative z-10">
+                    <div className="h-8 bg-white/10 rounded w-1/3 mb-6"></div>
+                    <div className="h-4 bg-white/10 rounded w-full"></div>
+                    <div className="h-4 bg-white/10 rounded w-5/6"></div>
+                    <div className="h-4 bg-white/10 rounded w-4/6"></div>
+                </div>
+                <div className="grid grid-cols-3 gap-6 mt-8 relative z-10">
+                    <div className="h-24 bg-white/5 rounded-lg"></div>
+                    <div className="h-24 bg-white/5 rounded-lg"></div>
+                    <div className="h-24 bg-white/5 rounded-lg"></div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!briefing) return null;
+
     return (
-        <div className="relative bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 p-6 rounded-lg shadow-lg text-white overflow-hidden text-shadow-strong">
-            <div className="absolute -top-4 -right-4 w-32 h-32 bg-cyan-500/10 rounded-full filter blur-2xl"></div>
-            <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-violet-500/10 rounded-full filter blur-2xl"></div>
-            <div className="relative z-10">
-                <div className="flex justify-between items-start">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 text-white shadow-xl transition-all duration-500">
+            {/* Background Decorations */}
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl"></div>
+            
+            <div className="relative z-10 p-6 md:p-8">
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
-                        <h3 className="text-xl font-bold">Daily Briefing</h3>
-                        <p className="text-sm text-slate-300">Your AI-powered morning summary.</p>
+                        <div className="flex items-center gap-2 mb-2 text-indigo-200 text-sm font-medium tracking-wide uppercase">
+                            <Sun size={16} />
+                            <span>Daily Briefing</span>
+                            <span className="mx-2 text-indigo-500/50">•</span>
+                            <span>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-indigo-100">
+                            {briefing.greeting}
+                        </h2>
                     </div>
-                    <button onClick={getBriefing} disabled={isLoading} className="p-1.5 rounded-full text-slate-300 hover:bg-white/10 disabled:opacity-50" aria-label="Refresh briefing">
-                        <RefreshIcon isLoading={isLoading} />
+                    <button 
+                        onClick={getBriefing} 
+                        className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-indigo-100 transition-colors backdrop-blur-sm"
+                        title="Refresh Briefing"
+                    >
+                        <RefreshCw size={20} />
                     </button>
                 </div>
-                <div className="mt-4 min-h-[72px]">
-                    {isLoading ? (
-                         <div className="space-y-2 animate-pulse">
-                            <div className="h-4 bg-slate-700 rounded w-3/4"></div>
-                            <div className="h-4 bg-slate-700 rounded w-full"></div>
-                            <div className="h-4 bg-slate-700 rounded w-1/2"></div>
+
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    {/* Left Column: Summary & Actions (8 cols) */}
+                    <div className="lg:col-span-8 space-y-8">
+                        {/* Executive Summary */}
+                        <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10">
+                            <p className="text-lg leading-relaxed text-indigo-50 font-light">
+                                {briefing.summary}
+                            </p>
+                            {briefing.quote && (
+                                <div className="mt-4 flex items-start gap-3 pt-4 border-t border-white/10 text-indigo-200/80 italic text-sm">
+                                    <Quote size={16} className="shrink-0 mt-0.5" />
+                                    <span>"{briefing.quote}"</span>
+                                </div>
+                            )}
                         </div>
-                    ) : (
-                        <p className="text-slate-200 whitespace-pre-wrap">{briefing}</p>
-                    )}
+
+                        {/* Action Items */}
+                        <div>
+                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-indigo-100">
+                                <CheckCircle size={20} className="text-emerald-400" />
+                                Action Items
+                            </h3>
+                            <div className="grid gap-3">
+                                {briefing.actionItems.length > 0 ? (
+                                    briefing.actionItems.map((item, idx) => (
+                                        <div 
+                                            key={idx} 
+                                            onClick={() => handleActionClick(item)}
+                                            className={`flex items-start gap-3 bg-white/5 hover:bg-white/10 transition-colors p-3 rounded-lg border border-white/5 group ${item.relatedId ? 'cursor-pointer' : ''}`}
+                                        >
+                                            <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
+                                                item.priority === 'high' ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 
+                                                item.priority === 'medium' ? 'bg-amber-400' : 'bg-emerald-400'
+                                            }`} />
+                                            <div className="flex-1">
+                                                <span className="text-indigo-50 group-hover:text-white transition-colors">{item.text}</span>
+                                                {item.relatedType && (
+                                                    <div className="flex items-center gap-1 mt-1 text-xs text-indigo-300/60 group-hover:text-indigo-300 transition-colors">
+                                                        <ArrowRight size={12} />
+                                                        <span className="capitalize">View {item.relatedType}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-indigo-300/60 italic">No urgent actions suggested for today.</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column: Highlights & Kudos (4 cols) */}
+                    <div className="lg:col-span-4 space-y-6">
+                        
+                        {/* Kudos / Wins */}
+                        {(briefing.kudos.length > 0 || briefing.recap.length > 0) && (
+                            <div className="bg-gradient-to-br from-emerald-900/40 to-teal-900/40 backdrop-blur-md rounded-xl p-5 border border-emerald-500/20">
+                                <h3 className="text-sm font-bold text-emerald-200 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                    <Trophy size={16} /> Highlights
+                                </h3>
+                                <ul className="space-y-3">
+                                    {[...briefing.kudos, ...briefing.recap].slice(0, 3).map((item, i) => (
+                                        <li key={i} className="text-sm text-emerald-50 flex items-start gap-2">
+                                            <span className="mt-1.5 w-1 h-1 bg-emerald-400 rounded-full shrink-0" />
+                                            {item}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {/* Reminders */}
+                        <div className="bg-white/5 backdrop-blur-md rounded-xl p-5 border border-white/10">
+                            <h3 className="text-sm font-bold text-amber-200 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <AlertCircle size={16} /> Reminders
+                            </h3>
+                            <ul className="space-y-3">
+                                {briefing.reminders.length > 0 ? (
+                                    briefing.reminders.map((item, i) => (
+                                        <li key={i} className="text-sm text-amber-50 flex items-start gap-2">
+                                            <span className="mt-1.5 w-1 h-1 bg-amber-400 rounded-full shrink-0" />
+                                            {item}
+                                        </li>
+                                    ))
+                                ) : (
+                                    <li className="text-sm text-indigo-300/60 italic">No pending reminders.</li>
+                                )}
+                            </ul>
+                        </div>
+                        
+                        {/* Quick Stats Mini-Row (if data available) */}
+                         <div className="grid grid-cols-2 gap-2">
+                            {data.donations && data.donations.length > 0 && (
+                                <div className="bg-white/5 p-3 rounded-lg text-center">
+                                    <div className="text-xs text-indigo-300 mb-1">Recent Gifts</div>
+                                    <div className="text-lg font-bold text-white">
+                                        {data.donations.filter(d => new Date(d.date) > new Date(Date.now() - 7 * 86400000)).length}
+                                    </div>
+                                </div>
+                            )}
+                             {data.tasks && (
+                                <div className="bg-white/5 p-3 rounded-lg text-center">
+                                    <div className="text-xs text-indigo-300 mb-1">Due Soon</div>
+                                    <div className="text-lg font-bold text-white">
+                                        {data.tasks.filter(t => t.status !== TaskStatus.Done && new Date(t.dueDate) <= new Date(Date.now() + 7 * 86400000)).length}
+                                    </div>
+                                </div>
+                            )}
+                         </div>
+
+                    </div>
                 </div>
             </div>
         </div>
@@ -302,6 +458,7 @@ const DashboardRoleSelector: React.FC<{
   onRoleChange: (role: DashboardRole) => void;
 }> = ({ currentRole, onRoleChange }) => {
   const [showMore, setShowMore] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const primaryRoles: { id: DashboardRole; label: string; description: string }[] = [
     { id: 'leadership', label: 'Leadership', description: 'Executive overview' },
@@ -318,6 +475,23 @@ const DashboardRoleSelector: React.FC<{
   const allRoles = [...primaryRoles, ...moreRoles];
   const currentRoleData = allRoles.find(r => r.id === currentRole);
   const isMoreRole = moreRoles.some(r => r.id === currentRole);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowMore(false);
+      }
+    };
+
+    if (showMore) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMore]);
 
   return (
     <div className="flex items-center gap-2">
@@ -340,7 +514,7 @@ const DashboardRoleSelector: React.FC<{
         ))}
 
         {/* More dropdown */}
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowMore(!showMore)}
             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1 ${
@@ -359,10 +533,11 @@ const DashboardRoleSelector: React.FC<{
 
           {showMore && (
             <div
-              className="absolute right-0 top-full mt-1 py-1 rounded-lg shadow-lg z-50 min-w-[140px]"
+              className="absolute right-0 mt-1 py-1 rounded-lg shadow-lg z-[9999] min-w-[140px]"
               style={{
                 backgroundColor: 'var(--cmf-surface)',
                 border: '1px solid var(--cmf-border)',
+                top: '100%',
               }}
             >
               {moreRoles.map((role) => (
@@ -390,7 +565,19 @@ const DashboardRoleSelector: React.FC<{
   );
 };
 
-export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, activities, teamMembers, currentUserId, onSelectProject, setCurrentPage, onScheduleEvent }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ 
+  projects, 
+  clients, 
+  cases, 
+  activities, 
+  teamMembers, 
+  currentUserId, 
+  onSelectProject, 
+  setCurrentPage, 
+  onScheduleEvent,
+  documents = [],
+  donations = []
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
 
@@ -476,6 +663,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, 
   const currentUser = useMemo(() => teamMembers.find(tm => tm.id === currentUserId), [teamMembers, currentUserId]);
   const donationSummary = useDonationSummary();
 
+  const myTasks = useMemo(() => 
+    projects.flatMap(p => 
+      p.tasks.map(t => ({...t, projectName: p.name, projectId: p.id}))
+    ).filter(task => task.teamMemberId === currentUserId),
+  [projects, currentUserId]);
+
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 1200);
     return () => clearTimeout(timer);
@@ -551,13 +744,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, clients, cases, 
       </div>
 
       <div id="dashboard-briefing">
-        <DailyBriefing
-          userName={currentUser?.name || 'User'}
-          projects={projects}
-          cases={cases}
-          activities={activities}
-          currentUserId={currentUserId}
+      {(isWidgetVisible('briefing') || dashboardConfig.role === 'custom') && (
+        <EnhancedHeroWidget 
+            userName={currentUser?.name || 'User'}
+            projects={projects}
+            cases={cases}
+            activities={activities}
+            tasks={myTasks}
+            clients={clients}
+            documents={documents}
+            donations={donations}
+            onNavigate={(page, id, type) => {
+                if (type === 'project' && id) {
+                    onSelectProject(id);
+                } else {
+                    setCurrentPage(page);
+                }
+            }}
         />
+      )}
       </div>
 
       <div id="dashboard-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

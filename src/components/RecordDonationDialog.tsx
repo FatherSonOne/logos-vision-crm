@@ -34,6 +34,15 @@ const RecordDonationDialog: React.FC<RecordDonationDialogProps> = ({
     notes: '',
   });
 
+  // Prevent body scroll when dialog is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   // Fetch contacts for dropdown
   useEffect(() => {
     const fetchContacts = async () => {

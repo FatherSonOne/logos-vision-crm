@@ -52,6 +52,15 @@ const DonationDetailModal: React.FC<DonationDetailModalProps> = ({
     notes: '',
   });
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   // Fetch donation and contacts
   useEffect(() => {
     const fetchData = async () => {

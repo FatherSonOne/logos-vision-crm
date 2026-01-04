@@ -71,16 +71,17 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* Right section: User controls */}
                 <div className="flex items-center gap-2 flex-1 justify-end">
                     {/* Invite Team Button */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
+                    <button
                         onClick={() => setShowInviteModal(true)}
-                        className="flex items-center gap-1.5"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-200 group
+                            bg-transparent hover:bg-[var(--cmf-accent)]/10
+                            border-[var(--cmf-border)] hover:border-[var(--cmf-accent)]/50
+                            text-[var(--cmf-text-secondary)] hover:text-[var(--cmf-accent)]"
                         title="Invite Team Member"
                     >
                         <UserPlus className="w-4 h-4" />
-                        <span className="hidden sm:inline">Invite</span>
-                    </Button>
+                        <span className="text-xs font-medium hidden sm:inline">Invite</span>
+                    </button>
                     <HelpToggle />
                     <ThemeToggle size="sm" />
                     {/* User Avatar Menu */}

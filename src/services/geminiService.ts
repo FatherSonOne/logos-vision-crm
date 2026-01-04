@@ -1302,73 +1302,172 @@ export async function performAdvancedSearch(
 
 // --- Dashboard Briefing ---
 
-export async function generateDailyBriefing(
-  userName: string,
-  tasks: EnrichedTask[],
-  cases: Case[],
-  activities: Activity[],
-): Promise<string> {
+export interface BriefingData {
+  userName: string;
+  tasks: EnrichedTask[];
+  cases: Case[];
+  activities: Activity[];
+  projects: Project[];
+  clients: Client[];
+  donations?: Donation[];
+  documents?: AppDocument[];
+}
+
+export interface DailyBriefingResult {
+  greeting: string;
+  summary: string;
+  actionItems: { 
+    text: string; 
+    priority: 'high' | 'medium' | 'low';
+    relatedId?: string;
+    relatedType?: 'task' | 'project' | 'case' | 'activity' | 'document' | 'donation';
+  }[];
+  kudos: string[];
+  reminders: string[];
+  recap: string[];
+  quote?: string;
+}
+
+const dailyBriefingSchema = {
+  type: Type.OBJECT,
+  properties: {
+    greeting: { type: Type.STRING, description: 'A warm, personalized morning greeting.' },
+    summary: { type: Type.STRING, description: 'A concise executive summary of the day and key focus areas.' },
+    actionItems: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          text: { type: Type.STRING },
+          priority: { type: Type.STRING, enum: ['high', 'medium', 'low'] },
+          relatedId: { type: Type.STRING, description: 'The ID of the related item (task, project, etc) if applicable' },
+          relatedType: { type: Type.STRING, enum: ['task', 'project', 'case', 'activity', 'document', 'donation'], description: 'The type of the related item' }
+        },
+        required: ['text', 'priority']
+      },
+      description: 'Specific, actionable tasks or events for today and this week.'
+    },
+    kudos: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: 'Positive reinforcement based on recent completed tasks, closed cases, or new donations.'
+    },
+    reminders: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: 'Gentle reminders for follow-ups, deadlines, or stalled projects.'
+    },
+    recap: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: 'Recap of important recent activity or documents if the day is quiet.'
+    },
+    quote: { type: Type.STRING, description: 'An inspiring quote relevant to leadership, productivity, or charity.' }
+  },
+  required: ['greeting', 'summary', 'actionItems', 'kudos', 'reminders', 'recap']
+};
+
+export async function generateDailyBriefing(data: BriefingData): Promise<DailyBriefingResult> {
   if (!import.meta.env.VITE_API_KEY) {
-    return `Good morning, ${userName}! The AI briefing service is currently unavailable.`;
+    return {
+      greeting: `Good morning, ${data.userName}!`,
+      summary: "The AI briefing service is currently unavailable.",
+      actionItems: [],
+      kudos: [],
+      reminders: [],
+      recap: [],
+      quote: "Technology is best when it brings people together."
+    };
   }
 
+  const { userName, tasks, cases, activities, projects, clients, donations = [], documents = [] } = data;
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   const oneWeekFromNow = new Date(today);
   oneWeekFromNow.setDate(today.getDate() + 7);
 
+  // Pre-process data for the prompt to keep it relevant and fit context if needed (though Flash has large context)
   const upcomingTasks = tasks
     .filter(t => {
-        const dueDate = new Date(t.dueDate);
-        return dueDate <= oneWeekFromNow && dueDate >= today && t.status !== TaskStatus.Done;
+      const dueDate = new Date(t.dueDate);
+      return dueDate <= oneWeekFromNow && dueDate >= today && t.status !== TaskStatus.Done;
     })
-    .map(t => `- Task: "${t.description}" due on ${new Date(t.dueDate).toLocaleDateString()}.`);
+    .map(t => `- Task [ID: ${t.id}]: "${t.description}" due ${new Date(t.dueDate).toLocaleDateString()} (Priority: ${t.priority})`);
 
-  const threeDaysAgo = new Date();
-  threeDaysAgo.setDate(today.getDate() - 3);
+  const completedTasks = tasks
+    .filter(t => t.status === TaskStatus.Done && new Date(t.updatedAt || t.createdAt) > new Date(Date.now() - 3 * 86400000))
+    .map(t => `- Completed Task [ID: ${t.id}]: "${t.description}"`);
 
-  const recentHighPriorityCases = cases
-    .filter(c => c.priority === CasePriority.High && new Date(c.createdAt) >= threeDaysAgo)
-    .map(c => `- A high-priority case was opened: "${c.title}".`);
-
-  const todaysActivities = activities
-    .filter(a => a.activityDate === todayStr && a.status === ActivityStatus.Scheduled)
-    .map(a => `- You have a ${a.type.toLowerCase()} scheduled: "${a.title}"${a.activityTime ? ` at ${a.activityTime}` : ''}.`);
-
-  if (upcomingTasks.length === 0 && recentHighPriorityCases.length === 0 && todaysActivities.length === 0) {
-      return `Good morning, ${userName}. Your day looks clear! You have no tasks due this week, no recent high-priority cases, and no meetings scheduled for today. Enjoy the calm!`;
-  }
-  
-  const prompt = `
-    You are a friendly and professional AI assistant in a CRM called Logos Vision.
-    Your task is to generate a personalized "Daily Briefing" for a user named ${userName}.
-    The current date is ${today.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
-
-    Based on the following data, create a concise, conversational summary. Start with "Good morning, ${userName}."
-    Synthesize the information into natural-sounding sentences. Don't just list items with bullet points in the final output. If there are multiple items of one type, group them together. For example, "You have 3 tasks due this week..."
-
-    **Data for Briefing:**
+  const recentCases = cases
+    .filter(c => new Date(c.createdAt) >= new Date(Date.now() - 3 * 86400000))
+    .map(c => `- New Case [ID: ${c.id}]: "${c.title}" (${c.priority})`);
     
-    **Upcoming Tasks (due within 7 days):**
-    ${upcomingTasks.join('\n') || 'None.'}
+  const todaysActivities = activities
+    .filter(a => a.activityDate === todayStr)
+    .map(a => `- ${a.type} [ID: ${a.id}]: "${a.title}" at ${a.activityTime || 'all day'}`);
 
-    **Recent High-Priority Cases (opened in last 3 days):**
-    ${recentHighPriorityCases.join('\n') || 'None.'}
+  const recentDonations = donations
+    .filter(d => new Date(d.date) >= new Date(Date.now() - 7 * 86400000))
+    .map(d => `- Donation [ID: ${d.id}]: $${d.amount} from donor ID ${d.donorId}`);
 
-    **Today's Scheduled Activities:**
-    ${todaysActivities.join('\n') || 'None.'}
+  const recentDocs = documents
+    .filter(d => new Date(d.uploadedAt) >= new Date(Date.now() - 3 * 86400000))
+    .map(d => `- Document [ID: ${d.id}]: "${d.title}" (${d.category})`);
 
-    Generate the summary now as a single block of text, without any markdown formatting like headings or bolding.
+  const activeProjects = projects
+    .filter(p => p.status === 'In Progress')
+    .map(p => `- Project [ID: ${p.id}]: ${p.name}`);
+
+  const prompt = `
+    You are an intelligent and empathetic executive assistant for ${userName} in the Logos Vision CRM.
+    Current Date: ${today.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
+
+    **Goal**: Generate a comprehensive "Daily Briefing" hero widget content. 
+    The user wants to feel prepared, encouraged, and informed.
+
+    **Data Sources:**
+    *   **Agenda (Today):** ${todaysActivities.length ? todaysActivities.join('\n') : "No scheduled activities."}
+    *   **Immediate Priorities (Tasks due soon):** ${upcomingTasks.length ? upcomingTasks.join('\n') : "No urgent tasks."}
+    *   **Recent Wins (Completed Tasks):** ${completedTasks.length ? completedTasks.join('\n') : "No recent completed tasks."}
+    *   **New Developments (Cases/Docs):** 
+        ${recentCases.join('\n')}
+        ${recentDocs.join('\n')}
+    *   **Financials (Recent Donations):** ${recentDonations.length ? recentDonations.join('\n') : "No recent donations."}
+    *   **Active Projects:** ${activeProjects.join(', ')}
+
+    **Instructions:**
+    1.  **Greeting**: Warm and professional.
+    2.  **Summary**: Synthesize the "big picture". If busy, highlight top priorities. If quiet, suggest focusing on long-term goals or reviewing active projects.
+    3.  **Action Items**: Extract specific actions from tasks and agenda. Assign priority based on context. 
+        *IMPORTANT*: Use the provided IDs to populate 'relatedId' and 'relatedType' in the output JSON.
+    4.  **Kudos**: Find reasons to celebrate (completed tasks, new donations, or just managing a lot of projects).
+    5.  **Reminders**: Remind about upcoming deadlines or suggest checking in on "Active Projects" that haven't had recent activity.
+    6.  **Recap**: If the day is light, recap important recent files or active project statuses to keep them top of mind.
+    7.  **Quote**: Include a short, relevant inspirational quote.
+
+    Return the result as a strictly valid JSON object matching the schema.
   `;
 
   try {
     const response = await (await getAI()).models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: dailyBriefingSchema,
+      }
     });
-    return response.text;
+    return JSON.parse(response.text);
   } catch (error) {
     console.error("Error generating daily briefing:", error);
-    return "Apologies, but I couldn't generate your daily briefing at this moment. There might be an issue with the AI service. Please try again later.";
+    return {
+        greeting: `Good morning, ${userName}.`,
+        summary: "I'm having trouble connecting to the intelligence engine right now.",
+        actionItems: [],
+        kudos: [],
+        reminders: ["Check your internet connection", "Try refreshing the dashboard"],
+        recap: [],
+        quote: "Patience is a virtue."
+    };
   }
 }

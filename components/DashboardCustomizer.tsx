@@ -228,6 +228,17 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
     setPreferences(loadPreferences());
   }, [isOpen]);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   const handleLayoutSelect = (layoutId: string) => {
     const layout = presetLayouts.find(l => l.id === layoutId);
     if (layout) {

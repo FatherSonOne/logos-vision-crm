@@ -34,28 +34,28 @@ export const projectService = {
       .from('lv_projects')
       .select('*')
       .order('name', { ascending: true });
-    
+
     if (projectsError) {
       console.error('Error fetching projects:', projectsError);
       throw projectsError;
     }
-    
+
     if (!projectsData || projectsData.length === 0) {
       return [];
     }
-    
-    // Then get all tasks for these projects
+
+    // Then get all tasks for these projects from lv_tasks
     const projectIds = projectsData.map(p => p.id);
-    const { data: tasksData, error: tasksError } = await supabase
-      .from('tasks')
+    const { data: tasksData, error: tasksError } = await logosSupabase
+      .from('lv_tasks')
       .select('*')
       .in('project_id', projectIds);
-    
+
     if (tasksError) {
       console.error('Error fetching tasks:', tasksError);
       // Don't throw - just return projects without tasks
     }
-    
+
     // Convert projects and attach their tasks
     return projectsData.map(dbProject => {
       const project = dbToProject(dbProject);
@@ -79,33 +79,33 @@ export const projectService = {
 
   // Get projects by client
   async getByClient(clientId: string): Promise<Project[]> {
-    const { data, error } = await supabase
-      .from('projects')
+    const { data, error } = await logosSupabase
+      .from('lv_projects')
       .select('*')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false });
-    
+
     if (error) {
       console.error('Error fetching client projects:', error);
       throw error;
     }
-    
+
     return (data || []).map(dbToProject);
   },
 
   // Get a single project by ID
   async getById(id: string): Promise<Project | null> {
-    const { data, error } = await supabase
-      .from('projects')
+    const { data, error } = await logosSupabase
+      .from('lv_projects')
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) {
       console.error('Error fetching project:', error);
       throw error;
     }
-    
+
     return data ? dbToProject(data) : null;
   },
 
@@ -120,27 +120,31 @@ export const projectService = {
       start_date: project.startDate,
       end_date: project.endDate,
       budget: project.budget,
-      notes: project.notes
+      notes: project.notes,
+      team_member_ids: project.teamMemberIds || [],
+      pinned: project.pinned || false,
+      starred: project.starred || false,
+      archived: project.archived || false
     };
-    
+
     // Only include id if it exists (for migrating existing data)
     if (project.id) {
       insertData.id = project.id;
     }
-    
-    // Create the project
-    const { data: projectData, error: projectError } = await supabase
-      .from('projects')
+
+    // Create the project in lv_projects
+    const { data: projectData, error: projectError } = await logosSupabase
+      .from('lv_projects')
       .insert([insertData])
       .select()
       .single();
-    
+
     if (projectError) {
       console.error('Error creating project:', projectError);
       throw projectError;
     }
-    
-    // Create tasks if provided
+
+    // Create tasks if provided in lv_tasks
     if (project.tasks && project.tasks.length > 0) {
       const tasksToInsert = project.tasks.map(task => {
         const taskData: any = {
@@ -153,25 +157,25 @@ export const projectService = {
           notes: task.notes,
           phase: task.phase
         };
-        
+
         // Only include task id if it exists (for migration)
         if (task.id) {
           taskData.id = task.id;
         }
-        
+
         return taskData;
       });
-      
-      const { error: tasksError } = await supabase
-        .from('tasks')
+
+      const { error: tasksError } = await logosSupabase
+        .from('lv_tasks')
         .insert(tasksToInsert);
-      
+
       if (tasksError) {
         console.error('Error creating tasks:', tasksError);
         // Don't throw - project was created successfully
       }
     }
-    
+
     const newProject = dbToProject(projectData);
     newProject.tasks = project.tasks || [];
     newProject.teamMemberIds = project.teamMemberIds || [];
@@ -181,7 +185,7 @@ export const projectService = {
   // Update an existing project
   async update(id: string, updates: Partial<Project>): Promise<Project> {
     const updateData: any = {};
-    
+
     if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.description !== undefined) updateData.description = updates.description;
     if (updates.clientId !== undefined) updateData.client_id = updates.clientId;
@@ -195,29 +199,41 @@ export const projectService = {
     if (updates.starred !== undefined) updateData.starred = updates.starred;
     if (updates.tags !== undefined) updateData.tags = updates.tags;
     if (updates.archived !== undefined) updateData.archived = updates.archived;
-    
-    const { data, error } = await supabase
-      .from('projects')
+
+    const { data, error } = await logosSupabase
+      .from('lv_projects')
       .update(updateData)
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) {
       console.error('Error updating project:', error);
       throw error;
     }
-    
+
     return dbToProject(data);
   },
 
-  // Delete a project
+  // Delete a project (also deletes associated tasks)
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('projects')
+    // First delete associated tasks
+    const { error: tasksError } = await logosSupabase
+      .from('lv_tasks')
+      .delete()
+      .eq('project_id', id);
+
+    if (tasksError) {
+      console.error('Error deleting project tasks:', tasksError);
+      // Continue to delete the project even if task deletion fails
+    }
+
+    // Then delete the project
+    const { error } = await logosSupabase
+      .from('lv_projects')
       .delete()
       .eq('id', id);
-    
+
     if (error) {
       console.error('Error deleting project:', error);
       throw error;

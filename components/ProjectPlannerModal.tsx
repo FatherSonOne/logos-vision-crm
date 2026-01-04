@@ -11,7 +11,7 @@ import { SparklesIcon } from './icons';
 interface ProjectPlannerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (plan: AiProjectPlan, clientId: string) => void;
+  onSave: (plan: AiProjectPlan, clientId: string) => void | Promise<void>;
   clients: Client[];
 }
 

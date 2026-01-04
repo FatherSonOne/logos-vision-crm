@@ -229,22 +229,8 @@ const LogoDownloader: React.FC<{ selectedLogo: LogoVariant }> = ({ selectedLogo 
   );
 };
 
-type FontFamily = 'inter' | 'system' | 'roboto' | 'open-sans' | 'poppins';
-type FontSize = 'small' | 'medium' | 'large';
 type ViewportSize = 'mobile' | 'tablet' | 'desktop' | 'full';
 
-interface FontConfig {
-  family: FontFamily;
-  size: FontSize;
-}
-
-const fontFamilies: { id: FontFamily; name: string; value: string }[] = [
-  { id: 'inter', name: 'Inter', value: "'Inter', system-ui, sans-serif" },
-  { id: 'system', name: 'System', value: "system-ui, -apple-system, sans-serif" },
-  { id: 'roboto', name: 'Roboto', value: "'Roboto', sans-serif" },
-  { id: 'open-sans', name: 'Open Sans', value: "'Open Sans', sans-serif" },
-  { id: 'poppins', name: 'Poppins', value: "'Poppins', sans-serif" },
-];
 
 const fontSizes: { id: FontSize; name: string; scale: number }[] = [
   { id: 'small', name: 'Small (90%)', scale: 0.9 },
@@ -278,13 +264,24 @@ const FontSelector: React.FC = () => {
     'ibm-plex-mono': "'IBM Plex Mono', 'Courier New', monospace",
   };
 
-  const groupedFonts = fontFamilies.reduce((acc, font) => {
-    if (!acc[font.category]) {
-      acc[font.category] = [];
-    }
-    acc[font.category].push(font);
-    return acc;
-  }, {} as Record<string, typeof fontFamilies>);
+  const fontsByCategory: Record<string, { id: FontFamily; name: string }[]> = {
+    'Sans Serif': [
+      { id: 'inter', name: 'Inter' },
+      { id: 'system', name: 'System' },
+      { id: 'roboto', name: 'Roboto' },
+      { id: 'open-sans', name: 'Open Sans' },
+      { id: 'poppins', name: 'Poppins' },
+    ],
+    'Serif': [
+      { id: 'anthropic-serif', name: 'Anthropic Serif (Crimson Pro)' },
+    ],
+    'Monospace': [
+      { id: 'jetbrains-mono', name: 'JetBrains Mono' },
+      { id: 'fira-code', name: 'Fira Code' },
+      { id: 'source-code-pro', name: 'Source Code Pro' },
+      { id: 'ibm-plex-mono', name: 'IBM Plex Mono' },
+    ],
+  };
 
   return (
     <div>
@@ -298,7 +295,7 @@ const FontSelector: React.FC = () => {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">Font Family</label>
           <div className="space-y-3">
-            {Object.entries(groupedFonts).map(([category, fonts]) => (
+            {Object.entries(fontsByCategory).map(([category, fonts]) => (
               <div key={category}>
                 <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">{category}</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -376,23 +373,53 @@ const ResponsivePreview: React.FC<{
 }> = ({ viewportSize, onViewportChange, children }) => {
   const currentViewport = viewportSizes.find(v => v.id === viewportSize) || viewportSizes[2];
 
-  // Reset any global scaling on mount/unmount
+  // Apply viewport scaling to the entire app with safe scaling limits
   React.useEffect(() => {
     const root = document.documentElement;
     const appContainer = document.getElementById('root');
     
-    // Always reset global scaling - we only scale the preview content, not the entire app
-    if (appContainer) {
-      appContainer.style.removeProperty('transform');
-      appContainer.style.removeProperty('width');
-      appContainer.style.removeProperty('transform-origin');
+    if (viewportSize === 'full') {
+      // Reset scaling for full screen
+      root.style.removeProperty('--viewport-scale');
+      root.style.removeProperty('--viewport-width');
+      root.removeAttribute('data-viewport-scale');
+      if (appContainer) {
+        appContainer.style.removeProperty('transform');
+        appContainer.style.removeProperty('width');
+        appContainer.style.removeProperty('transform-origin');
+      }
+    } else {
+      // Calculate scale with safe minimums
+      let scale: number;
+      const desktopWidth = 1280;
+      
+      if (viewportSize === 'desktop') {
+        scale = 1.0;
+      } else if (viewportSize === 'tablet') {
+        // Tablet: scale to 60% (768/1280 = 0.6, but we'll use 0.6)
+        scale = Math.max(0.6, currentViewport.width / desktopWidth);
+      } else if (viewportSize === 'mobile') {
+        // Mobile: use 50% scale (safe minimum) - slightly less than tablet but not too small
+        // This ensures mobile is visible and usable
+        scale = 0.5;
+      } else {
+        scale = Math.max(0.5, Math.min(1, currentViewport.width / desktopWidth));
+      }
+      
+      // Apply scaling to the entire app
+      root.style.setProperty('--viewport-scale', scale.toString());
+      root.style.setProperty('--viewport-width', `${currentViewport.width}px`);
+      root.setAttribute('data-viewport-scale', viewportSize);
+      
+      if (appContainer) {
+        appContainer.style.transform = `scale(${scale})`;
+        appContainer.style.transformOrigin = 'top center';
+        appContainer.style.width = `${100 / scale}%`;
+      }
     }
-    root.style.removeProperty('--viewport-scale');
-    root.style.removeProperty('--viewport-width');
-    root.removeAttribute('data-viewport-scale');
     
     return () => {
-      // Cleanup on unmount - ensure we reset everything
+      // Cleanup on unmount - reset to prevent stuck states
       if (appContainer) {
         appContainer.style.removeProperty('transform');
         appContainer.style.removeProperty('width');
@@ -402,7 +429,7 @@ const ResponsivePreview: React.FC<{
       root.style.removeProperty('--viewport-width');
       root.removeAttribute('data-viewport-scale');
     };
-  }, []);
+  }, [viewportSize, currentViewport]);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
@@ -473,6 +500,9 @@ const ResponsivePreview: React.FC<{
         {viewportSize !== 'full' && (
           <p className="text-xs text-gray-500 text-center mt-2">
             {currentViewport.name}: {currentViewport.width} × {currentViewport.height}px
+            {viewportSize === 'mobile' && ' (50% scale)'}
+            {viewportSize === 'tablet' && ' (60% scale)'}
+            {viewportSize === 'desktop' && ' (100% scale)'}
           </p>
         )}
       </div>
