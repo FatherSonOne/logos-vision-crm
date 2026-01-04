@@ -5,19 +5,28 @@ interface DonationSummary {
   thisYearTotal: number;
   lastYearTotal: number;
   thisYearCount: number;
+  lastYearCount: number;
   averageGiftThisYear: number;
+  averageGiftLastYear: number;
   loading: boolean;
   error: string | null;
+  currentYear: number;
+  lastYear: number;
 }
 
 export const useDonationSummary = (): DonationSummary => {
+  const currentYear = new Date().getFullYear();
   const [state, setState] = useState<DonationSummary>({
     thisYearTotal: 0,
     lastYearTotal: 0,
     thisYearCount: 0,
+    lastYearCount: 0,
     averageGiftThisYear: 0,
+    averageGiftLastYear: 0,
     loading: true,
-    error: null
+    error: null,
+    currentYear,
+    lastYear: currentYear - 1
   });
 
   useEffect(() => {
@@ -63,15 +72,22 @@ export const useDonationSummary = (): DonationSummary => {
         const lastYearTotal = (lastYearData || []).reduce(
           (sum, d: any) => sum + (Number(d.amount) || 0),
           0
-);
+        );
+        const lastYearCount = lastYearData?.length || 0;
+        const averageGiftLastYear =
+          lastYearCount > 0 ? lastYearTotal / lastYearCount : 0;
 
         setState({
           thisYearTotal,
           lastYearTotal,
           thisYearCount,
+          lastYearCount,
           averageGiftThisYear,
+          averageGiftLastYear,
           loading: false,
-          error: null
+          error: null,
+          currentYear: thisYear,
+          lastYear
         });
       } catch (err: any) {
         console.error('Error fetching donation summary:', err);

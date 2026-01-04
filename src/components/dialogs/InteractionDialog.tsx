@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, MessageSquare, Phone, Mail, Users, Calendar } from 'lucide-react';
 import { supabase } from '../../services/supabaseClient';
 import { Button } from '../ui/Button';
@@ -31,6 +31,15 @@ export const InteractionDialog: React.FC<InteractionDialogProps> = ({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Prevent body scroll when dialog is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

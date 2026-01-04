@@ -815,28 +815,51 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {isWidgetVisible('donations') && (
             <CollapsibleWidget
               id="donations"
-              title="Donations This Year"
+              title={donationSummary.thisYearCount > 0 ? `Donations ${donationSummary.currentYear}` : `Donations ${donationSummary.lastYear}`}
               isCollapsed={isWidgetCollapsed('donations')}
               onToggle={() => toggleWidgetCollapse('donations')}
             >
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  {donationSummary.loading ? (
-                    <div className="h-8 w-28 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
-                  ) : (
-                    <p className="text-3xl font-bold" style={{ color: 'var(--cmf-text)' }}>
-                      ${donationSummary.thisYearTotal.toLocaleString(undefined, {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                      })}
-                    </p>
-                  )}
-                  <Badge variant="info" size="sm">{donationSummary.thisYearCount} gifts</Badge>
-                </div>
-                {!donationSummary.loading && (
-                  <div className="flex gap-4 text-sm" style={{ color: 'var(--cmf-text-secondary)' }}>
-                    <span>Avg: <strong>${donationSummary.averageGiftThisYear.toFixed(0)}</strong></span>
-                    <span>Last yr: <strong>${donationSummary.lastYearTotal.toLocaleString()}</strong></span>
+                {donationSummary.loading ? (
+                  <div className="h-8 w-28 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+                ) : donationSummary.thisYearCount > 0 ? (
+                  // Show this year's data when available
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-3xl font-bold" style={{ color: 'var(--cmf-text)' }}>
+                        ${donationSummary.thisYearTotal.toLocaleString(undefined, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        })}
+                      </p>
+                      <Badge variant="info" size="sm">{donationSummary.thisYearCount} gifts</Badge>
+                    </div>
+                    <div className="flex gap-4 text-sm" style={{ color: 'var(--cmf-text-secondary)' }}>
+                      <span>Avg: <strong>${donationSummary.averageGiftThisYear.toFixed(0)}</strong></span>
+                      <span>{donationSummary.lastYear}: <strong>${donationSummary.lastYearTotal.toLocaleString()}</strong></span>
+                    </div>
+                  </>
+                ) : donationSummary.lastYearCount > 0 ? (
+                  // Show last year's data when no data for current year
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-3xl font-bold" style={{ color: 'var(--cmf-text)' }}>
+                        ${donationSummary.lastYearTotal.toLocaleString(undefined, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        })}
+                      </p>
+                      <Badge variant="info" size="sm">{donationSummary.lastYearCount} gifts</Badge>
+                    </div>
+                    <div className="flex gap-4 text-sm" style={{ color: 'var(--cmf-text-secondary)' }}>
+                      <span>Avg: <strong>${donationSummary.averageGiftLastYear.toFixed(0)}</strong></span>
+                      <span className="text-amber-600">{donationSummary.currentYear}: No donations yet</span>
+                    </div>
+                  </>
+                ) : (
+                  // No data at all
+                  <div className="text-center py-4" style={{ color: 'var(--cmf-text-secondary)' }}>
+                    <p>No donation data available</p>
                   </div>
                 )}
               </div>

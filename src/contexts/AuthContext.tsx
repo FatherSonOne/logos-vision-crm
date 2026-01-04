@@ -9,7 +9,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithOAuth: (provider: Provider) => Promise<{ error: any }>;
   signUp: (email: string, password: string, metadata?: { name?: string; role?: string }) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
+  signOut: (options?: { revokeGoogle?: boolean }) => Promise<void>;
+  removeAccount: () => Promise<void>;
   updateProfile: (metadata: { name?: string; role?: string }) => Promise<{ error: any }>;
 }
 
@@ -142,8 +143,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return { error };
   };
 
-  const signOut = async () => {
-    await authService.signOut();
+  const signOut = async (options?: { revokeGoogle?: boolean }) => {
+    const userEmail = user?.email;
+    await authService.signOut({
+      revokeGoogle: options?.revokeGoogle,
+      userEmail
+    });
+    setUser(null);
+    setSession(null);
+  };
+
+  const removeAccount = async () => {
+    const userEmail = user?.email;
+    if (userEmail) {
+      await authService.removeAccount(userEmail);
+    } else {
+      await authService.signOut({ revokeGoogle: true });
+    }
     setUser(null);
     setSession(null);
   };
@@ -166,6 +182,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signInWithOAuth,
     signUp,
     signOut,
+    removeAccount,
     updateProfile
   };
 

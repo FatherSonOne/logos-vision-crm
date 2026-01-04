@@ -2,6 +2,32 @@
 import { supabase } from './supabaseClient';
 import type { User, Session, Provider } from '@supabase/supabase-js';
 
+// Google Identity Services types (extends the global google namespace)
+interface GoogleAccountsId {
+  initialize: (config: any) => void;
+  prompt: (callback?: (notification: any) => void) => void;
+  renderButton: (element: HTMLElement, config: any) => void;
+  disableAutoSelect: () => void;
+  revoke: (hint: string, callback?: () => void) => void;
+  cancel: () => void;
+}
+
+interface GoogleAccountsOAuth2 {
+  initTokenClient: (config: any) => any;
+  revoke: (token: string, callback?: () => void) => void;
+}
+
+interface GoogleAccounts {
+  id: GoogleAccountsId;
+  oauth2: GoogleAccountsOAuth2;
+}
+
+// Helper to safely access google.accounts
+const getGoogleAccounts = (): GoogleAccounts | undefined => {
+  const win = window as any;
+  return win.google?.accounts as GoogleAccounts | undefined;
+};
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -52,10 +78,77 @@ export const authService = {
     return { error };
   },
 
-  // Sign out current user
-  async signOut(): Promise<{ error: any }> {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+  // Sign out current user - comprehensive cleanup
+  async signOut(options?: { revokeGoogle?: boolean; userEmail?: string }): Promise<{ error: any }> {
+    try {
+      // 1. Get current session to access tokens before signing out
+      const { data: { session } } = await supabase.auth.getSession();
+      const googleAccounts = getGoogleAccounts();
+
+      // 2. Revoke Google credentials if requested and available
+      if (options?.revokeGoogle && googleAccounts?.id) {
+        const emailHint = options.userEmail || session?.user?.email;
+        if (emailHint) {
+          // Revoke Google Sign-In credential
+          googleAccounts.id.revoke(emailHint, () => {
+            console.log('Google credential revoked for:', emailHint);
+          });
+        }
+        // Disable auto-select for future sign-ins
+        googleAccounts.id.disableAutoSelect();
+      }
+
+      // 3. If we have an access token from Google OAuth, revoke it
+      if (session?.provider_token && googleAccounts?.oauth2) {
+        googleAccounts.oauth2.revoke(session.provider_token, () => {
+          console.log('Google OAuth token revoked');
+        });
+      }
+
+      // 4. Clear all local storage items related to auth
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (
+          key.includes('supabase') ||
+          key.includes('google') ||
+          key.includes('oauth') ||
+          key.includes('auth') ||
+          key.includes('token')
+        )) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
+      // 5. Clear session storage
+      sessionStorage.clear();
+
+      // 6. Sign out from Supabase (global sign out)
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+
+      return { error };
+    } catch (err) {
+      console.error('Error during sign out:', err);
+      // Still try to sign out from Supabase even if other steps fail
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      return { error };
+    }
+  },
+
+  // Remove user account completely (revokes all access)
+  async removeAccount(userEmail: string): Promise<{ error: any }> {
+    // First revoke Google credentials
+    const googleAccounts = getGoogleAccounts();
+    if (googleAccounts?.id) {
+      googleAccounts.id.revoke(userEmail, () => {
+        console.log('Google credential removed for:', userEmail);
+      });
+      googleAccounts.id.disableAutoSelect();
+    }
+
+    // Then perform full sign out
+    return this.signOut({ revokeGoogle: true, userEmail });
   },
 
   // Get current session

@@ -55,6 +55,17 @@ export const AddOrganizationContactDialog: React.FC<AddOrganizationContactDialog
 
   const isEditing = !!existingRelationship;
 
+  // Prevent body scroll when dialog is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
