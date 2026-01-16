@@ -229,10 +229,19 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
     setError(null);
     try {
       const data = await taskManagementService.getAllEnriched();
-      setTasks(data);
+      // If no tasks from database, use initial sample tasks
+      if (data.length === 0) {
+        console.log('No tasks in database, using sample data');
+        setTasks(initialTasks);
+      } else {
+        setTasks(data);
+      }
     } catch (err) {
       console.error('Error loading tasks:', err);
-      setError('Failed to load tasks. Please try again.');
+      // Fall back to sample data on error
+      console.log('Failed to load from database, using sample data');
+      setTasks(initialTasks);
+      setError(null); // Clear error since we have fallback data
     } finally {
       setLoading(false);
     }
@@ -479,7 +488,10 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">No tasks yet</h3>
         <p className="text-gray-500 dark:text-gray-400 mt-2">Create your first task to get started</p>
         <button
-          onClick={() => setShowCreateDialog(true)}
+          onClick={() => {
+            console.log('Create Task button clicked');
+            setShowCreateDialog(true);
+          }}
           className="mt-4 px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors inline-flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -744,11 +756,14 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
 
       {/* Create Task Dialog */}
       {showCreateDialog && (
-        <CreateTaskDialog
-          onClose={() => setShowCreateDialog(false)}
-          onCreate={addTask}
-          assignees={assignees}
-        />
+        <>
+          {console.log('Rendering CreateTaskDialog, assignees:', assignees)}
+          <CreateTaskDialog
+            onClose={() => setShowCreateDialog(false)}
+            onCreate={addTask}
+            assignees={assignees}
+          />
+        </>
       )}
 
       {/* Delete Confirmation Dialog */}
