@@ -1,8 +1,11 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { Project, TeamMember, EnrichedTask } from '../types';
 import { TaskStatus } from '../types';
 import { getDeadlineStatus } from '../utils/dateHelpers';
+import { taskManagementService, type ExtendedTask as ServiceExtendedTask } from '../services/taskManagementService';
+import { taskMetricsService } from '../services/taskMetricsService';
+import { supabase } from '../services/supabaseClient';
 import {
   CheckSquare,
   Clock,
@@ -188,7 +191,9 @@ interface TaskViewProps {
 
 export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSelectTask }) => {
   // Core state
-  const [tasks, setTasks] = useState<ExtendedTask[]>(initialTasks);
+  const [tasks, setTasks] = useState<ExtendedTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ExtendedTaskStatus | 'all'>('all');
@@ -203,6 +208,75 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
   const [editingTask, setEditingTask] = useState<ExtendedTask | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
+
+  // Metrics state
+  const [metricsData, setMetricsData] = useState({
+    total: 0,
+    completed: 0,
+    overdue: 0,
+    inProgress: 0,
+    dueToday: 0,
+    critical: 0
+  });
+
+  // ============================================================================
+  // DATA LOADING
+  // ============================================================================
+
+  const loadTasks = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await taskManagementService.getAllEnriched();
+      setTasks(data);
+    } catch (err) {
+      console.error('Error loading tasks:', err);
+      setError('Failed to load tasks. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadMetrics = useCallback(async () => {
+    try {
+      const metrics = await taskMetricsService.getOverallMetrics(tasks);
+      setMetricsData(metrics);
+    } catch (err) {
+      console.error('Error loading metrics:', err);
+    }
+  }, [tasks]);
+
+  // Initial load
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
+
+  // Load metrics when tasks change
+  useEffect(() => {
+    if (tasks.length > 0) {
+      loadMetrics();
+    }
+  }, [tasks, loadMetrics]);
+
+  // Real-time subscriptions
+  useEffect(() => {
+    const subscription = supabase
+      .channel('tasks_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'tasks'
+      }, (payload) => {
+        console.log('Task changed:', payload);
+        loadTasks();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [loadTasks]);
 
   // ============================================================================
   // CRUD OPERATIONS
@@ -214,43 +288,56 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
   }, []);
 
-  const addTask = useCallback((taskData: Partial<ExtendedTask>) => {
-    const newTask: ExtendedTask = {
-      id: Date.now().toString(),
-      title: taskData.title || 'New Task',
-      description: taskData.description || '',
-      status: taskData.status || 'new',
-      priority: taskData.priority || 'medium',
-      dueDate: taskData.dueDate || generateDate(7),
-      createdAt: new Date().toISOString(),
-      assignedToId: taskData.assignedToId || '1',
-      assignedToName: taskData.assignedToName || 'Unassigned',
-      department: taskData.department || 'Consulting',
-      projectId: taskData.projectId,
-      projectName: taskData.projectName,
-      clientId: taskData.clientId,
-      clientName: taskData.clientName,
-      timeEstimate: taskData.timeEstimate || 4,
-      timeSpent: taskData.timeSpent || 0,
-      tags: taskData.tags || [],
-      subtasks: taskData.subtasks || [],
-      comments: 0,
-      attachments: 0,
-    };
-    setTasks(prev => [newTask, ...prev]);
-    showToast('Task created successfully');
-    return newTask;
+  const addTask = useCallback(async (taskData: Partial<ExtendedTask>) => {
+    try {
+      const newTask = await taskManagementService.create({
+        title: taskData.title || 'New Task',
+        description: taskData.description || '',
+        status: taskData.status || 'new',
+        priority: taskData.priority || 'medium',
+        dueDate: taskData.dueDate || getDefaultDueDate(),
+        assignedToId: taskData.assignedToId || '',
+        department: taskData.department || 'Consulting',
+        projectId: taskData.projectId,
+        timeEstimate: taskData.timeEstimate || 4,
+        timeSpent: taskData.timeSpent || 0,
+        tags: taskData.tags || [],
+      });
+
+      if (newTask) {
+        setTasks(prev => [newTask, ...prev]);
+        showToast('Task created successfully');
+        return newTask;
+      }
+    } catch (err) {
+      console.error('Error creating task:', err);
+      showToast('Failed to create task', 'error');
+      setError('Failed to create task. Please try again.');
+    }
   }, [showToast]);
 
-  const updateTask = useCallback((id: string, updates: Partial<ExtendedTask>) => {
+  const updateTask = useCallback(async (id: string, updates: Partial<ExtendedTask>) => {
+    // Optimistic update
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
     if (selectedTask?.id === id) {
       setSelectedTask(prev => prev ? { ...prev, ...updates } : null);
     }
-    showToast('Task updated successfully');
-  }, [selectedTask, showToast]);
 
-  const deleteTask = useCallback((id: string) => {
+    try {
+      await taskManagementService.update(id, updates);
+      showToast('Task updated successfully');
+    } catch (err) {
+      console.error('Error updating task:', err);
+      showToast('Failed to update task', 'error');
+      // Reload to get correct state
+      loadTasks();
+      setError('Failed to update task. Please try again.');
+    }
+  }, [selectedTask, showToast, loadTasks]);
+
+  const deleteTask = useCallback(async (id: string) => {
+    // Optimistic update
+    const previousTasks = tasks;
     setTasks(prev => prev.filter(t => t.id !== id));
     setSelectedTaskIds(prev => {
       const next = new Set(prev);
@@ -258,28 +345,61 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
       return next;
     });
     if (selectedTask?.id === id) setSelectedTask(null);
-    showToast('Task deleted successfully');
-  }, [selectedTask, showToast]);
 
-  const updateTaskStatus = useCallback((id: string, status: ExtendedTaskStatus) => {
+    try {
+      await taskManagementService.delete(id);
+      showToast('Task deleted successfully');
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      showToast('Failed to delete task', 'error');
+      // Revert on error
+      setTasks(previousTasks);
+      setError('Failed to delete task. Please try again.');
+    }
+  }, [selectedTask, showToast, tasks]);
+
+  const updateTaskStatus = useCallback(async (id: string, status: ExtendedTaskStatus) => {
     const updates: Partial<ExtendedTask> = { status };
     if (status === 'completed') {
       updates.completedAt = new Date().toISOString();
     }
-    updateTask(id, updates);
+    await updateTask(id, updates);
   }, [updateTask]);
 
-  const bulkUpdateTasks = useCallback((ids: Set<string>, updates: Partial<ExtendedTask>) => {
+  const bulkUpdateTasks = useCallback(async (ids: Set<string>, updates: Partial<ExtendedTask>) => {
+    // Optimistic update
     setTasks(prev => prev.map(t => ids.has(t.id) ? { ...t, ...updates } : t));
     setSelectedTaskIds(new Set());
-    showToast(`${ids.size} tasks updated`);
-  }, [showToast]);
 
-  const bulkDeleteTasks = useCallback((ids: Set<string>) => {
+    try {
+      if (updates.status) {
+        await taskManagementService.bulkUpdateStatus(Array.from(ids), updates.status);
+      }
+      showToast(`${ids.size} tasks updated`);
+    } catch (err) {
+      console.error('Error bulk updating tasks:', err);
+      showToast('Failed to update tasks', 'error');
+      loadTasks();
+      setError('Failed to update tasks. Please try again.');
+    }
+  }, [showToast, loadTasks]);
+
+  const bulkDeleteTasks = useCallback(async (ids: Set<string>) => {
+    // Optimistic update
+    const previousTasks = tasks;
     setTasks(prev => prev.filter(t => !ids.has(t.id)));
     setSelectedTaskIds(new Set());
-    showToast(`${ids.size} tasks deleted`);
-  }, [showToast]);
+
+    try {
+      await Promise.all(Array.from(ids).map(id => taskManagementService.delete(id)));
+      showToast(`${ids.size} tasks deleted`);
+    } catch (err) {
+      console.error('Error bulk deleting tasks:', err);
+      showToast('Failed to delete tasks', 'error');
+      setTasks(previousTasks);
+      setError('Failed to delete tasks. Please try again.');
+    }
+  }, [showToast, tasks]);
 
   // Get unique assignees from tasks
   const assignees = useMemo(() => {
@@ -288,20 +408,8 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [tasks]);
 
-  // Calculate metrics
-  const metrics = useMemo(() => {
-    const total = tasks.length;
-    const completed = tasks.filter(t => t.status === 'completed').length;
-    const overdue = tasks.filter(t => t.status === 'overdue').length;
-    const inProgress = tasks.filter(t => t.status === 'in_progress').length;
-    const dueToday = tasks.filter(t => {
-      const due = new Date(t.dueDate);
-      const today = new Date();
-      return due.toDateString() === today.toDateString() && t.status !== 'completed';
-    }).length;
-    const critical = tasks.filter(t => t.priority === 'critical' && t.status !== 'completed').length;
-    return { total, completed, overdue, inProgress, dueToday, critical };
-  }, [tasks]);
+  // Use metrics from state (loaded from taskMetricsService)
+  const metrics = metricsData;
 
   // Filter tasks
   const filteredTasks = useMemo(() => {
@@ -340,6 +448,34 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
     calendar: <Calendar className="w-4 h-4" />,
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
+        <span className="ml-4 text-gray-600 dark:text-gray-400">Loading tasks...</span>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (!loading && tasks.length === 0 && !error) {
+    return (
+      <div className="text-center py-12">
+        <CheckSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">No tasks yet</h3>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">Create your first task to get started</p>
+        <button
+          onClick={() => setShowCreateDialog(true)}
+          className="mt-4 px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors inline-flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Create Task
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Toast Notifications */}
@@ -359,6 +495,26 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
         ))}
       </div>
 
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg flex items-start justify-between">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium">Error</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-700 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+            aria-label="Dismiss error"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -370,13 +526,22 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
             Track and manage tasks across all departments
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateDialog(true)}
-          className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 flex items-center gap-2 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New Task
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTemplatesDialog(true)}
+            className="px-4 py-2 bg-white dark:bg-slate-800 border-2 border-rose-500 text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 flex items-center gap-2 transition-colors"
+          >
+            <GitBranch className="w-4 h-4" />
+            <span className="hidden sm:inline">Templates</span>
+          </button>
+          <button
+            onClick={() => setShowCreateDialog(true)}
+            className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 flex items-center gap-2 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New Task
+          </button>
+        </div>
       </div>
 
       {/* Metrics */}
@@ -440,51 +605,88 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
         <p className="mt-2 text-sm text-gray-500">{filteredTasks.length} of {tasks.length} tasks</p>
       </div>
 
-      {/* Bulk Actions Bar */}
+      {/* Enhanced Bulk Actions Toolbar - Floating */}
       {selectedTaskIds.size > 0 && (
-        <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg p-4 flex items-center justify-between">
-          <span className="font-medium text-rose-700 dark:text-rose-300">
-            {selectedTaskIds.size} task{selectedTaskIds.size > 1 ? 's' : ''} selected
-          </span>
-          <div className="flex items-center gap-2">
-            <select
-              onChange={(e) => {
-                if (e.target.value) {
-                  bulkUpdateTasks(selectedTaskIds, { status: e.target.value as ExtendedTaskStatus });
-                  e.target.value = '';
-                }
-              }}
-              className="px-3 py-1.5 border border-rose-300 dark:border-rose-700 rounded-lg bg-white dark:bg-slate-800 text-sm"
-              defaultValue=""
-            >
-              <option value="" disabled>Change Status</option>
-              {Object.entries(statusConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-            </select>
-            <select
-              onChange={(e) => {
-                if (e.target.value) {
-                  bulkUpdateTasks(selectedTaskIds, { priority: e.target.value as TaskPriority });
-                  e.target.value = '';
-                }
-              }}
-              className="px-3 py-1.5 border border-rose-300 dark:border-rose-700 rounded-lg bg-white dark:bg-slate-800 text-sm"
-              defaultValue=""
-            >
-              <option value="" disabled>Change Priority</option>
-              {Object.entries(priorityConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-            </select>
-            <button
-              onClick={() => bulkDeleteTasks(selectedTaskIds)}
-              className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 flex items-center gap-1"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete
-            </button>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+          <div className="bg-slate-900 dark:bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-4">
+            {/* Selection count */}
+            <div className="flex items-center gap-2 pr-4 border-r border-slate-600">
+              <CheckSquare className="h-5 w-5 text-cyan-400" />
+              <span className="font-semibold">{selectedTaskIds.size} selected</span>
+            </div>
+
+            {/* Select all / Deselect all */}
+            <div className="flex items-center gap-2 pr-4 border-r border-slate-600">
+              {selectedTaskIds.size < filteredTasks.length ? (
+                <button
+                  onClick={() => setSelectedTaskIds(new Set(filteredTasks.map(t => t.id)))}
+                  className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                >
+                  Select all ({filteredTasks.length})
+                </button>
+              ) : (
+                <button
+                  onClick={() => setSelectedTaskIds(new Set())}
+                  className="text-sm text-slate-400 hover:text-slate-300 transition-colors"
+                >
+                  Deselect all
+                </button>
+              )}
+            </div>
+
+            {/* Bulk actions */}
+            <div className="flex items-center gap-2">
+              {/* Status dropdown */}
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    bulkUpdateTasks(selectedTaskIds, { status: e.target.value as ExtendedTaskStatus });
+                    e.target.value = '';
+                  }
+                }}
+                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors appearance-none pr-8 cursor-pointer"
+                defaultValue=""
+              >
+                <option value="" disabled>Change Status</option>
+                {Object.entries(statusConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+
+              {/* Priority dropdown */}
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    bulkUpdateTasks(selectedTaskIds, { priority: e.target.value as TaskPriority });
+                    e.target.value = '';
+                  }
+                }}
+                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors appearance-none pr-8 cursor-pointer"
+                defaultValue=""
+              >
+                <option value="" disabled>Change Priority</option>
+                {Object.entries(priorityConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+
+              {/* Delete button */}
+              <button
+                onClick={() => {
+                  if (confirm(`Delete ${selectedTaskIds.size} task(s)? This cannot be undone.`)) {
+                    bulkDeleteTasks(selectedTaskIds);
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-sm transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </button>
+            </div>
+
+            {/* Cancel button */}
             <button
               onClick={() => setSelectedTaskIds(new Set())}
-              className="px-3 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm"
+              className="ml-2 p-1.5 hover:bg-slate-700 rounded-lg transition-colors"
+              title="Cancel selection"
             >
-              Clear
+              <X className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -558,6 +760,248 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
               >
                 Delete
               </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Task Templates Dialog */}
+      {showTemplatesDialog && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowTemplatesDialog(false)}>
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <GitBranch className="w-6 h-6 text-rose-500" />
+                    Task Templates
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">Start with a pre-built template to save time</p>
+                </div>
+                <button
+                  onClick={() => setShowTemplatesDialog(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-88px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Template 1: Client Onboarding */}
+                <div className="border-2 border-gray-200 dark:border-slate-700 rounded-lg p-5 hover:border-rose-500 dark:hover:border-rose-500 transition-all cursor-pointer group">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 dark:text-white">Client Onboarding</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">New client setup process</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-medium rounded">Consulting</span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Complete onboarding process for new clients including documentation, contracts, and initial meetings.</p>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xs text-gray-500">5 subtasks</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="text-xs text-gray-500">~16h estimated</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 text-xs rounded">High Priority</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      addTask({
+                        title: 'Client Onboarding - [Client Name]',
+                        description: 'Complete onboarding process for new client',
+                        status: 'new',
+                        priority: 'high',
+                        dueDate: getDefaultDueDate(),
+                        assignedToId: '',
+                        assignedToName: 'Unassigned',
+                        department: 'Consulting',
+                        timeEstimate: 16,
+                        timeSpent: 0,
+                        tags: ['onboarding', 'client'],
+                        subtasks: [
+                          { id: crypto.randomUUID(), title: 'Send welcome packet', completed: false },
+                          { id: crypto.randomUUID(), title: 'Schedule kickoff meeting', completed: false },
+                          { id: crypto.randomUUID(), title: 'Complete intake forms', completed: false },
+                          { id: crypto.randomUUID(), title: 'Set up client portal access', completed: false },
+                          { id: crypto.randomUUID(), title: 'Assign account manager', completed: false },
+                        ]
+                      });
+                      setShowTemplatesDialog(false);
+                      showToast('Task created from template', 'success');
+                    }}
+                    className="w-full px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors text-sm font-medium"
+                  >
+                    Use Template
+                  </button>
+                </div>
+
+                {/* Template 2: Quarterly Report */}
+                <div className="border-2 border-gray-200 dark:border-slate-700 rounded-lg p-5 hover:border-rose-500 dark:hover:border-rose-500 transition-all cursor-pointer group">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                        <Briefcase className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 dark:text-white">Quarterly Report</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Financial reporting process</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded">Finance</span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Prepare comprehensive quarterly financial report including statements, analysis, and board presentation.</p>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xs text-gray-500">4 subtasks</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="text-xs text-gray-500">~20h estimated</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300 text-xs rounded">Critical</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      addTask({
+                        title: 'Q4 Financial Report',
+                        description: 'Prepare quarterly financial statements and analysis',
+                        status: 'new',
+                        priority: 'critical',
+                        dueDate: getDefaultDueDate(),
+                        assignedToId: '',
+                        assignedToName: 'Unassigned',
+                        department: 'Finance',
+                        timeEstimate: 20,
+                        timeSpent: 0,
+                        tags: ['quarterly', 'report', 'financial'],
+                        subtasks: [
+                          { id: crypto.randomUUID(), title: 'Reconcile all accounts', completed: false },
+                          { id: crypto.randomUUID(), title: 'Generate financial statements', completed: false },
+                          { id: crypto.randomUUID(), title: 'Write executive summary', completed: false },
+                          { id: crypto.randomUUID(), title: 'Prepare board presentation', completed: false },
+                        ]
+                      });
+                      setShowTemplatesDialog(false);
+                      showToast('Task created from template', 'success');
+                    }}
+                    className="w-full px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors text-sm font-medium"
+                  >
+                    Use Template
+                  </button>
+                </div>
+
+                {/* Template 3: Employee Onboarding */}
+                <div className="border-2 border-gray-200 dark:border-slate-700 rounded-lg p-5 hover:border-rose-500 dark:hover:border-rose-500 transition-all cursor-pointer group">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
+                        <User className="w-5 h-5 text-pink-600 dark:text-pink-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 dark:text-white">Employee Onboarding</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">New hire setup</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 text-xs font-medium rounded">HR</span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Complete onboarding checklist for new employee including paperwork, IT setup, and training schedule.</p>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xs text-gray-500">6 subtasks</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="text-xs text-gray-500">~12h estimated</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 text-xs rounded">High Priority</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      addTask({
+                        title: 'New Employee Onboarding - [Employee Name]',
+                        description: 'Complete onboarding process for new hire',
+                        status: 'new',
+                        priority: 'high',
+                        dueDate: getDefaultDueDate(),
+                        assignedToId: '',
+                        assignedToName: 'Unassigned',
+                        department: 'HR',
+                        timeEstimate: 12,
+                        timeSpent: 0,
+                        tags: ['onboarding', 'hr', 'new-hire'],
+                        subtasks: [
+                          { id: crypto.randomUUID(), title: 'Process employment paperwork', completed: false },
+                          { id: crypto.randomUUID(), title: 'Set up IT accounts and equipment', completed: false },
+                          { id: crypto.randomUUID(), title: 'Schedule orientation session', completed: false },
+                          { id: crypto.randomUUID(), title: 'Assign mentor/buddy', completed: false },
+                          { id: crypto.randomUUID(), title: 'Create training plan', completed: false },
+                          { id: crypto.randomUUID(), title: 'Add to team meetings and Slack channels', completed: false },
+                        ]
+                      });
+                      setShowTemplatesDialog(false);
+                      showToast('Task created from template', 'success');
+                    }}
+                    className="w-full px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors text-sm font-medium"
+                  >
+                    Use Template
+                  </button>
+                </div>
+
+                {/* Template 4: Marketing Campaign */}
+                <div className="border-2 border-gray-200 dark:border-slate-700 rounded-lg p-5 hover:border-rose-500 dark:hover:border-rose-500 transition-all cursor-pointer group">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 dark:text-white">Marketing Campaign</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Campaign launch checklist</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-medium rounded">Marketing</span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Plan and execute marketing campaign including content creation, design, distribution, and analytics tracking.</p>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xs text-gray-500">5 subtasks</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="text-xs text-gray-500">~24h estimated</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 text-xs rounded">Medium</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      addTask({
+                        title: 'Marketing Campaign - [Campaign Name]',
+                        description: 'Plan and execute marketing campaign',
+                        status: 'new',
+                        priority: 'medium',
+                        dueDate: getDefaultDueDate(),
+                        assignedToId: '',
+                        assignedToName: 'Unassigned',
+                        department: 'Marketing',
+                        timeEstimate: 24,
+                        timeSpent: 0,
+                        tags: ['campaign', 'marketing'],
+                        subtasks: [
+                          { id: crypto.randomUUID(), title: 'Define campaign objectives and KPIs', completed: false },
+                          { id: crypto.randomUUID(), title: 'Create content and design assets', completed: false },
+                          { id: crypto.randomUUID(), title: 'Set up tracking and analytics', completed: false },
+                          { id: crypto.randomUUID(), title: 'Launch campaign across channels', completed: false },
+                          { id: crypto.randomUUID(), title: 'Monitor and optimize performance', completed: false },
+                        ]
+                      });
+                      setShowTemplatesDialog(false);
+                      showToast('Task created from template', 'success');
+                    }}
+                    className="w-full px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors text-sm font-medium"
+                  >
+                    Use Template
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>,
@@ -763,45 +1207,124 @@ const KanbanView: React.FC<{
             </div>
           </div>
           <div className={`space-y-3 min-h-[200px] p-2 rounded-lg transition-colors ${dragOverStatus === status ? 'bg-rose-50 dark:bg-rose-900/20 border-2 border-dashed border-rose-300' : ''}`}>
-            {tasksByStatus[status]?.map(t => (
-              <div
-                key={t.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, t.id)}
-                onClick={() => onSelectTask(t)}
-                className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 cursor-grab hover:shadow-md transition group ${
-                  draggedTaskId === t.id ? 'opacity-50 rotate-2' : ''
-                }`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <GripVertical className="w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
-                    <h4 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-2">{t.title}</h4>
-                  </div>
-                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${priorityConfig[t.priority].bgColor} ${priorityConfig[t.priority].color}`}>
-                    {t.priority.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                  <User className="w-3 h-3" />
-                  {t.assignedToName}
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className={`px-1.5 py-0.5 rounded text-white ${departmentConfig[t.department].color}`}>
-                    {t.department}
-                  </span>
-                  <DueDateDisplay dueDate={t.dueDate} status={t.status} compact />
-                </div>
-                {t.subtasks.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700">
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <CheckSquare className="w-3 h-3" />
-                      {t.subtasks.filter(s => s.completed).length}/{t.subtasks.length} subtasks
+            {tasksByStatus[status]?.map(t => {
+              const completedSubtasks = t.subtasks.filter(s => s.completed).length;
+              const subtaskProgress = t.subtasks.length > 0 ? (completedSubtasks / t.subtasks.length) * 100 : 0;
+              const isOverdue = new Date(t.dueDate) < new Date() && t.status !== 'completed';
+
+              return (
+                <div
+                  key={t.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, t.id)}
+                  onClick={() => onSelectTask(t)}
+                  className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border-2 p-4 cursor-grab hover:shadow-xl transition-all group relative ${
+                    draggedTaskId === t.id ? 'opacity-50 rotate-2' : ''
+                  } ${
+                    t.priority === 'critical' ? 'border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-800' :
+                    t.priority === 'high' ? 'border-orange-300 dark:border-orange-700' :
+                    isOverdue ? 'border-red-200 dark:border-red-800' :
+                    'border-gray-200 dark:border-slate-700'
+                  }`}
+                >
+                  {/* Priority Flag - Top Left */}
+                  {t.priority === 'critical' && (
+                    <div className="absolute -top-2 -left-2 bg-red-500 text-white p-1 rounded-full shadow-lg">
+                      <Flag className="w-3 h-3 fill-current" />
                     </div>
+                  )}
+
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <GripVertical className="w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab flex-shrink-0" />
+                      <h4 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2">{t.title}</h4>
+                    </div>
+                    {/* Enhanced Priority Badge */}
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border-2 flex-shrink-0 ${
+                      t.priority === 'critical' ? 'bg-red-50 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-600' :
+                      t.priority === 'high' ? 'bg-orange-50 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-600' :
+                      t.priority === 'medium' ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-600' :
+                      'bg-slate-50 text-slate-600 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
+                    }`}>
+                      {t.priority === 'critical' ? '🔥' : t.priority === 'high' ? '⚡' : t.priority === 'medium' ? '●' : '○'}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {/* Assignee */}
+                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    <User className="w-3.5 h-3.5" />
+                    <span className="font-medium">{t.assignedToName}</span>
+                  </div>
+
+                  {/* Subtasks Progress */}
+                  {t.subtasks.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                        <div className="flex items-center gap-1">
+                          <CheckSquare className="w-3 h-3" />
+                          <span>Subtasks</span>
+                        </div>
+                        <span className="font-semibold">{completedSubtasks}/{t.subtasks.length}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-1.5 rounded-full transition-all duration-300 ${
+                            subtaskProgress === 100 ? 'bg-green-500' :
+                            subtaskProgress >= 50 ? 'bg-blue-500' :
+                            'bg-amber-500'
+                          }`}
+                          style={{ width: `${subtaskProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Time Tracking */}
+                  {(t.timeEstimate > 0 || t.timeSpent > 0) && (
+                    <div className="flex items-center gap-3 text-xs mb-3 p-2 bg-slate-50 dark:bg-slate-700/50 rounded">
+                      <div className="flex items-center gap-1">
+                        <Timer className="w-3 h-3 text-gray-500" />
+                        <span className="text-gray-600 dark:text-gray-400">{t.timeSpent}h / {t.timeEstimate}h</span>
+                      </div>
+                      {t.timeSpent > t.timeEstimate && (
+                        <span className="text-red-600 dark:text-red-400 font-medium">Over budget!</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Department & Due Date */}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={`px-2 py-1 rounded text-white font-medium ${departmentConfig[t.department].color}`}>
+                      {t.department}
+                    </span>
+                    <DueDateDisplay dueDate={t.dueDate} status={t.status} compact />
+                  </div>
+
+                  {/* Tags & Metadata */}
+                  {(t.tags.length > 0 || t.comments > 0 || t.attachments > 0) && (
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
+                      {t.comments > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <MessageSquare className="w-3 h-3" />
+                          <span>{t.comments}</span>
+                        </div>
+                      )}
+                      {t.attachments > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <Paperclip className="w-3 h-3" />
+                          <span>{t.attachments}</span>
+                        </div>
+                      )}
+                      {t.tags.slice(0, 2).map(tag => (
+                        <span key={tag} className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 rounded text-xs">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       ))}
