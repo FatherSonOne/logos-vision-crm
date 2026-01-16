@@ -401,12 +401,25 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
     }
   }, [showToast, tasks]);
 
-  // Get unique assignees from tasks
+  // Get unique assignees from tasks or teamMembers
   const assignees = useMemo(() => {
     const map = new Map<string, string>();
+
+    // First, add assignees from existing tasks
     tasks.forEach(t => map.set(t.assignedToId, t.assignedToName));
+
+    // If no tasks exist, populate from teamMembers
+    if (map.size === 0 && teamMembers.length > 0) {
+      teamMembers.forEach(tm => map.set(tm.id, tm.name));
+    }
+
+    // Ensure we always have at least one "Unassigned" option
+    if (map.size === 0) {
+      map.set('unassigned', 'Unassigned');
+    }
+
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-  }, [tasks]);
+  }, [tasks, teamMembers]);
 
   // Use metrics from state (loaded from taskMetricsService)
   const metrics = metricsData;
