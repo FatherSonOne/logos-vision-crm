@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import type { Project, Client, Activity, Page, TeamMember, Case, EnrichedTask, Donation, Document as AppDocument } from '../types';
 import { ProjectStatus, ActivityType, ActivityStatus, TaskStatus } from '../types';
 import { getDeadlineStatus } from '../utils/dateHelpers';
@@ -10,22 +10,23 @@ import { Sparkles, CheckCircle, Calendar, Trophy, AlertCircle, RefreshCw, Quote,
 // Design System Components
 import { StatCard, Card, CardTitle, CardContent, Badge } from './ui';
 
-// Phase 1 Dashboard Widgets
-import { DonorRetentionWidget } from './dashboard/DonorRetentionWidget';
-import { LapsedDonorAlert } from './dashboard/LapsedDonorAlert';
-import { PledgeFulfillmentWidget } from './dashboard/PledgeFulfillmentWidget';
-import { ServiceImpactSummary } from './dashboard/ServiceImpactSummary';
-import { HouseholdStatsWidget } from './dashboard/HouseholdStatsWidget';
-import { DonorEngagementWidget } from './dashboard/DonorEngagementWidget';
-import { SentimentHealthWidget } from './dashboard/SentimentHealthWidget';
-import { OpportunityScoutWidget } from './dashboard/OpportunityScoutWidget';
-import { MeetingPrepWidget } from './dashboard/MeetingPrepWidget';
-import { ProjectRiskRadarWidget } from './dashboard/ProjectRiskRadarWidget';
-import { ResourceAllocatorWidget } from './dashboard/ResourceAllocatorWidget';
+// Phase 1 Dashboard Widgets - Lazy Loaded for Performance
+const DonorRetentionWidget = lazy(() => import('./dashboard/DonorRetentionWidget').then(m => ({ default: m.DonorRetentionWidget })));
+const LapsedDonorAlert = lazy(() => import('./dashboard/LapsedDonorAlert').then(m => ({ default: m.LapsedDonorAlert })));
+const PledgeFulfillmentWidget = lazy(() => import('./dashboard/PledgeFulfillmentWidget').then(m => ({ default: m.PledgeFulfillmentWidget })));
+const ServiceImpactSummary = lazy(() => import('./dashboard/ServiceImpactSummary').then(m => ({ default: m.ServiceImpactSummary })));
+const HouseholdStatsWidget = lazy(() => import('./dashboard/HouseholdStatsWidget').then(m => ({ default: m.HouseholdStatsWidget })));
+const DonorEngagementWidget = lazy(() => import('./dashboard/DonorEngagementWidget').then(m => ({ default: m.DonorEngagementWidget })));
+const SentimentHealthWidget = lazy(() => import('./dashboard/SentimentHealthWidget').then(m => ({ default: m.SentimentHealthWidget })));
+const OpportunityScoutWidget = lazy(() => import('./dashboard/OpportunityScoutWidget').then(m => ({ default: m.OpportunityScoutWidget })));
+const MeetingPrepWidget = lazy(() => import('./dashboard/MeetingPrepWidget').then(m => ({ default: m.MeetingPrepWidget })));
+const ProjectRiskRadarWidget = lazy(() => import('./dashboard/ProjectRiskRadarWidget').then(m => ({ default: m.ProjectRiskRadarWidget })));
+const ResourceAllocatorWidget = lazy(() => import('./dashboard/ResourceAllocatorWidget').then(m => ({ default: m.ResourceAllocatorWidget })));
 
 // New Tier 1 & 2 Components
 import { DashboardCustomizer, useDashboardPreferences } from '../../components/DashboardCustomizer';
 import { ActivityFeed as CollaborationActivityFeed, TeamPresenceBar } from '../../components/CollaborationFeatures';
+import { EnhancedDashboardCustomizer } from './EnhancedDashboardCustomizer';
 
 // Dashboard Role Types - Extended with specialized roles
 export type DashboardRole = 'fundraising' | 'programs' | 'leadership' | 'grants' | 'volunteers' | 'custom';
@@ -53,6 +54,7 @@ interface WidgetMeta {
 }
 
 const WIDGET_DEFINITIONS: WidgetMeta[] = [
+  { id: 'briefing', title: 'Daily Briefing', roles: ['fundraising', 'programs', 'leadership', 'grants', 'volunteers', 'custom'] },
   { id: 'donations', title: 'Donations This Year', roles: ['fundraising', 'leadership', 'grants'] },
   { id: 'retention', title: 'Donor Retention', roles: ['fundraising', 'leadership'] },
   { id: 'lapsed', title: 'Lapsed Donors', roles: ['fundraising'] },
@@ -128,6 +130,22 @@ const CollapsibleWidget: React.FC<{
   );
 };
 
+// Widget Loading Skeleton
+const WidgetSkeleton: React.FC = () => (
+  <div className="animate-pulse">
+    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+    <div className="space-y-3">
+      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
+    </div>
+    <div className="mt-4 grid grid-cols-2 gap-4">
+      <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+      <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+    </div>
+  </div>
+);
+
 interface DashboardProps {
   projects: Project[];
   clients: Client[];
@@ -149,6 +167,7 @@ interface EnhancedHeroWidgetProps extends BriefingData {
 const EnhancedHeroWidget: React.FC<EnhancedHeroWidgetProps> = ({ onNavigate, ...data }) => {
     const [briefing, setBriefing] = useState<DailyBriefingResult | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [activePriority, setActivePriority] = useState<'all' | 'high' | 'medium' | 'low'>('all');
 
     const getBriefing = useCallback(async () => {
         setIsLoading(true);
@@ -223,12 +242,13 @@ const EnhancedHeroWidget: React.FC<EnhancedHeroWidgetProps> = ({ onNavigate, ...
                             {briefing.greeting}
                         </h2>
                     </div>
-                    <button 
-                        onClick={getBriefing} 
+                    <button
+                        onClick={getBriefing}
                         className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-indigo-100 transition-colors backdrop-blur-sm"
                         title="Refresh Briefing"
+                        aria-label="Refresh daily briefing"
                     >
-                        <RefreshCw size={20} />
+                        <RefreshCw size={20} aria-hidden="true" />
                     </button>
                 </div>
 
@@ -250,37 +270,79 @@ const EnhancedHeroWidget: React.FC<EnhancedHeroWidgetProps> = ({ onNavigate, ...
                             )}
                         </div>
 
-                        {/* Action Items */}
+                        {/* Action Items - Enhanced with Priority Filter */}
                         <div>
-                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-indigo-100">
-                                <CheckCircle size={20} className="text-emerald-400" />
-                                Action Items
-                            </h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold flex items-center gap-2 text-indigo-100">
+                                    <CheckCircle size={20} className="text-emerald-400" />
+                                    Action Items
+                                </h3>
+
+                                {/* Priority Filter Tabs */}
+                                <div className="flex items-center gap-1 p-1 rounded-lg bg-white/5">
+                                    {(['all', 'high', 'medium', 'low'] as const).map(priority => (
+                                        <button
+                                            key={priority}
+                                            className={`px-2 py-1 text-xs rounded transition-all ${
+                                                activePriority === priority
+                                                    ? 'bg-white/10 text-white font-medium'
+                                                    : 'text-indigo-300 hover:text-white'
+                                            }`}
+                                            onClick={() => setActivePriority(priority)}
+                                        >
+                                            {priority === 'all' ? 'All' : priority.charAt(0).toUpperCase() + priority.slice(1)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <div className="grid gap-3">
                                 {briefing.actionItems.length > 0 ? (
-                                    briefing.actionItems.map((item, idx) => (
-                                        <div 
-                                            key={idx} 
-                                            onClick={() => handleActionClick(item)}
-                                            className={`flex items-start gap-3 bg-white/5 hover:bg-white/10 transition-colors p-3 rounded-lg border border-white/5 group ${item.relatedId ? 'cursor-pointer' : ''}`}
+                                    briefing.actionItems
+                                        .filter(item => activePriority === 'all' || item.priority === activePriority)
+                                        .map((item, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="flex items-start gap-3 bg-white/5 hover:bg-white/10 transition-all p-4 rounded-xl border border-white/5 group"
                                         >
+                                            {/* Priority Indicator */}
                                             <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
-                                                item.priority === 'high' ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 
+                                                item.priority === 'high' ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse' :
                                                 item.priority === 'medium' ? 'bg-amber-400' : 'bg-emerald-400'
                                             }`} />
-                                            <div className="flex-1">
-                                                <span className="text-indigo-50 group-hover:text-white transition-colors">{item.text}</span>
-                                                {item.relatedType && (
-                                                    <div className="flex items-center gap-1 mt-1 text-xs text-indigo-300/60 group-hover:text-indigo-300 transition-colors">
-                                                        <ArrowRight size={12} />
-                                                        <span className="capitalize">View {item.relatedType}</span>
-                                                    </div>
-                                                )}
+
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-indigo-50 group-hover:text-white transition-colors mb-2">
+                                                    {item.text}
+                                                </p>
+
+                                                {/* Quick Actions - Shown on Hover */}
+                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button className="px-2 py-1 text-xs bg-emerald-600/20 text-emerald-300 rounded hover:bg-emerald-600/30 transition-colors">
+                                                        Mark Done
+                                                    </button>
+                                                    <button className="px-2 py-1 text-xs bg-indigo-600/20 text-indigo-300 rounded hover:bg-indigo-600/30 transition-colors">
+                                                        Snooze
+                                                    </button>
+                                                    {item.relatedType && item.relatedId && (
+                                                        <button
+                                                            onClick={() => handleActionClick(item)}
+                                                            className="px-2 py-1 text-xs bg-white/5 text-indigo-300 rounded hover:bg-white/10 transition-colors flex items-center gap-1"
+                                                        >
+                                                            <ArrowRight size={12} />
+                                                            <span className="capitalize">View {item.relatedType}</span>
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-indigo-300/60 italic">No urgent actions suggested for today.</p>
+                                    <p className="text-indigo-300/60 italic">
+                                        {activePriority === 'all'
+                                            ? 'No urgent actions suggested for today.'
+                                            : `No ${activePriority} priority actions.`}
+                                    </p>
                                 )}
                             </div>
                         </div>
@@ -632,6 +694,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }));
   };
 
+  // Handler for toggling widget visibility in customizer
+  const handleToggleWidget = (widgetId: string) => {
+    setDashboardConfig(prev => ({
+      ...prev,
+      hiddenWidgets: prev.hiddenWidgets.includes(widgetId)
+        ? prev.hiddenWidgets.filter(id => id !== widgetId)
+        : [...prev.hiddenWidgets, widgetId]
+    }));
+  };
+
+  // Handler for applying layout presets
+  const handleApplyPreset = (preset: { defaultCollapsed: string[]; defaultHidden: string[] }) => {
+    setDashboardConfig(prev => ({
+      ...prev,
+      collapsedWidgets: preset.defaultCollapsed,
+      hiddenWidgets: preset.defaultHidden
+    }));
+  };
+
+  // Handler for resetting to default configuration
+  const handleResetToDefaults = () => {
+    const DEFAULT_CONFIG: DashboardConfig = {
+      role: 'leadership',
+      expandedWidgets: [],
+      collapsedWidgets: [],
+      hiddenWidgets: [],
+    };
+    setDashboardConfig(DEFAULT_CONFIG);
+    localStorage.setItem('dashboardConfig', JSON.stringify(DEFAULT_CONFIG));
+  };
+
   // Get role description for subtitle
   const getRoleDescription = (role: DashboardRole): string => {
     const descriptions: Record<DashboardRole, string> = {
@@ -643,6 +736,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
       custom: 'Your customized view showing all widgets',
     };
     return descriptions[role];
+  };
+
+  // Get role-specific greeting for header
+  const getRoleGreeting = (role: DashboardRole): string => {
+    const greetings: Record<DashboardRole, string> = {
+      leadership: 'Leadership Dashboard',
+      fundraising: 'Fundraising Hub',
+      programs: 'Programs Overview',
+      grants: 'Grants & Compliance',
+      volunteers: 'Volunteer Center',
+      custom: 'Custom Dashboard',
+    };
+    return greetings[role];
   };
 
   // Computed stats - FIXED: Proper calculations
@@ -725,34 +831,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Dashboard Header with Role Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--cmf-text)' }}>Dashboard</h1>
-          <p className="text-sm" style={{ color: 'var(--cmf-text-secondary)' }}>
-            {getRoleDescription(dashboardConfig.role)}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <DashboardRoleSelector currentRole={dashboardConfig.role} onRoleChange={handleRoleChange} />
-          <button
-            onClick={() => setIsCustomizerOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: 'var(--cmf-surface-2)',
-              color: 'var(--cmf-text-secondary)',
-              border: '1px solid var(--cmf-border)'
-            }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            Customize
-          </button>
-        </div>
-      </div>
-
+      {/* Daily Briefing - First Widget */}
       <div id="dashboard-briefing">
       {(isWidgetVisible('briefing') || dashboardConfig.role === 'custom') && (
         <EnhancedHeroWidget 
@@ -773,6 +852,99 @@ export const Dashboard: React.FC<DashboardProps> = ({
             }}
         />
       )}
+      </div>
+
+      {/* Enhanced Dashboard Context Bar - Below Daily Briefing */}
+      <div
+        className="rounded-xl border transition-all p-6"
+        style={{
+          backgroundColor: 'var(--cmf-surface)',
+          borderColor: 'var(--cmf-border)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+        }}
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          {/* Left: Title & Context */}
+          <div className="flex items-center gap-4">
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-bold" style={{ color: 'var(--cmf-text)' }}>
+                  {getRoleGreeting(dashboardConfig.role)}
+                </h2>
+                <span
+                  className="px-2.5 py-0.5 text-xs font-semibold rounded-full"
+                  style={{
+                    backgroundColor: 'var(--cmf-accent-muted)',
+                    color: 'var(--cmf-accent)'
+                  }}
+                >
+                  {dashboardConfig.role}
+                </span>
+              </div>
+              <p className="text-sm mt-1" style={{ color: 'var(--cmf-text-secondary)' }}>
+                {getRoleDescription(dashboardConfig.role)}
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Quick Stats & Controls */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Quick Stats Card */}
+            <div
+              className="flex items-center gap-4 px-4 py-2 rounded-lg"
+              style={{ backgroundColor: 'var(--cmf-surface-2)' }}
+            >
+              <div className="text-center">
+                <div className="text-xs" style={{ color: 'var(--cmf-text-faint)' }}>Tasks Due</div>
+                <div className="text-lg font-bold" style={{ color: 'var(--cmf-accent)' }}>
+                  {myTasks.filter(t => t.status !== TaskStatus.Done).length}
+                </div>
+              </div>
+              <div className="w-px h-8" style={{ backgroundColor: 'var(--cmf-border)' }} />
+              <div className="text-center">
+                <div className="text-xs" style={{ color: 'var(--cmf-text-faint)' }}>This Week</div>
+                <div className="text-lg font-bold" style={{ color: 'var(--color-success)' }}>
+                  {formatCurrency(donationSummary.weekTotal)}
+                </div>
+              </div>
+            </div>
+
+            {/* Role Selector */}
+            <DashboardRoleSelector currentRole={dashboardConfig.role} onRoleChange={handleRoleChange} />
+
+            {/* Customize Button - Enhanced */}
+            <button
+              onClick={() => setIsCustomizerOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105"
+              style={{
+                backgroundColor: 'var(--cmf-accent-muted)',
+                color: 'var(--cmf-accent)',
+                border: '1px solid var(--cmf-accent-subtle)'
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="hidden sm:inline">Customize</span>
+            </button>
+
+            {/* Export/Share Button */}
+            <button
+              className="p-2 rounded-lg transition-colors"
+              style={{
+                backgroundColor: 'var(--cmf-surface-2)',
+                color: 'var(--cmf-text-secondary)'
+              }}
+              title="Export Dashboard"
+              aria-label="Export dashboard"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div id="dashboard-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -884,7 +1056,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isCollapsed={isWidgetCollapsed('retention')}
               onToggle={() => toggleWidgetCollapse('retention')}
             >
-              <DonorRetentionWidget />
+              <Suspense fallback={<WidgetSkeleton />}>
+                <DonorRetentionWidget />
+              </Suspense>
             </CollapsibleWidget>
           )}
 
@@ -896,7 +1070,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isCollapsed={isWidgetCollapsed('lapsed')}
               onToggle={() => toggleWidgetCollapse('lapsed')}
             >
-              <LapsedDonorAlert />
+              <Suspense fallback={<WidgetSkeleton />}>
+                <LapsedDonorAlert />
+              </Suspense>
             </CollapsibleWidget>
           )}
 
@@ -908,7 +1084,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isCollapsed={isWidgetCollapsed('pledges')}
               onToggle={() => toggleWidgetCollapse('pledges')}
             >
-              <PledgeFulfillmentWidget />
+              <Suspense fallback={<WidgetSkeleton />}>
+                <PledgeFulfillmentWidget />
+              </Suspense>
             </CollapsibleWidget>
           )}
 
@@ -920,7 +1098,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isCollapsed={isWidgetCollapsed('engagement')}
               onToggle={() => toggleWidgetCollapse('engagement')}
             >
-              <DonorEngagementWidget />
+              <Suspense fallback={<WidgetSkeleton />}>
+                <DonorEngagementWidget />
+              </Suspense>
             </CollapsibleWidget>
           )}
 
@@ -932,9 +1112,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isCollapsed={isWidgetCollapsed('sentiment')}
               onToggle={() => toggleWidgetCollapse('sentiment')}
             >
-              <div className="h-[400px]">
-                <SentimentHealthWidget clients={clients} activities={activities} />
-              </div>
+              <Suspense fallback={<WidgetSkeleton />}>
+                <div className="h-[400px]">
+                  <SentimentHealthWidget clients={clients} activities={activities} />
+                </div>
+              </Suspense>
             </CollapsibleWidget>
           )}
 
@@ -946,9 +1128,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isCollapsed={isWidgetCollapsed('opportunities')}
               onToggle={() => toggleWidgetCollapse('opportunities')}
             >
-               <div className="h-[400px]">
-                <OpportunityScoutWidget clients={clients} donations={donations} />
-              </div>
+              <Suspense fallback={<WidgetSkeleton />}>
+                <div className="h-[400px]">
+                  <OpportunityScoutWidget clients={clients} donations={donations} />
+                </div>
+              </Suspense>
             </CollapsibleWidget>
           )}
 
@@ -960,9 +1144,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isCollapsed={isWidgetCollapsed('meeting-prep')}
               onToggle={() => toggleWidgetCollapse('meeting-prep')}
             >
-               <div className="h-[400px]">
-                <MeetingPrepWidget activities={activities} clients={clients} />
-              </div>
+              <Suspense fallback={<WidgetSkeleton />}>
+                <div className="h-[400px]">
+                  <MeetingPrepWidget activities={activities} clients={clients} />
+                </div>
+              </Suspense>
             </CollapsibleWidget>
           )}
 
@@ -974,9 +1160,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isCollapsed={isWidgetCollapsed('project-risk')}
               onToggle={() => toggleWidgetCollapse('project-risk')}
             >
-               <div className="h-[400px]">
-                <ProjectRiskRadarWidget projects={projects} cases={cases} />
-              </div>
+              <Suspense fallback={<WidgetSkeleton />}>
+                <div className="h-[400px]">
+                  <ProjectRiskRadarWidget projects={projects} cases={cases} />
+                </div>
+              </Suspense>
             </CollapsibleWidget>
           )}
 
@@ -988,9 +1176,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isCollapsed={isWidgetCollapsed('resource-allocator')}
               onToggle={() => toggleWidgetCollapse('resource-allocator')}
             >
-               <div className="h-[400px]">
-                <ResourceAllocatorWidget teamMembers={teamMembers} projects={projects} />
-              </div>
+              <Suspense fallback={<WidgetSkeleton />}>
+                <div className="h-[400px]">
+                  <ResourceAllocatorWidget teamMembers={teamMembers} projects={projects} />
+                </div>
+              </Suspense>
             </CollapsibleWidget>
           )}
 
@@ -1002,7 +1192,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isCollapsed={isWidgetCollapsed('service-impact')}
               onToggle={() => toggleWidgetCollapse('service-impact')}
             >
-              <ServiceImpactSummary />
+              <Suspense fallback={<WidgetSkeleton />}>
+                <ServiceImpactSummary />
+              </Suspense>
             </CollapsibleWidget>
           )}
 
@@ -1014,7 +1206,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isCollapsed={isWidgetCollapsed('household')}
               onToggle={() => toggleWidgetCollapse('household')}
             >
-              <HouseholdStatsWidget />
+              <Suspense fallback={<WidgetSkeleton />}>
+                <HouseholdStatsWidget />
+              </Suspense>
             </CollapsibleWidget>
           )}
         </div>
@@ -1090,12 +1284,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </Card>
       </div>
 
-      {/* Dashboard Customizer Modal */}
-      <DashboardCustomizer
+      {/* Enhanced Dashboard Customizer Modal */}
+      <EnhancedDashboardCustomizer
         isOpen={isCustomizerOpen}
         onClose={() => setIsCustomizerOpen(false)}
-        preferences={dashboardPreferences.preferences}
-        onPreferencesChange={dashboardPreferences.updatePreferences}
+        currentRole={dashboardConfig.role}
+        availableWidgets={WIDGET_DEFINITIONS.filter(w =>
+          dashboardConfig.role === 'custom' || w.roles.includes(dashboardConfig.role)
+        )}
+        hiddenWidgets={dashboardConfig.hiddenWidgets}
+        collapsedWidgets={dashboardConfig.collapsedWidgets}
+        onToggleWidget={handleToggleWidget}
+        onApplyPreset={handleApplyPreset}
+        onResetToDefaults={handleResetToDefaults}
       />
     </div>
   );

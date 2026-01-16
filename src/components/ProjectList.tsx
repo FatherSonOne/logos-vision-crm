@@ -332,9 +332,12 @@ const ProjectCard: React.FC<{
                 )}
 
                 <div className={isSelectionMode ? 'pl-6' : ''}>
-                    <div className="flex justify-between items-start mb-2 pr-12">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{project.name}</h3>
-                        {/* Quick Status Dropdown */}
+                    <div className="flex justify-between items-start mb-3 pr-12">
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{project.name}</h3>
+                            <p className="text-sm text-cyan-800 font-medium dark:text-cyan-300">{clientName}</p>
+                        </div>
+                        {/* Enhanced Status Badge */}
                         <div className="relative" onClick={(e) => e.stopPropagation()}>
                           <select
                             value={project.status}
@@ -342,12 +345,12 @@ const ProjectCard: React.FC<{
                               e.stopPropagation();
                               onStatusChange?.(project.id, e.target.value as ProjectStatus);
                             }}
-                            className={`text-xs font-semibold px-2 py-1 rounded-full cursor-pointer appearance-none pr-6 border-0 focus:ring-2 focus:ring-cyan-500 ${
-                              project.status === ProjectStatus.Planning ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' :
-                              project.status === ProjectStatus.InProgress ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' :
-                              project.status === ProjectStatus.Completed ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' :
-                              project.status === ProjectStatus.OnHold ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300' : 
-                              'bg-slate-200 text-slate-700'
+                            className={`text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer appearance-none pr-8 border-2 focus:ring-2 focus:ring-cyan-500 transition-all shadow-sm hover:shadow-md ${
+                              project.status === ProjectStatus.Planning ? 'bg-slate-50 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600' :
+                              project.status === ProjectStatus.InProgress ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-600' :
+                              project.status === ProjectStatus.Completed ? 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-600' :
+                              project.status === ProjectStatus.OnHold ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-600' :
+                              'bg-slate-50 text-slate-700 border-slate-300'
                             }`}
                             title="Click to change status"
                           >
@@ -355,27 +358,55 @@ const ProjectCard: React.FC<{
                               <option key={status} value={status}>{status}</option>
                             ))}
                           </select>
-                          <ChevronDownIcon className="absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none" />
+                          <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" />
                         </div>
-                    </div>
-                    <p className="text-sm text-cyan-800 font-medium mb-3 dark:text-cyan-300">{clientName}</p>
-                    <p className="text-sm text-slate-700 line-clamp-2 mb-4 dark:text-slate-200">{project.description}</p>
-                    
-                    <div className="flex justify-between items-center text-sm mb-4">
-                        <span className="font-semibold text-slate-700 dark:text-slate-200">Deadline</span>
-                        <span className={`flex items-center gap-1 font-semibold ${deadline.color}`}>
-                            <ClockIcon />
-                            {deadline.text}
-                        </span>
                     </div>
 
-                    <div className="mb-2">
-                        <div className="flex justify-between text-xs text-slate-600 mb-1 dark:text-slate-300">
-                            <span>Progress</span>
-                            <span>{Math.round(completionPercentage)}%</span>
+                    <p className="text-sm text-slate-700 line-clamp-2 mb-4 dark:text-slate-200 leading-relaxed">{project.description}</p>
+
+                    {/* Task Stats Grid */}
+                    <div className="grid grid-cols-3 gap-2 mb-4 p-3 bg-slate-50/50 dark:bg-black/20 rounded-lg">
+                        <div className="text-center">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Tasks</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{project.tasks.length}</div>
                         </div>
-                        <div className="w-full bg-slate-200/50 rounded-full h-2 dark:bg-black/20">
-                            <div className="bg-gradient-to-r from-cyan-500 to-sky-500 h-2 rounded-full" style={{ width: `${completionPercentage}%` }}></div>
+                        <div className="text-center border-x border-slate-200 dark:border-slate-600">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Done</div>
+                            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                                {project.tasks.filter(t => t.status === 'Done').length}
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Progress</div>
+                            <div className="text-lg font-bold text-cyan-600 dark:text-cyan-400">{Math.round(completionPercentage)}%</div>
+                        </div>
+                    </div>
+
+                    {/* Enhanced Progress Bar */}
+                    <div className="mb-4">
+                        <div className="flex justify-between items-center text-xs text-slate-600 mb-2 dark:text-slate-300">
+                            <span className="font-semibold flex items-center gap-1">
+                                <ClockIcon />
+                                Deadline: {deadline.text}
+                            </span>
+                            <span className={`font-bold px-2 py-0.5 rounded-full ${deadline.color}`}>
+                                {new Date(project.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                        </div>
+                        <div className="relative w-full bg-slate-200/50 rounded-full h-3 dark:bg-black/30 overflow-hidden shadow-inner">
+                            <div
+                                className={`h-3 rounded-full transition-all duration-500 ${
+                                    completionPercentage >= 75 ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
+                                    completionPercentage >= 50 ? 'bg-gradient-to-r from-cyan-500 to-blue-500' :
+                                    completionPercentage >= 25 ? 'bg-gradient-to-r from-amber-500 to-orange-500' :
+                                    'bg-gradient-to-r from-slate-400 to-slate-500'
+                                }`}
+                                style={{ width: `${completionPercentage}%` }}
+                            >
+                                {completionPercentage > 0 && (
+                                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     

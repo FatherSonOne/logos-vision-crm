@@ -403,7 +403,8 @@ export const CaseManagement: React.FC<CaseManagementProps> = ({
   const [priorityFilter, setPriorityFilter] = useState<string | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<CaseType | 'all'>('all');
   const [showTemplates, setShowTemplates] = useState(false);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showNewCasePanel, setShowNewCasePanel] = useState(false);
+  const [newCasePanelExpanded, setNewCasePanelExpanded] = useState(true);
 
   // Use sample data for enhanced display
   const enhancedCases = sampleCases;
@@ -497,7 +498,10 @@ export const CaseManagement: React.FC<CaseManagementProps> = ({
             <span>Templates</span>
           </button>
           <button
-            onClick={() => setShowCreateDialog(true)}
+            onClick={() => {
+              setShowNewCasePanel(true);
+              setNewCasePanelExpanded(true);
+            }}
             className="px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors"
             style={{
               backgroundColor: 'var(--cmf-accent)',
@@ -511,6 +515,22 @@ export const CaseManagement: React.FC<CaseManagementProps> = ({
           </button>
         </div>
       </div>
+
+      {/* New Case Panel - Sliding top panel */}
+      <NewCasePanel
+        isOpen={showNewCasePanel}
+        isExpanded={newCasePanelExpanded}
+        onToggleExpand={() => setNewCasePanelExpanded(!newCasePanelExpanded)}
+        onClose={() => {
+          setShowNewCasePanel(false);
+          setNewCasePanelExpanded(true);
+        }}
+        onSave={(data) => {
+          console.log('New case created:', data);
+          // After save, collapse the panel
+          setNewCasePanelExpanded(false);
+        }}
+      />
 
       {/* View Tabs */}
       <div className="flex items-center gap-2 border-b border-gray-200 dark:border-slate-700">
@@ -734,13 +754,6 @@ export const CaseManagement: React.FC<CaseManagementProps> = ({
         <TemplatesModal templates={caseTemplates} onClose={() => setShowTemplates(false)} />
       )}
 
-      {/* Create Case Dialog */}
-      {showCreateDialog && (
-        <CreateCaseDialog
-          templates={caseTemplates}
-          onClose={() => setShowCreateDialog(false)}
-        />
-      )}
     </div>
   );
 };
@@ -769,8 +782,9 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseItem, onBack, onSta
         <button
           onClick={onBack}
           className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
+          aria-label="Go back to case list"
         >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
+          <ArrowLeft className="w-5 h-5 text-gray-500" aria-hidden="true" />
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
@@ -1092,8 +1106,13 @@ const TemplatesModal: React.FC<{ templates: CaseTemplate[]; onClose: () => void 
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl" onClick={e => e.stopPropagation()}>
       <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Case Templates</h2>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
-          <X className="w-5 h-5 text-gray-500" />
+        <button
+          onClick={onClose}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+          aria-label="Close template modal"
+          type="button"
+        >
+          <X className="w-5 h-5 text-gray-500" aria-hidden="true" />
         </button>
       </div>
       <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
@@ -1119,7 +1138,19 @@ const TemplatesModal: React.FC<{ templates: CaseTemplate[]; onClose: () => void 
   </div>
 );
 
-const CreateCaseDialog: React.FC<{ templates: CaseTemplate[]; onClose: () => void }> = ({ templates, onClose }) => {
+// ============================================================================
+// NEW CASE PANEL - Sliding top panel with collapse functionality
+// ============================================================================
+
+interface NewCasePanelProps {
+  isOpen: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onClose: () => void;
+  onSave: (data: { title: string; description: string; caseType: CaseType; priority: string; clientName: string }) => void;
+}
+
+const NewCasePanel: React.FC<NewCasePanelProps> = ({ isOpen, isExpanded, onToggleExpand, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -1127,84 +1158,194 @@ const CreateCaseDialog: React.FC<{ templates: CaseTemplate[]; onClose: () => voi
     priority: 'medium',
     clientName: '',
   });
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title.trim()) return;
+    onSave(formData);
+    setHasBeenSaved(true);
+    // Reset form
+    setFormData({
+      title: '',
+      description: '',
+      caseType: 'general',
+      priority: 'medium',
+      clientName: '',
+    });
+  };
+
+  const handleCancel = () => {
+    setFormData({
+      title: '',
+      description: '',
+      caseType: 'general',
+      priority: 'medium',
+      clientName: '',
+    });
+    setHasBeenSaved(false);
+    onClose();
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
-        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Create New Case</h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
-              <X className="w-5 h-5 text-gray-500" />
+    <div
+      className="w-full flex justify-center"
+      style={{ position: 'relative', zIndex: 30 }}
+    >
+      <div
+        className={`
+          w-full max-w-2xl mx-auto
+          bg-white dark:bg-slate-800
+          rounded-b-2xl shadow-lg
+          border border-t-0 border-gray-200 dark:border-slate-700
+          overflow-hidden
+          transform transition-all duration-300 ease-out
+          ${isExpanded ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-100'}
+        `}
+      >
+        {/* Collapsed Bar */}
+        {!isExpanded && (
+          <button
+            onClick={onToggleExpand}
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group"
+            aria-label="Expand new case form"
+            aria-expanded="false"
+            type="button"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
+                <Briefcase className="w-4 h-4 text-rose-600 dark:text-rose-400" aria-hidden="true" />
+              </div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {hasBeenSaved ? 'New Case Entry' : 'Create New Case'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <ChevronDown className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200 transition-transform duration-200" aria-hidden="true" />
+            </div>
+          </button>
+        )}
+
+        {/* Expanded Form */}
+        <div
+          className={`
+            overflow-hidden transition-all duration-300 ease-out
+            ${isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}
+          `}
+        >
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center bg-gradient-to-r from-rose-50 to-amber-50 dark:from-rose-900/10 dark:to-amber-900/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-xl">
+                <Briefcase className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Create New Case</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Enter case details below</p>
+              </div>
+            </div>
+            <button
+              onClick={onToggleExpand}
+              className="p-2 hover:bg-white/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors group"
+              aria-label="Collapse new case form"
+              aria-expanded="true"
+              type="button"
+            >
+              <ChevronDown className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200 transform rotate-180 transition-transform" aria-hidden="true" />
             </button>
           </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Case Title <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={e => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                  placeholder="e.g., Grant Application Review"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client Name</label>
+                <input
+                  type="text"
+                  value={formData.clientName}
+                  onChange={e => setFormData({ ...formData, clientName: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                  placeholder="Client organization"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                  <select
+                    value={formData.caseType}
+                    onChange={e => setFormData({ ...formData, caseType: e.target.value as CaseType })}
+                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                  >
+                    {Object.entries(caseTypeConfig).map(([key, config]) => (
+                      <option key={key} value={key}>{config.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+                  <select
+                    value={formData.priority}
+                    onChange={e => setFormData({ ...formData, priority: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                  >
+                    {Object.entries(priorityConfig).map(([key, config]) => (
+                      <option key={key} value={key}>{config.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <textarea
+                  rows={2}
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all resize-none"
+                  placeholder="Brief description of the case..."
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-5 py-2.5 border border-gray-300 dark:border-slate-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!formData.title.trim()}
+                className="px-5 py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-xl hover:from-rose-600 hover:to-rose-700 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-rose-500/25"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Create Case
+              </button>
+            </div>
+          </form>
         </div>
-        <form className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={e => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white"
-              placeholder="Case title"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-            <textarea
-              rows={3}
-              value={formData.description}
-              onChange={e => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white"
-              placeholder="Case description"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
-              <select
-                value={formData.caseType}
-                onChange={e => setFormData({ ...formData, caseType: e.target.value as CaseType })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white"
-              >
-                {Object.entries(caseTypeConfig).map(([key, config]) => (
-                  <option key={key} value={key}>{config.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
-              <select
-                value={formData.priority}
-                onChange={e => setFormData({ ...formData, priority: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white"
-              >
-                {Object.entries(priorityConfig).map(([key, config]) => (
-                  <option key={key} value={key}>{config.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client Name</label>
-            <input
-              type="text"
-              value={formData.clientName}
-              onChange={e => setFormData({ ...formData, clientName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white"
-              placeholder="Client organization"
-            />
-          </div>
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300">
-              Cancel
-            </button>
-            <button type="submit" className="flex-1 px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600">
-              Create Case
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

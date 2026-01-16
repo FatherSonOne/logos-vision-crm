@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Filter, Users, Building2, Home, Award, AlertCircle, Plus, Mail, Phone, Calendar, DollarSign, User, MapPin, List } from 'lucide-react';
+import { Search, Filter, Users, Building2, Home, Award, AlertCircle, Plus, Mail, Phone, Calendar, DollarSign, User, MapPin, List, Grid, Edit, Archive } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { contactService } from '../services/contactService';
 import { DonationDialog } from './dialogs/DonationDialog';
@@ -91,7 +91,7 @@ export const Contacts: React.FC<ContactsProps> = ({ defaultType = 'all', onSelec
     }
   }, [activeTypeFilter]);
 
-  const [viewMode, setViewMode] = useState<'table' | 'map'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid' | 'map'>('table');
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -381,9 +381,22 @@ export const Contacts: React.FC<ContactsProps> = ({ defaultType = 'all', onSelec
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
+              title="Table View"
             >
               <List className="w-4 h-4" />
-              Table
+              <span className="hidden sm:inline">Table</span>
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+              title="Grid View"
+            >
+              <Grid className="w-4 h-4" />
+              <span className="hidden sm:inline">Grid</span>
             </button>
             <button
               onClick={() => setViewMode('map')}
@@ -392,9 +405,10 @@ export const Contacts: React.FC<ContactsProps> = ({ defaultType = 'all', onSelec
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
+              title="Map View"
             >
               <MapPin className="w-4 h-4" />
-              Map
+              <span className="hidden sm:inline">Map</span>
             </button>
           </div>
 
@@ -805,7 +819,172 @@ export const Contacts: React.FC<ContactsProps> = ({ defaultType = 'all', onSelec
             </tbody>
           </table>
         </div>
+      ) : viewMode === 'grid' ? (
+        /* Grid View */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {loading ? (
+            /* Loading skeletons */
+            [...Array(8)].map((_, idx) => (
+              <div key={idx} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 animate-pulse">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-full bg-gray-200" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded w-full" />
+                  <div className="h-3 bg-gray-200 rounded w-5/6" />
+                </div>
+              </div>
+            ))
+          ) : filteredContacts.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg">No contacts found</p>
+              <p className="text-gray-500 text-sm mt-2">Try adjusting your filters</p>
+            </div>
+          ) : (
+            filteredContacts.map((contact) => {
+              const isSelected = selectedIds.includes(contact.id);
+              const isNew = contact.id === newContactId;
+
+              return (
+                <div
+                  key={contact.id}
+                  className={`group relative bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
+                    isSelected ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200 hover:border-blue-300'
+                  } ${isNew ? 'animate-fade-in-up' : ''}`}
+                  onClick={() => handleOpenSlideOut(contact.id)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {/* Selection checkbox */}
+                  <div className="absolute top-4 right-4 z-10" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelection(contact.id)}
+                      className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="p-6">
+                    {/* Avatar and Name */}
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+                        {contact.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 text-lg truncate mb-1">
+                          {contact.name}
+                        </h3>
+                        {contact.organization && (
+                          <p className="text-sm text-gray-600 truncate flex items-center gap-1">
+                            <Building2 className="w-3 h-3" />
+                            {contact.organization}
+                          </p>
+                        )}
+                        {contact.household?.household_name && (
+                          <p className="text-xs text-gray-500 truncate flex items-center gap-1">
+                            <Home className="w-3 h-3" />
+                            {contact.household.household_name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Contact Info */}
+                    <div className="space-y-2 mb-4">
+                      {contact.email && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          <span className="truncate">{contact.email}</span>
+                        </div>
+                      )}
+                      {contact.phone && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Phone className="w-4 h-4 text-gray-400" />
+                          <span>{contact.phone}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-3 mb-4 pb-4 border-b border-gray-200">
+                      <div>
+                        <p className="text-xs text-gray-500">Lifetime Giving</p>
+                        <p className="font-semibold text-sm text-gray-900">
+                          ${contact.total_lifetime_giving?.toLocaleString() || '0'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Last Gift</p>
+                        <p className="font-semibold text-sm text-gray-900">
+                          {contact.last_gift_date
+                            ? new Date(contact.last_gift_date).toLocaleDateString()
+                            : 'Never'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Badges */}
+                    <div className="flex flex-wrap gap-2">
+                      {contact.engagement_score && (
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          contact.engagement_score === 'high'
+                            ? 'bg-green-100 text-green-700'
+                            : contact.engagement_score === 'medium'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {contact.engagement_score.charAt(0).toUpperCase() + contact.engagement_score.slice(1)}
+                        </span>
+                      )}
+                      {contact.donor_stage && (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                          {contact.donor_stage}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Quick Actions - Show on hover */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (contact.email) {
+                              window.location.href = `mailto:${contact.email}`;
+                            }
+                          }}
+                          className="flex-1 px-3 py-2 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+                          title="Send Email"
+                        >
+                          <Mail className="w-3 h-3" />
+                          Email
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingContact(contact);
+                            setIsAddContactOpen(true);
+                          }}
+                          className="px-3 py-2 text-xs font-medium bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                          title="Edit Contact"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       ) : (
+        /* Map View */
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 overflow-hidden p-4">
           <div className="h-[600px] bg-gray-100 rounded-lg flex items-center justify-center">
             <div className="text-center">

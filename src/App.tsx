@@ -88,6 +88,7 @@ import {
   MoreIcon as MobileMoreIcon
 } from '../components/MobileOptimized';
 import { getTourStepsForPage } from './components/ui/PageTourSteps';
+import { KeyboardShortcutsPanel, useKeyboardShortcuts } from './components/KeyboardShortcutsPanel';
 import { QuickAddButton, QuickAction } from './components/quickadd/QuickAddButton';
 import { ProjectPlannerModal } from './components/ProjectPlannerModal';
 import { MeetingAssistantModal } from './components/MeetingAssistantModal';
@@ -432,6 +433,9 @@ useEffect(() => {
 
   // Onboarding state
   const { isComplete: isOnboardingComplete, complete: completeOnboarding } = useOnboarding();
+
+  // Keyboard shortcuts
+  const keyboardShortcuts = useKeyboardShortcuts();
 
   // Mobile detection
   const isMobile = useIsMobile();
@@ -2077,6 +2081,12 @@ useEffect(() => {
             onCreateTask={() => navigateToPage('tasks')}
             onCreateProject={() => navigateToPage('projects')}
             onAiAssist={() => setIsAiChatOpen(true)}
+        />
+
+        {/* Keyboard Shortcuts Panel */}
+        <KeyboardShortcutsPanel
+            isOpen={keyboardShortcuts.isOpen}
+            onClose={keyboardShortcuts.close}
         />
 
         {/* Onboarding Flow for new users */}

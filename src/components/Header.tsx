@@ -6,6 +6,7 @@ import { ThemeToggle } from './ui/ThemeToggle';
 import { HelpToggle } from './ui/HelpToggle';
 import { InviteTeamModal } from './InviteTeamModal';
 import { UserAvatarMenu } from './UserAvatarMenu';
+import { NotificationCenter } from './NotificationCenter';
 import { UserPlus } from 'lucide-react';
 
 
@@ -78,10 +79,13 @@ export const Header: React.FC<HeaderProps> = ({
                             border-[var(--cmf-border)] hover:border-[var(--cmf-accent)]/50
                             text-[var(--cmf-text-secondary)] hover:text-[var(--cmf-accent)]"
                         title="Invite Team Member"
+                        aria-label="Invite team member"
+                        type="button"
                     >
-                        <UserPlus className="w-4 h-4" />
+                        <UserPlus className="w-4 h-4" aria-hidden="true" />
                         <span className="text-xs font-medium hidden sm:inline">Invite</span>
                     </button>
+                    <NotificationCenter />
                     <HelpToggle />
                     <ThemeToggle size="sm" />
                     {/* User Avatar Menu */}
