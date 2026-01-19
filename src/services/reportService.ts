@@ -502,6 +502,55 @@ export const reportService = {
     return this.updateReport(id, { isFavorite: !report.isFavorite });
   },
 
+  async createFromTemplate(
+    templateId: string,
+    customizations?: Partial<Report>
+  ): Promise<Report> {
+    try {
+      // Fetch the template
+      const { data: template, error: fetchError } = await supabase
+        .from('reports')
+        .select('*')
+        .eq('id', templateId)
+        .eq('is_template', true)
+        .single();
+
+      if (fetchError || !template) {
+        throw new Error(`Template not found: ${templateId}`);
+      }
+
+      // Clone template configuration and apply customizations
+      const newReport: Partial<Report> = {
+        name: customizations?.name || `${template.name} (Copy)`,
+        description: customizations?.description || template.description,
+        reportType: 'custom',
+        category: customizations?.category || template.category,
+        dataSource: customizations?.dataSource || { ...template.data_source },
+        visualizationType: customizations?.visualizationType || template.visualization_type,
+        filters: customizations?.filters ? { ...template.filters, ...customizations.filters } : { ...template.filters },
+        availableFilters: customizations?.availableFilters || [...(template.available_filters || [])],
+        columns: customizations?.columns || [...(template.columns || [])],
+        sortBy: customizations?.sortBy || template.sort_by,
+        sortDirection: customizations?.sortDirection || template.sort_direction,
+        layout: customizations?.layout || { ...template.layout },
+        isPublic: customizations?.isPublic !== undefined ? customizations.isPublic : false,
+        sharedWith: customizations?.sharedWith || [],
+        isTemplate: false,
+        templateCategory: null,
+        icon: customizations?.icon || template.icon,
+        color: customizations?.color || template.color,
+        isFavorite: customizations?.isFavorite !== undefined ? customizations.isFavorite : false,
+        isPinned: customizations?.isPinned !== undefined ? customizations.isPinned : false,
+        createdBy: customizations?.createdBy,
+      };
+
+      return this.createReport(newReport);
+    } catch (error) {
+      console.error('Failed to create report from template:', error);
+      throw error;
+    }
+  },
+
   // ==========================================
   // DASHBOARDS
   // ==========================================
@@ -912,6 +961,10 @@ export const reportService = {
   },
 
   async createSchedule(schedule: Partial<ReportSchedule>): Promise<ReportSchedule> {
+    // Calculate initial next_run_at
+    const { calculateNextRun } = await import('./reports/ScheduleExecutor');
+    const nextRun = calculateNextRun(schedule);
+
     const { data, error } = await supabase
       .from('report_schedules')
       .insert({
@@ -931,6 +984,7 @@ export const reportService = {
         include_timestamp: schedule.includeTimestamp !== false,
         email_subject: schedule.emailSubject,
         email_body: schedule.emailBody,
+        next_run_at: nextRun.toISOString(),
         created_by: schedule.createdBy,
       })
       .select()
@@ -973,6 +1027,103 @@ export const reportService = {
       .eq('id', id);
 
     if (error) throw error;
+  },
+
+  async getSchedulesByReport(reportId: string): Promise<ReportSchedule[]> {
+    return this.getSchedules(reportId);
+  },
+
+  async getAllSchedules(): Promise<ReportSchedule[]> {
+    return this.getSchedules();
+  },
+
+  async getScheduleHistory(scheduleId: string, limit: number = 10): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('report_export_history')
+        .select('*')
+        .eq('schedule_id', scheduleId)
+        .order('exported_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Failed to fetch schedule history:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch schedule history:', error);
+      return [];
+    }
+  },
+
+  async getDueSchedules(): Promise<ReportSchedule[]> {
+    try {
+      const { data, error } = await supabase
+        .from('report_schedules')
+        .select('*')
+        .eq('is_active', true)
+        .lte('next_run_at', new Date().toISOString())
+        .order('next_run_at', { ascending: true });
+
+      if (error) throw error;
+      return (data || []).map(mapScheduleRow);
+    } catch (error) {
+      console.error('Failed to fetch due schedules:', error);
+      return [];
+    }
+  },
+
+  async updateScheduleExecution(
+    scheduleId: string,
+    success: boolean,
+    error?: string
+  ): Promise<void> {
+    try {
+      // Get the schedule to calculate next run
+      const schedule = await this.getSchedules().then(schedules =>
+        schedules.find(s => s.id === scheduleId)
+      );
+
+      if (!schedule) {
+        throw new Error(`Schedule ${scheduleId} not found`);
+      }
+
+      // Calculate next run time (imported dynamically to avoid circular dependency)
+      const { calculateNextRun } = await import('./reports/ScheduleExecutor');
+      const nextRun = calculateNextRun(schedule);
+
+      const updateData: Record<string, any> = {
+        last_run_at: new Date().toISOString(),
+        run_count: (schedule.runCount || 0) + 1,
+        last_status: success ? 'success' : 'error',
+      };
+
+      // Only update next_run_at if not a one-time schedule or if it failed
+      if (schedule.scheduleType !== 'once' || !success) {
+        updateData.next_run_at = nextRun.toISOString();
+      } else {
+        // Deactivate one-time schedules after successful execution
+        updateData.is_active = false;
+      }
+
+      if (error) {
+        updateData.last_error = error;
+      } else {
+        updateData.last_error = null;
+      }
+
+      const { error: updateError } = await supabase
+        .from('report_schedules')
+        .update(updateData)
+        .eq('id', scheduleId);
+
+      if (updateError) throw updateError;
+    } catch (error) {
+      console.error('Failed to update schedule execution:', error);
+      throw error;
+    }
   },
 
   // ==========================================
@@ -1173,6 +1324,263 @@ export const reportService = {
       { value: 'case', label: 'Cases', icon: 'briefcase', color: 'slate' },
       { value: 'hr', label: 'HR & Ops', icon: 'building', color: 'purple' },
     ];
+  },
+
+  // ==========================================
+  // EXPORT TRACKING
+  // ==========================================
+
+  async logExport(params: {
+    reportId: string;
+    format: ExportFormat;
+    rowCount: number;
+    executionTimeMs: number;
+    fileSizeBytes?: number;
+    success: boolean;
+    errorMessage?: string;
+  }): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('report_export_history')
+        .insert({
+          report_id: params.reportId,
+          export_format: params.format,
+          row_count: params.rowCount,
+          execution_time_ms: params.executionTimeMs,
+          file_size_bytes: params.fileSizeBytes,
+          success: params.success,
+          error_message: params.errorMessage,
+          exported_at: new Date().toISOString(),
+        });
+
+      // Don't throw on logging failure - just log to console
+      if (error) {
+        console.error('Failed to log export:', error);
+      }
+    } catch (error) {
+      // Silently fail - logging failure shouldn't break export
+      console.error('Failed to log export:', error);
+    }
+  },
+
+  async getExportAnalytics(reportId?: string, limit: number = 100): Promise<any[]> {
+    try {
+      let query = supabase
+        .from('report_export_history')
+        .select('*')
+        .order('exported_at', { ascending: false });
+
+      if (reportId) {
+        query = query.eq('report_id', reportId);
+      }
+
+      if (limit > 0) {
+        query = query.limit(limit);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Failed to fetch export analytics:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch export analytics:', error);
+      return [];
+    }
+  },
+
+  // ==========================================
+  // EXPORT TEMPLATES
+  // ==========================================
+
+  async createExportTemplate(template: {
+    name: string;
+    description?: string;
+    template_type: 'pdf' | 'excel' | 'csv' | 'png';
+    configuration: any;
+    is_public?: boolean;
+    shared_with?: string[];
+    thumbnail_url?: string;
+  }): Promise<any> {
+    const { data, error } = await supabase
+      .from('export_templates')
+      .insert({
+        name: template.name,
+        description: template.description,
+        template_type: template.template_type,
+        configuration: template.configuration,
+        is_public: template.is_public || false,
+        shared_with: template.shared_with || [],
+        thumbnail_url: template.thumbnail_url,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateExportTemplate(
+    id: string,
+    updates: {
+      name?: string;
+      description?: string;
+      configuration?: any;
+      is_public?: boolean;
+      shared_with?: string[];
+      thumbnail_url?: string;
+    }
+  ): Promise<any> {
+    const updateData: Record<string, any> = {};
+
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.configuration !== undefined) updateData.configuration = updates.configuration;
+    if (updates.is_public !== undefined) updateData.is_public = updates.is_public;
+    if (updates.shared_with !== undefined) updateData.shared_with = updates.shared_with;
+    if (updates.thumbnail_url !== undefined) updateData.thumbnail_url = updates.thumbnail_url;
+
+    const { data, error } = await supabase
+      .from('export_templates')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteExportTemplate(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('export_templates')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async getExportTemplates(filters?: {
+    template_type?: 'pdf' | 'excel' | 'csv' | 'png';
+    is_public?: boolean;
+    search?: string;
+  }): Promise<any[]> {
+    let query = supabase
+      .from('export_templates')
+      .select('*')
+      .order('usage_count', { ascending: false });
+
+    if (filters?.template_type) {
+      query = query.eq('template_type', filters.template_type);
+    }
+
+    if (filters?.is_public !== undefined) {
+      query = query.eq('is_public', filters.is_public);
+    }
+
+    if (filters?.search) {
+      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getTemplatesByFormat(format: 'pdf' | 'excel' | 'csv' | 'png'): Promise<any[]> {
+    return this.getExportTemplates({ template_type: format });
+  },
+
+  async getUserTemplates(userId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('export_templates')
+      .select('*')
+      .eq('created_by', userId)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getPublicTemplates(): Promise<any[]> {
+    return this.getExportTemplates({ is_public: true });
+  },
+
+  async incrementTemplateUsage(id: string): Promise<void> {
+    const { error } = await supabase.rpc('increment_template_usage', {
+      template_id: id,
+    });
+
+    if (error) {
+      // Fallback if the RPC function doesn't exist yet
+      const { data: template } = await supabase
+        .from('export_templates')
+        .select('usage_count')
+        .eq('id', id)
+        .single();
+
+      if (template) {
+        await supabase
+          .from('export_templates')
+          .update({ usage_count: (template.usage_count || 0) + 1 })
+          .eq('id', id);
+      }
+    }
+  },
+
+  async getExportTemplateById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('export_templates')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw error;
+    }
+
+    return data;
+  },
+
+  async duplicateExportTemplate(id: string, newName?: string): Promise<any> {
+    const template = await this.getExportTemplateById(id);
+    if (!template) throw new Error('Template not found');
+
+    return this.createExportTemplate({
+      name: newName || `${template.name} (Copy)`,
+      description: template.description,
+      template_type: template.template_type,
+      configuration: template.configuration,
+      is_public: false,
+      shared_with: [],
+      thumbnail_url: template.thumbnail_url,
+    });
+  },
+
+  async getRecentTemplates(limit: number = 5): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('export_templates')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getMostUsedTemplates(limit: number = 5): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('export_templates')
+      .select('*')
+      .order('usage_count', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
   },
 };
 

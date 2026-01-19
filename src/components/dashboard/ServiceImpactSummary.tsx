@@ -36,12 +36,12 @@ export const ServiceImpactSummary: React.FC = () => {
 
       const uniqueClients = new Set(activities?.map(a => a.contact_id).filter(Boolean) || []);
 
-      // Service hours from activities (if you track hours)
+      // Service hours from completed tasks this month
       const { data: tasks } = await supabase
         .from('tasks')
         .select('estimated_hours')
-        .eq('status', 'completed')
-        .gte('completed_at', firstDayStr);
+        .eq('status', 'Done')
+        .gte('updated_at', firstDayStr);
 
       const totalHours = tasks?.reduce((sum, t) => sum + (t.estimated_hours || 0), 0) || 0;
 

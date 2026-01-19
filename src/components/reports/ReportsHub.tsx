@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { reportService, Report, KPI, AIInsight, ReportCategory } from '../../services/reportService';
+import { reportTemplateService } from '../../services/reportTemplateService';
 import { ReportsDashboard } from './ReportsDashboard';
 import { ReportsGrid } from './ReportsGrid';
 import { ReportBuilder } from './ReportBuilder';
 import { ReportViewer } from './ReportViewer';
 import { KPIMonitoring } from './KPIMonitoring';
 import { AIInsightsPanel } from './AIInsightsPanel';
+import { getTemplateById, convertTemplateToReport, getDateRangeFilter } from '../../config/reportTemplates';
 
 // ============================================
 // ICONS
@@ -97,6 +99,9 @@ export const ReportsHub: React.FC<ReportsHubProps> = ({ onNavigate }) => {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingReport, setEditingReport] = useState<Report | null>(null);
+  const [templateReport, setTemplateReport] = useState<Partial<Report> | null>(null);
+  const [isCreatingFromTemplate, setIsCreatingFromTemplate] = useState(false);
+  const [templateError, setTemplateError] = useState<string | null>(null);
 
   // Load initial data
   useEffect(() => {
@@ -146,8 +151,49 @@ export const ReportsHub: React.FC<ReportsHubProps> = ({ onNavigate }) => {
 
   const handleCreateReport = () => {
     setEditingReport(null);
+    setTemplateReport(null);
     setShowBuilder(true);
     setActiveTab('builder');
+  };
+
+  const handleCreateFromTemplate = async (templateNameOrId: string, customize: boolean = false) => {
+    setIsCreatingFromTemplate(true);
+    setTemplateError(null);
+
+    try {
+      // Fetch the template from database
+      const template = await reportTemplateService.getTemplate(templateNameOrId);
+
+      if (!template) {
+        setTemplateError(`Template "${templateNameOrId}" not found`);
+        console.error(`Template not found: ${templateNameOrId}`);
+        return;
+      }
+
+      if (customize) {
+        // Open builder with template pre-filled
+        setTemplateReport(template);
+        setEditingReport(null);
+        setShowBuilder(true);
+        setActiveTab('builder');
+      } else {
+        // Create report directly from template using the service
+        const newReport = await reportService.createFromTemplate(template.id);
+
+        // Show success notification
+        console.log(`Created report from template: ${newReport.name}`);
+
+        // Reload reports and navigate to view the new report
+        await loadData();
+        setSelectedReport(newReport);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to create report from template';
+      setTemplateError(errorMsg);
+      console.error('Template creation error:', err);
+    } finally {
+      setIsCreatingFromTemplate(false);
+    }
   };
 
   const handleEditReport = (report: Report) => {
@@ -166,6 +212,7 @@ export const ReportsHub: React.FC<ReportsHubProps> = ({ onNavigate }) => {
       await loadData();
       setShowBuilder(false);
       setEditingReport(null);
+      setTemplateReport(null);
       setActiveTab('reports');
     } catch (err) {
       console.error('Failed to save report:', err);
@@ -259,6 +306,7 @@ export const ReportsHub: React.FC<ReportsHubProps> = ({ onNavigate }) => {
         </div>
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={handleRefresh}
             disabled={isRefreshing}
             className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
@@ -267,6 +315,7 @@ export const ReportsHub: React.FC<ReportsHubProps> = ({ onNavigate }) => {
             {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </button>
           <button
+            type="button"
             onClick={handleCreateReport}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
@@ -275,6 +324,42 @@ export const ReportsHub: React.FC<ReportsHubProps> = ({ onNavigate }) => {
           </button>
         </div>
       </div>
+
+      {/* Template Error Notification */}
+      {templateError && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <h3 className="font-medium text-red-900 dark:text-red-200">Template Error</h3>
+              <p className="text-sm text-red-700 dark:text-red-300 mt-1">{templateError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setTemplateError(null)}
+              className="text-red-600 hover:text-red-700 dark:text-red-400"
+              aria-label="Dismiss error"
+              title="Dismiss error"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Indicator for Template Creation */}
+      {isCreatingFromTemplate && (
+        <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+            <p className="text-sm text-indigo-700 dark:text-indigo-300">Creating report from template...</p>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
@@ -362,6 +447,7 @@ export const ReportsHub: React.FC<ReportsHubProps> = ({ onNavigate }) => {
               onSelectReport={handleSelectReport}
               onDismissInsight={handleDismissInsight}
               onCreateReport={handleCreateReport}
+              onCreateFromTemplate={handleCreateFromTemplate}
             />
           )}
 
@@ -379,11 +465,12 @@ export const ReportsHub: React.FC<ReportsHubProps> = ({ onNavigate }) => {
           {/* Builder Tab */}
           {activeTab === 'builder' && (
             <ReportBuilder
-              report={editingReport}
+              report={editingReport || (templateReport as Report)}
               onSave={handleSaveReport}
               onCancel={() => {
                 setShowBuilder(false);
                 setEditingReport(null);
+                setTemplateReport(null);
                 setActiveTab('reports');
               }}
             />

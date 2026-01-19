@@ -178,15 +178,15 @@ export const caseService = {
       .from('case_comments')
       .select('*')
       .eq('case_id', caseId)
-      .order('timestamp', { ascending: true });
+      .order('created_at', { ascending: true });
 
     if (error) throw error;
 
     return (data || []).map(comment => ({
       id: comment.id,
       authorId: comment.author_id,
-      text: comment.text,
-      timestamp: comment.timestamp
+      text: comment.content,
+      timestamp: comment.created_at
     }));
   },
 
@@ -197,8 +197,8 @@ export const caseService = {
       .insert([{
         case_id: caseId,
         author_id: comment.authorId,
-        text: comment.text,
-        timestamp: new Date().toISOString()
+        content: comment.text,
+        created_at: new Date().toISOString()
       }])
       .select()
       .single();
@@ -214,8 +214,8 @@ export const caseService = {
     return {
       id: data.id,
       authorId: data.author_id,
-      text: data.text,
-      timestamp: data.timestamp
+      text: data.content,
+      timestamp: data.created_at
     };
   },
 

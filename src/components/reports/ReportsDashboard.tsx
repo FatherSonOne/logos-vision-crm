@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Report, KPI, AIInsight, reportService } from '../../services/reportService';
+import { reportTemplates, getTemplateById } from '../../config/reportTemplates';
+import { TemplatePreviewModal } from './TemplatePreviewModal';
 
 // ============================================
 // ICONS
@@ -53,6 +55,19 @@ const XIcon = () => (
   </svg>
 );
 
+const EyeIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+  </svg>
+);
+
+const TemplateIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+  </svg>
+);
+
 // ============================================
 // TYPES
 // ============================================
@@ -65,6 +80,7 @@ interface ReportsDashboardProps {
   onSelectReport: (report: Report) => void;
   onDismissInsight: (id: string) => void;
   onCreateReport: () => void;
+  onCreateFromTemplate?: (templateId: string, customize?: boolean) => void;
 }
 
 // ============================================
@@ -249,7 +265,43 @@ export const ReportsDashboard: React.FC<ReportsDashboardProps> = ({
   onSelectReport,
   onDismissInsight,
   onCreateReport,
+  onCreateFromTemplate,
 }) => {
+  const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleTemplateClick = (templateId: string) => {
+    setPreviewTemplate(templateId);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewTemplate(null);
+  };
+
+  const handleCreateFromTemplate = () => {
+    if (previewTemplate && onCreateFromTemplate) {
+      onCreateFromTemplate(previewTemplate, false);
+      setPreviewTemplate(null);
+    }
+  };
+
+  const handleCustomizeTemplate = () => {
+    if (previewTemplate && onCreateFromTemplate) {
+      onCreateFromTemplate(previewTemplate, true);
+      setPreviewTemplate(null);
+    }
+  };
+
+  const currentTemplate = previewTemplate ? getTemplateById(previewTemplate) : null;
+
+  const filteredTemplates = searchQuery
+    ? reportTemplates.filter(t =>
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : reportTemplates;
+
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
@@ -347,25 +399,137 @@ export const ReportsDashboard: React.FC<ReportsDashboardProps> = ({
       <section>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Create Report', icon: <PlusIcon />, color: 'indigo', action: onCreateReport },
-            { label: 'Financial Summary', icon: <ChartIcon />, color: 'green' },
-            { label: 'Donation Report', icon: <ChartIcon />, color: 'pink' },
-            { label: 'Impact Report', icon: <ChartIcon />, color: 'emerald' },
-          ].map((action, i) => (
-            <button
-              key={i}
-              onClick={action.action}
-              className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md transition-all text-left`}
-            >
-              <div className={`p-2 rounded-lg bg-${action.color}-100 dark:bg-${action.color}-900/30 text-${action.color}-600 inline-block`}>
-                {action.icon}
-              </div>
-              <p className="mt-2 font-medium text-gray-900 dark:text-white">{action.label}</p>
-            </button>
-          ))}
+          <button
+            onClick={onCreateReport}
+            className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md transition-all text-left"
+          >
+            <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 inline-block">
+              <PlusIcon />
+            </div>
+            <p className="mt-2 font-medium text-gray-900 dark:text-white">Create Report</p>
+          </button>
+          <button
+            onClick={() => handleTemplateClick('financial-summary')}
+            className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md transition-all text-left group"
+          >
+            <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 inline-block">
+              <ChartIcon />
+            </div>
+            <p className="mt-2 font-medium text-gray-900 dark:text-white">Financial Summary</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              Revenue & expenses analysis
+            </p>
+          </button>
+          <button
+            onClick={() => handleTemplateClick('donation-report')}
+            className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md transition-all text-left group"
+          >
+            <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-900/30 text-pink-600 inline-block">
+              <ChartIcon />
+            </div>
+            <p className="mt-2 font-medium text-gray-900 dark:text-white">Donation Report</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              Donations by campaign & donor
+            </p>
+          </button>
+          <button
+            onClick={() => handleTemplateClick('impact-report')}
+            className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md transition-all text-left group"
+          >
+            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 inline-block">
+              <ChartIcon />
+            </div>
+            <p className="mt-2 font-medium text-gray-900 dark:text-white">Impact Report</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              Program outcomes & metrics
+            </p>
+          </button>
         </div>
       </section>
+
+      {/* Browse Templates */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <TemplateIcon />
+            Browse Templates
+          </h2>
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search templates..."
+              className="w-64 pl-3 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredTemplates.map((template) => {
+            const category = reportService.getReportCategories().find(c => c.value === template.category);
+            return (
+              <button
+                key={template.id}
+                onClick={() => handleTemplateClick(template.id)}
+                className="group relative p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-lg transition-all text-left overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-transparent to-gray-100 dark:to-gray-700 opacity-50 rounded-bl-full"></div>
+                <div className="relative">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="text-3xl">{template.icon}</div>
+                    <span className={`px-2 py-1 bg-${template.color}-100 dark:bg-${template.color}-900/30 text-${template.color}-600 dark:text-${template.color}-400 text-xs font-medium rounded-full`}>
+                      {category?.label}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    {template.name}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
+                    {template.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-1">
+                      {template.tags.slice(0, 2).map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      {template.tags.length > 2 && (
+                        <span className="px-2 py-0.5 text-gray-500 text-xs">
+                          +{template.tags.length - 2}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <EyeIcon />
+                      <span className="text-sm font-medium">Preview</span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {filteredTemplates.length === 0 && (
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+            <TemplateIcon />
+            <p className="mt-2">No templates found matching "{searchQuery}"</p>
+          </div>
+        )}
+      </section>
+
+      {/* Template Preview Modal */}
+      {currentTemplate && (
+        <TemplatePreviewModal
+          template={currentTemplate}
+          onClose={handleClosePreview}
+          onCreateReport={handleCreateFromTemplate}
+          onCustomize={handleCustomizeTemplate}
+        />
+      )}
     </div>
   );
 };

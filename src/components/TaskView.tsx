@@ -6,6 +6,18 @@ import { getDeadlineStatus } from '../utils/dateHelpers';
 import { taskManagementService, type ExtendedTask as ServiceExtendedTask } from '../services/taskManagementService';
 import { taskMetricsService } from '../services/taskMetricsService';
 import { supabase } from '../services/supabaseClient';
+// AI Service and Components
+import taskAiService, {
+  TaskSummary,
+  PrioritySuggestion,
+  WorkloadAnalysisResult,
+  RiskDetectionResult,
+  TeamMember as AiTeamMember,
+} from '../services/taskAiService';
+import AiSuggestionBadge from './tasks/AiSuggestionBadge';
+import WorkloadAnalysisPanel from './tasks/WorkloadAnalysisPanel';
+import RiskIndicator from './tasks/RiskIndicator';
+import NaturalLanguageSearch from './tasks/NaturalLanguageSearch';
 import {
   CheckSquare,
   Clock,
@@ -42,6 +54,7 @@ import {
   Check,
   ChevronLeft,
   Zap,
+  Sparkles,
 } from 'lucide-react';
 
 // ============================================================================
@@ -183,15 +196,29 @@ interface TaskViewProps {
   projects: Project[];
   teamMembers: TeamMember[];
   onSelectTask: (projectId: string) => void;
+  tasks?: ExtendedTask[]; // Optional: shared tasks from parent
+  onTasksUpdate?: (tasks: ExtendedTask[]) => void; // Callback to update parent tasks
 }
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
-export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSelectTask }) => {
-  // Core state
-  const [tasks, setTasks] = useState<ExtendedTask[]>([]);
+export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSelectTask, tasks: propTasks, onTasksUpdate }) => {
+  // Core state - manage tasks internally and sync with parent if callback provided
+  const [tasks, setTasksState] = useState<ExtendedTask[]>([]);
+
+  // Simple wrapper that just updates local state
+  const setTasks = useCallback((newTasks: ExtendedTask[] | ((prev: ExtendedTask[]) => ExtendedTask[])) => {
+    setTasksState(newTasks);
+  }, []);
+
+  // Sync tasks to parent component after state has updated (not during render)
+  useEffect(() => {
+    if (onTasksUpdate && tasks.length >= 0) {
+      onTasksUpdate(tasks);
+    }
+  }, [tasks, onTasksUpdate]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -221,6 +248,32 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
   });
 
   // ============================================================================
+  // AI FEATURE STATES
+  // ============================================================================
+
+  // AI Priority Suggestions
+  const [prioritySuggestion, setPrioritySuggestion] = useState<PrioritySuggestion | null>(null);
+  const [loadingPrioritySuggestion, setLoadingPrioritySuggestion] = useState(false);
+
+  // Workload Analysis
+  const [workloadAnalysis, setWorkloadAnalysis] = useState<WorkloadAnalysisResult | null>(null);
+  const [loadingWorkloadAnalysis, setLoadingWorkloadAnalysis] = useState(false);
+
+  // Natural Language Search
+  const [nlSearchActive, setNlSearchActive] = useState(false);
+  const [nlSearchInterpretation, setNlSearchInterpretation] = useState<string | null>(null);
+
+  // Task Risks (cached by task ID)
+  const [taskRisks, setTaskRisks] = useState<Record<string, RiskDetectionResult>>({});
+
+  // Task Summaries (cached by task ID)
+  const [taskSummaries, setTaskSummaries] = useState<Record<string, TaskSummary>>({});
+  const [loadingTaskSummary, setLoadingTaskSummary] = useState(false);
+
+  // AI Features Toggle
+  const [aiEnabled, setAiEnabled] = useState(true);
+
+  // ============================================================================
   // DATA LOADING
   // ============================================================================
 
@@ -245,7 +298,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setTasks]);
 
   const loadMetrics = useCallback(async () => {
     try {
@@ -392,6 +445,118 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
       setError('Failed to update tasks. Please try again.');
     }
   }, [showToast, loadTasks]);
+
+  // ============================================================================
+  // AI FEATURE FUNCTIONS
+  // ============================================================================
+
+  // Fetch AI priority suggestion for a task
+  const fetchPrioritySuggestion = useCallback(async (task: Partial<ExtendedTask>) => {
+    if (!aiEnabled || !task.title || task.title.length < 5) {
+      setPrioritySuggestion(null);
+      return;
+    }
+
+    setLoadingPrioritySuggestion(true);
+    try {
+      const suggestion = await taskAiService.suggestTaskPriority(task);
+      setPrioritySuggestion(suggestion);
+    } catch (error) {
+      console.error('Error getting priority suggestion:', error);
+      setPrioritySuggestion(null);
+    } finally {
+      setLoadingPrioritySuggestion(false);
+    }
+  }, [aiEnabled]);
+
+  // Load workload analysis for the team
+  const loadWorkloadAnalysis = useCallback(async () => {
+    if (!aiEnabled || tasks.length === 0) return;
+
+    setLoadingWorkloadAnalysis(true);
+    try {
+      // Build team members array from tasks and prop team members
+      const aiTeamMembers: AiTeamMember[] = teamMembers.map(member => ({
+        id: member.id,
+        name: member.name,
+        department: (member as any).department || 'Operations',
+        hoursPerWeek: 40,
+      }));
+
+      const analysis = await taskAiService.analyzeTeamWorkload(tasks, aiTeamMembers);
+      setWorkloadAnalysis(analysis);
+    } catch (error) {
+      console.error('Error loading workload analysis:', error);
+      setWorkloadAnalysis(null);
+    } finally {
+      setLoadingWorkloadAnalysis(false);
+    }
+  }, [aiEnabled, tasks, teamMembers]);
+
+  // Load task risks for visible tasks
+  const loadTaskRisks = useCallback(async (tasksToAnalyze: ExtendedTask[]) => {
+    if (!aiEnabled) return;
+
+    // Load risks for first 20 tasks only (performance)
+    const visibleTasks = tasksToAnalyze.slice(0, 20);
+
+    for (const task of visibleTasks) {
+      // Skip if already cached
+      if (taskRisks[task.id]) continue;
+
+      try {
+        const relatedTasks = tasks.filter(t => t.projectId === task.projectId && t.id !== task.id);
+        const risks = await taskAiService.detectTaskRisks(task, relatedTasks);
+        setTaskRisks(prev => ({ ...prev, [task.id]: risks }));
+      } catch (error) {
+        console.error(`Error loading risk for task ${task.id}:`, error);
+      }
+    }
+  }, [aiEnabled, tasks, taskRisks]);
+
+  // Load task summary for detail view
+  const loadTaskSummary = useCallback(async (task: ExtendedTask) => {
+    if (!aiEnabled) return;
+
+    // Check cache first
+    if (taskSummaries[task.id]) {
+      return taskSummaries[task.id];
+    }
+
+    setLoadingTaskSummary(true);
+    try {
+      const relatedTasks = tasks.filter(t => t.projectId === task.projectId && t.id !== task.id);
+      const summary = await taskAiService.generateTaskSummary(task, relatedTasks);
+      setTaskSummaries(prev => ({ ...prev, [task.id]: summary }));
+      return summary;
+    } catch (error) {
+      console.error('Error loading task summary:', error);
+      return null;
+    } finally {
+      setLoadingTaskSummary(false);
+    }
+  }, [aiEnabled, tasks, taskSummaries]);
+
+  // Handle natural language search
+  const handleNaturalLanguageSearch = useCallback(async (results: ExtendedTask[], interpretation: string) => {
+    setNlSearchActive(true);
+    setNlSearchInterpretation(interpretation);
+    setSearchQuery(''); // Clear regular search when using NL search
+    // The results are already filtered by the NaturalLanguageSearch component
+  }, []);
+
+  // Clear natural language search
+  const clearNaturalLanguageSearch = useCallback(() => {
+    setNlSearchActive(false);
+    setNlSearchInterpretation(null);
+  }, []);
+
+  // Auto-load workload analysis when tasks change
+  useEffect(() => {
+    if (aiEnabled && tasks.length > 0 && teamMembers.length > 0) {
+      loadWorkloadAnalysis();
+    }
+  }, [aiEnabled, tasks.length, teamMembers.length, loadWorkloadAnalysis]);
 
   const bulkDeleteTasks = useCallback(async (ids: Set<string>) => {
     // Optimistic update
@@ -553,6 +718,18 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setAiEnabled(!aiEnabled)}
+            className={`px-4 py-2 border-2 rounded-lg flex items-center gap-2 transition-colors ${
+              aiEnabled
+                ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'bg-white dark:bg-slate-800 border-gray-300 text-gray-600 dark:text-gray-400'
+            }`}
+            title={aiEnabled ? 'AI features enabled' : 'AI features disabled'}
+          >
+            <Sparkles className={`w-4 h-4 ${aiEnabled ? 'animate-pulse' : ''}`} />
+            <span className="hidden sm:inline">AI {aiEnabled ? 'On' : 'Off'}</span>
+          </button>
+          <button
             onClick={() => setShowTemplatesDialog(true)}
             className="px-4 py-2 bg-white dark:bg-slate-800 border-2 border-rose-500 text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 flex items-center gap-2 transition-colors"
           >
@@ -579,6 +756,24 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
         <MetricCard label="Completed" value={metrics.completed} color="bg-green-500" />
       </div>
 
+      {/* AI Workload Analysis Panel */}
+      {aiEnabled && workloadAnalysis && (
+        <WorkloadAnalysisPanel
+          analysis={workloadAnalysis}
+          isLoading={loadingWorkloadAnalysis}
+          onReassign={async (taskId, fromUserId, toUserId) => {
+            try {
+              await updateTask(taskId, { assignedToId: toUserId });
+              showToast('Task reassigned successfully');
+              loadWorkloadAnalysis(); // Refresh analysis
+            } catch (error) {
+              showToast('Failed to reassign task', 'error');
+            }
+          }}
+          onRefresh={loadWorkloadAnalysis}
+        />
+      )}
+
       {/* View Tabs */}
       <div className="flex items-center gap-2 border-b border-gray-200 dark:border-slate-700 overflow-x-auto">
         {(Object.keys(viewIcons) as ViewMode[]).map(v => (
@@ -599,14 +794,33 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
 
       {/* Filters */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        {/* Natural Language Search */}
+        {aiEnabled && (
+          <div className="mb-4">
+            <NaturalLanguageSearch
+              allTasks={tasks}
+              onSearch={handleNaturalLanguageSearch}
+              onClear={clearNaturalLanguageSearch}
+            />
+            {nlSearchInterpretation && (
+              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                {nlSearchInterpretation}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px] relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search tasks..."
+              placeholder={aiEnabled ? "Or use traditional search..." : "Search tasks..."}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (nlSearchActive) clearNaturalLanguageSearch();
+              }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white"
             />
           </div>
@@ -728,6 +942,8 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
           onUpdatePriority={(id, priority) => updateTask(id, { priority })}
           assignees={assignees}
           onAssign={(id, assigneeId, assigneeName) => updateTask(id, { assignedToId: assigneeId, assignedToName: assigneeName })}
+          aiEnabled={aiEnabled}
+          taskRisks={taskRisks}
         />
       )}
       {viewMode === 'kanban' && (
@@ -737,20 +953,29 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
           onUpdateStatus={updateTaskStatus}
           draggedTaskId={draggedTaskId}
           setDraggedTaskId={setDraggedTaskId}
+          aiEnabled={aiEnabled}
+          taskRisks={taskRisks}
         />
       )}
-      {viewMode === 'timeline' && <GanttTimelineView tasks={filteredTasks} onSelectTask={setSelectedTask} onUpdateTask={updateTask} />}
-      {viewMode === 'department' && <DepartmentView tasksByDepartment={tasksByDepartment} expandedDepts={expandedDepts} setExpandedDepts={setExpandedDepts} onSelectTask={setSelectedTask} />}
+      {viewMode === 'timeline' && <GanttTimelineView tasks={filteredTasks} onSelectTask={setSelectedTask} onUpdateTask={updateTask} aiEnabled={aiEnabled} taskRisks={taskRisks} />}
+      {viewMode === 'department' && <DepartmentView tasksByDepartment={tasksByDepartment} expandedDepts={expandedDepts} setExpandedDepts={setExpandedDepts} onSelectTask={setSelectedTask} aiEnabled={aiEnabled} taskRisks={taskRisks} />}
       {viewMode === 'calendar' && <CalendarViewComponent tasks={filteredTasks} onSelectTask={setSelectedTask} />}
 
       {/* Task Detail Modal */}
       {selectedTask && (
         <TaskDetailModal
           task={selectedTask}
-          onClose={() => setSelectedTask(null)}
+          onClose={() => {
+            setSelectedTask(null);
+          }}
           onUpdate={updateTask}
           onDelete={deleteTask}
           assignees={assignees}
+          aiEnabled={aiEnabled}
+          taskSummary={taskSummaries[selectedTask.id] || null}
+          loadingTaskSummary={loadingTaskSummary}
+          onRequestTaskSummary={() => loadTaskSummary(selectedTask)}
+          taskRisk={taskRisks[selectedTask.id] || null}
         />
       )}
 
@@ -762,6 +987,11 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
             onClose={() => setShowCreateDialog(false)}
             onCreate={addTask}
             assignees={assignees}
+            aiEnabled={aiEnabled}
+            onRequestPrioritySuggestion={fetchPrioritySuggestion}
+            prioritySuggestion={prioritySuggestion}
+            onClearPrioritySuggestion={() => setPrioritySuggestion(null)}
+            loadingPrioritySuggestion={loadingPrioritySuggestion}
           />
         </>
       )}
@@ -1713,11 +1943,34 @@ const TaskDetailModal: React.FC<{
   onUpdate: (id: string, updates: Partial<ExtendedTask>) => void;
   onDelete: (id: string) => void;
   assignees: { id: string; name: string }[];
-}> = ({ task, onClose, onUpdate, onDelete, assignees }) => {
+  aiEnabled?: boolean;
+  taskSummary?: TaskSummary | null;
+  loadingTaskSummary?: boolean;
+  onRequestTaskSummary?: () => void;
+  taskRisk?: RiskDetectionResult | null;
+}> = ({
+  task,
+  onClose,
+  onUpdate,
+  onDelete,
+  assignees,
+  aiEnabled = false,
+  taskSummary,
+  loadingTaskSummary = false,
+  onRequestTaskSummary,
+  taskRisk,
+}) => {
   const [activeTab, setActiveTab] = useState<'details' | 'subtasks' | 'activity'>('details');
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(task);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Request AI summary when modal opens
+  useEffect(() => {
+    if (aiEnabled && !taskSummary && !loadingTaskSummary && onRequestTaskSummary) {
+      onRequestTaskSummary();
+    }
+  }, [aiEnabled, taskSummary, loadingTaskSummary, onRequestTaskSummary]);
 
   const handleSave = () => {
     onUpdate(task.id, editData);
@@ -1863,6 +2116,81 @@ const TaskDetailModal: React.FC<{
         <div className="p-6 overflow-y-auto max-h-[60vh]">
           {activeTab === 'details' && (
             <div className="space-y-6">
+              {/* AI Summary */}
+              {aiEnabled && !isEditing && (
+                <div>
+                  {loadingTaskSummary ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-500 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      <span>Generating AI summary...</span>
+                    </div>
+                  ) : taskSummary ? (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <h3 className="font-semibold text-gray-900 dark:text-white">AI Summary</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">{taskSummary.summary}</p>
+
+                      {taskSummary.insights.length > 0 && (
+                        <div className="mb-3">
+                          <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Key Insights:</div>
+                          <ul className="space-y-1">
+                            {taskSummary.insights.map((insight, idx) => (
+                              <li key={idx} className="text-sm text-gray-600 dark:text-gray-400 flex items-start gap-1">
+                                <span className="text-blue-500 mt-1">•</span>
+                                <span>{insight}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {taskSummary.blockers.length > 0 && (
+                        <div className="mb-3">
+                          <div className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1">Blockers:</div>
+                          <ul className="space-y-1">
+                            {taskSummary.blockers.map((blocker, idx) => (
+                              <li key={idx} className="text-sm text-red-600 dark:text-red-400 flex items-start gap-1">
+                                <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                <span>{blocker}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {taskSummary.suggestedActions.length > 0 && (
+                        <div>
+                          <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Suggested Actions:</div>
+                          <ul className="space-y-1">
+                            {taskSummary.suggestedActions.map((action, idx) => (
+                              <li key={idx} className="text-sm text-gray-600 dark:text-gray-400 flex items-start gap-1">
+                                <ArrowRight className="w-3 h-3 mt-0.5 flex-shrink-0 text-green-500" />
+                                <span>{action}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              {/* AI Risk Indicator */}
+              {aiEnabled && !isEditing && taskRisk && (
+                <div>
+                  <RiskIndicator
+                    riskLevel={taskRisk.riskLevel}
+                    blockers={taskRisk.blockers}
+                    alerts={taskRisk.alerts}
+                    showDetails={true}
+                    size="md"
+                  />
+                </div>
+              )}
+
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Description</h3>
                 {isEditing ? (
@@ -2046,7 +2374,21 @@ const CreateTaskDialog: React.FC<{
   onClose: () => void;
   onCreate: (task: Partial<ExtendedTask>) => void;
   assignees: { id: string; name: string }[];
-}> = ({ onClose, onCreate, assignees }) => {
+  aiEnabled?: boolean;
+  onRequestPrioritySuggestion?: (task: Partial<ExtendedTask>) => void;
+  prioritySuggestion?: PrioritySuggestion | null;
+  onClearPrioritySuggestion?: () => void;
+  loadingPrioritySuggestion?: boolean;
+}> = ({
+  onClose,
+  onCreate,
+  assignees,
+  aiEnabled = false,
+  onRequestPrioritySuggestion,
+  prioritySuggestion,
+  onClearPrioritySuggestion,
+  loadingPrioritySuggestion = false,
+}) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -2060,6 +2402,21 @@ const CreateTaskDialog: React.FC<{
     clientName: '',
   });
   const [errors, setErrors] = useState<{ title?: string }>({});
+
+  // Request AI priority suggestion when title, description, or due date changes
+  useEffect(() => {
+    if (aiEnabled && onRequestPrioritySuggestion && formData.title.length > 5 && formData.description.length > 10) {
+      const debounceTimer = setTimeout(() => {
+        onRequestPrioritySuggestion({
+          title: formData.title,
+          description: formData.description,
+          dueDate: new Date(formData.dueDate).toISOString(),
+          timeEstimate: formData.timeEstimate,
+        });
+      }, 1000); // Debounce 1 second
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [aiEnabled, formData.title, formData.description, formData.dueDate, formData.timeEstimate, onRequestPrioritySuggestion]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2157,6 +2514,29 @@ const CreateTaskDialog: React.FC<{
               >
                 {Object.entries(priorityConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
+
+              {/* AI Priority Suggestion */}
+              {aiEnabled && loadingPrioritySuggestion && (
+                <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+                  <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <span>Analyzing priority...</span>
+                </div>
+              )}
+              {aiEnabled && prioritySuggestion && !loadingPrioritySuggestion && (
+                <div className="mt-2">
+                  <AiSuggestionBadge
+                    type="priority"
+                    suggestion={prioritySuggestion.suggestedPriority}
+                    reasoning={prioritySuggestion.reasoning}
+                    confidence={prioritySuggestion.confidence}
+                    onApply={() => {
+                      setFormData({ ...formData, priority: prioritySuggestion.suggestedPriority });
+                      onClearPrioritySuggestion?.();
+                    }}
+                    onDismiss={onClearPrioritySuggestion}
+                  />
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>

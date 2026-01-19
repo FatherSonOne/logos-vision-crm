@@ -12,26 +12,51 @@ interface CalendarEvent {
   attendees?: string[];
   type?: EventType;
   color?: string;
+  taskData?: any; // For task-specific data
+  priority?: 'low' | 'medium' | 'high' | 'critical'; // For task priority
 }
 
 interface EnhancedCalendarEventProps {
   event: CalendarEvent;
   onClick?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   style?: React.CSSProperties;
   className?: string;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
 }
 
-export const EnhancedCalendarEvent: React.FC<EnhancedCalendarEventProps> = ({ 
-  event, 
-  onClick, 
+export const EnhancedCalendarEvent: React.FC<EnhancedCalendarEventProps> = ({
+  event,
+  onClick,
+  onContextMenu,
   style,
-  className = ''
+  className = '',
+  draggable = false,
+  onDragStart,
+  onDragEnd
 }) => {
+  // Check if this is a task (has taskData or title starts with 📋)
+  const isTask = event.taskData || event.title.startsWith('📋');
+
   // Detect event type from title and description
   const eventType = event.type || detectEventType(event.title, event.description);
-  
-  // Get gradient colors based on event type
+
+  // Get gradient colors based on event type or task priority
   const getGradientClasses = (type: EventType): string => {
+    // For tasks, use priority-based colors
+    if (isTask && event.priority) {
+      const priorityGradients = {
+        critical: 'from-red-500 to-red-600',
+        high: 'from-orange-500 to-orange-600',
+        medium: 'from-amber-500 to-amber-600',
+        low: 'from-slate-500 to-slate-600',
+      };
+      return priorityGradients[event.priority];
+    }
+
+    // Default event type gradients
     const gradients = {
       project: 'from-blue-500 to-blue-600',
       activity: 'from-orange-500 to-orange-600',
@@ -62,17 +87,31 @@ export const EnhancedCalendarEvent: React.FC<EnhancedCalendarEventProps> = ({
   return (
     <div
       onClick={onClick}
+      onContextMenu={onContextMenu}
       style={style}
       className={`
         group relative overflow-hidden rounded-lg cursor-pointer
         event-hover animate-pop-in
+        ${isTask ? 'border-2 border-dashed border-white/40' : ''}
+        ${draggable ? 'cursor-move' : ''}
         ${className}
       `}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
     >
+      {/* Task Badge */}
+      {isTask && (
+        <div className="absolute top-0 right-0 bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-bl-lg z-10">
+          TASK
+        </div>
+      )}
+
       {/* Gradient Background */}
       <div className={`
         absolute inset-0 bg-gradient-to-br ${getGradientClasses(eventType)}
         opacity-90 group-hover:opacity-100 transition-opacity duration-200
+        ${isTask ? 'opacity-85' : ''}
       `} />
       
       {/* Shine overlay on hover */}

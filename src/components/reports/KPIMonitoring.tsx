@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { KPI, reportService } from '../../services/reportService';
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
+import { useRealtimeKPI } from '../../hooks/useRealtimeKPI';
 
 // ============================================
 // ICONS
@@ -55,18 +56,35 @@ interface KPIMonitoringProps {
 type ViewMode = 'cards' | 'list' | 'scorecard';
 
 // ============================================
-// KPI CARD COMPONENT
+// KPI CARD COMPONENT WITH REAL-TIME UPDATES
 // ============================================
 
 interface KPIDetailCardProps {
   kpi: KPI;
   onEdit?: () => void;
+  enableRealtime?: boolean;
 }
 
-const KPIDetailCard: React.FC<KPIDetailCardProps> = ({ kpi, onEdit }) => {
-  const status = reportService.getKPIStatus(kpi);
-  const formattedValue = kpi.currentValue !== null && kpi.currentValue !== undefined
-    ? reportService.formatValue(kpi.currentValue, kpi.displayFormat, kpi.decimalPlaces)
+const KPIDetailCard: React.FC<KPIDetailCardProps> = ({ kpi, onEdit, enableRealtime = true }) => {
+  // Use real-time hook for live updates
+  const {
+    kpi: realtimeKpi,
+    isConnected,
+    hasValueChanged,
+    alerts
+  } = useRealtimeKPI(kpi.id, {
+    enabled: enableRealtime,
+    enableAlerts: true,
+    onValueChange: (updatedKpi, prevValue) => {
+      console.log(`KPI ${updatedKpi.name} changed from ${prevValue} to ${updatedKpi.currentValue}`);
+    }
+  });
+
+  // Use real-time KPI if available, otherwise use prop
+  const displayKpi = realtimeKpi || kpi;
+  const status = reportService.getKPIStatus(displayKpi);
+  const formattedValue = displayKpi.currentValue !== null && displayKpi.currentValue !== undefined
+    ? reportService.formatValue(displayKpi.currentValue, displayKpi.displayFormat, displayKpi.decimalPlaces)
     : '--';
 
   const statusColors = {
@@ -83,17 +101,29 @@ const KPIDetailCard: React.FC<KPIDetailCardProps> = ({ kpi, onEdit }) => {
     neutral: 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700',
   };
 
-  const sparklineData = kpi.valueHistory.length > 0
-    ? kpi.valueHistory.slice(-12).map((h, i) => ({ value: h.value, index: i }))
+  const sparklineData = displayKpi.valueHistory.length > 0
+    ? displayKpi.valueHistory.slice(-12).map((h, i) => ({ value: h.value, index: i }))
     : Array.from({ length: 12 }, (_, i) => ({ value: Math.random() * 100 + 50, index: i }));
 
   return (
-    <div className={`rounded-xl border p-5 ${statusBgColors[status]} transition-all hover:shadow-lg`}>
+    <div className={`rounded-xl border p-5 ${statusBgColors[status]} transition-all hover:shadow-lg relative`}>
+      {/* Real-time connection indicator */}
+      {enableRealtime && (
+        <div className="absolute top-3 right-3">
+          <div className="relative">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`} />
+            {isConnected && (
+              <div className="absolute inset-0 w-2 h-2 rounded-full bg-green-500 animate-ping" />
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="font-semibold text-gray-900 dark:text-white">{kpi.name}</h3>
-          {kpi.description && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{kpi.description}</p>
+          <h3 className="font-semibold text-gray-900 dark:text-white">{displayKpi.name}</h3>
+          {displayKpi.description && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{displayKpi.description}</p>
           )}
         </div>
         <div className={`px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${statusColors[status]} text-white`}>
@@ -103,16 +133,19 @@ const KPIDetailCard: React.FC<KPIDetailCardProps> = ({ kpi, onEdit }) => {
 
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">
-            {kpi.prefix}{formattedValue}{kpi.suffix}
+          {/* Animate value changes with flash effect */}
+          <p className={`text-3xl font-bold text-gray-900 dark:text-white transition-all duration-300 ${
+            hasValueChanged ? 'scale-110 text-indigo-600 dark:text-indigo-400' : ''
+          }`}>
+            {displayKpi.prefix}{formattedValue}{displayKpi.suffix}
           </p>
-          {kpi.trendDirection && kpi.trendPercentage !== null && (
-            <div className={`flex items-center gap-1 mt-2 ${
-              kpi.trendDirection === 'up' ? 'text-green-600' : kpi.trendDirection === 'down' ? 'text-red-600' : 'text-gray-500'
-            }`}>
-              {kpi.trendDirection === 'up' ? <TrendUpIcon /> : kpi.trendDirection === 'down' ? <TrendDownIcon /> : null}
+          {displayKpi.trendDirection && displayKpi.trendPercentage !== null && (
+            <div className={`flex items-center gap-1 mt-2 transition-all ${
+              displayKpi.trendDirection === 'up' ? 'text-green-600' : displayKpi.trendDirection === 'down' ? 'text-red-600' : 'text-gray-500'
+            } ${hasValueChanged ? 'animate-pulse' : ''}`}>
+              {displayKpi.trendDirection === 'up' ? <TrendUpIcon /> : displayKpi.trendDirection === 'down' ? <TrendDownIcon /> : null}
               <span className="text-sm font-medium">
-                {kpi.trendPercentage > 0 ? '+' : ''}{kpi.trendPercentage?.toFixed(1)}% from previous
+                {displayKpi.trendPercentage > 0 ? '+' : ''}{displayKpi.trendPercentage?.toFixed(1)}% from previous
               </span>
             </div>
           )}
@@ -137,42 +170,69 @@ const KPIDetailCard: React.FC<KPIDetailCardProps> = ({ kpi, onEdit }) => {
       </div>
 
       {/* Target Progress */}
-      {kpi.targetValue && (
+      {displayKpi.targetValue && (
         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-            <span>Target: {reportService.formatValue(kpi.targetValue, kpi.displayFormat, kpi.decimalPlaces)}</span>
-            <span>{((kpi.currentValue || 0) / kpi.targetValue * 100).toFixed(0)}%</span>
+            <span>Target: {reportService.formatValue(displayKpi.targetValue, displayKpi.displayFormat, displayKpi.decimalPlaces)}</span>
+            <span>{((displayKpi.currentValue || 0) / displayKpi.targetValue * 100).toFixed(0)}%</span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
-              className={`h-2 rounded-full bg-gradient-to-r ${statusColors[status]}`}
-              style={{ width: `${Math.min(100, ((kpi.currentValue || 0) / kpi.targetValue * 100))}%` }}
+              className={`h-2 rounded-full bg-gradient-to-r ${statusColors[status]} transition-all duration-500`}
+              style={{ width: `${Math.min(100, ((displayKpi.currentValue || 0) / displayKpi.targetValue * 100))}%` }}
             />
           </div>
         </div>
       )}
 
       {/* Thresholds */}
-      {(kpi.thresholdWarning || kpi.thresholdCritical) && (
+      {(displayKpi.thresholdWarning || displayKpi.thresholdCritical) && (
         <div className="mt-4 flex flex-wrap gap-2 text-xs">
-          {kpi.thresholdWarning && (
+          {displayKpi.thresholdWarning && (
             <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full">
-              Warning: {kpi.thresholdDirection === 'above' ? '>' : '<'} {reportService.formatValue(kpi.thresholdWarning, kpi.displayFormat, 0)}
+              Warning: {displayKpi.thresholdDirection === 'above' ? '>' : '<'} {reportService.formatValue(displayKpi.thresholdWarning, displayKpi.displayFormat, 0)}
             </span>
           )}
-          {kpi.thresholdCritical && (
+          {displayKpi.thresholdCritical && (
             <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full">
-              Critical: {kpi.thresholdDirection === 'above' ? '>' : '<'} {reportService.formatValue(kpi.thresholdCritical, kpi.displayFormat, 0)}
+              Critical: {displayKpi.thresholdDirection === 'above' ? '>' : '<'} {reportService.formatValue(displayKpi.thresholdCritical, displayKpi.displayFormat, 0)}
             </span>
           )}
         </div>
       )}
 
+      {/* Active Alerts */}
+      {alerts.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {alerts.slice(-2).map((alert) => (
+            <div
+              key={alert.id}
+              className={`p-2 rounded-lg text-xs ${
+                alert.type === 'critical'
+                  ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                  : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <BellIcon />
+                <div>
+                  <div className="font-medium">{alert.type.toUpperCase()}</div>
+                  <div className="mt-0.5">{alert.message}</div>
+                  <div className="text-xs opacity-75 mt-1">
+                    {alert.timestamp.toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Alert Status */}
-      {kpi.alertEnabled && (
+      {displayKpi.alertEnabled && (
         <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           <BellIcon />
-          <span>Alerts enabled ({kpi.alertRecipients.length} recipients)</span>
+          <span>Alerts enabled ({displayKpi.alertRecipients.length} recipients)</span>
         </div>
       )}
     </div>

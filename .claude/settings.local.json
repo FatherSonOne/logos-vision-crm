@@ -32,7 +32,14 @@
       "Bash(wc:*)",
       "Bash(git config:*)",
       "Bash(chmod:*)",
-      "Bash(timeout 10 cmd:*)"
+      "Bash(timeout 10 cmd:*)",
+      "Bash(supabase status:*)",
+      "Bash(supabase link:*)",
+      "Bash(supabase functions deploy:*)",
+      "Bash(supabase secrets set:*)",
+      "Bash(curl:*)",
+      "Bash(supabase db reset:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

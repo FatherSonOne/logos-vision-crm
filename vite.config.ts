@@ -23,23 +23,98 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
+      // Enable source maps for production debugging (optional)
+      sourcemap: false,
+      // Optimize chunks
       rollupOptions: {
         output: {
-          manualChunks: {
-            // Split React and React DOM into their own chunk
-            'react-vendor': ['react', 'react-dom'],
-            // Split Recharts (charting library) into its own chunk
-            'charts': ['recharts'],
-            // Split Google GenAI into its own chunk
-            'genai': ['@google/genai'],
-            // Split Supabase into its own chunk
-            'supabase': ['@supabase/supabase-js'],
-            // Split Lucide React icons into their own chunk
-            'icons': ['lucide-react'],
-          }
+          manualChunks: (id) => {
+            // Vendor chunks
+            if (id.includes('node_modules')) {
+              // React core
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'react-vendor';
+              }
+              // Router
+              if (id.includes('react-router')) {
+                return 'router';
+              }
+              // Charts
+              if (id.includes('recharts')) {
+                return 'charts';
+              }
+              // AI/ML libraries
+              if (id.includes('@google/genai') || id.includes('@anthropic-ai/sdk')) {
+                return 'genai';
+              }
+              // Database
+              if (id.includes('supabase')) {
+                return 'supabase';
+              }
+              // Icons
+              if (id.includes('lucide-react')) {
+                return 'icons';
+              }
+              // Google Maps
+              if (id.includes('@react-google-maps')) {
+                return 'maps';
+              }
+              // Analytics
+              if (id.includes('@vercel/analytics') || id.includes('@vercel/speed-insights')) {
+                return 'analytics';
+              }
+              // Other vendor code
+              return 'vendor';
+            }
+
+            // App code chunks by feature
+            if (id.includes('/src/components/')) {
+              // Calendar components
+              if (id.includes('/calendar/')) {
+                return 'calendar-components';
+              }
+              // Task components
+              if (id.includes('/tasks/')) {
+                return 'task-components';
+              }
+              // Large components get their own chunks
+              if (id.includes('Dashboard.tsx') || id.includes('AnalyticsDashboard.tsx')) {
+                return 'dashboard';
+              }
+              if (id.includes('CalendarView.tsx')) {
+                return 'calendar-view';
+              }
+              if (id.includes('TaskView.tsx')) {
+                return 'task-view';
+              }
+            }
+
+            // Services
+            if (id.includes('/src/services/')) {
+              if (id.includes('taskAiService') || id.includes('taskAutomationService')) {
+                return 'ai-services';
+              }
+            }
+          },
+          // Optimize chunk file names
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]',
         }
       },
-      chunkSizeWarningLimit: 600, // Increase limit slightly to reduce warnings
+      chunkSizeWarningLimit: 600,
+      // Enable minification
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true, // Remove console.logs in production
+          drop_debugger: true,
+        },
+      },
+      // Optimize CSS
+      cssCodeSplit: true,
+      // Increase chunk size limit for better caching
+      assetsInlineLimit: 4096,
     }
   };
 });

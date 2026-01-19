@@ -1,10 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, ScatterChart, Scatter,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, FunnelChart, Funnel, LabelList
 } from 'recharts';
+import { ColumnDef } from '@tanstack/react-table';
 import { Report, reportService } from '../../services/reportService';
+import { exportService } from '../../services/reports/export/ExportService';
+import { saveAs } from 'file-saver';
+import { AdvancedDataTable } from './tables/AdvancedDataTable';
+import {
+  selectRenderStrategy,
+  selectChartStrategy,
+  globalPerformanceMonitor,
+  estimateMemoryUsage,
+} from '../../utils/performanceOptimizer';
+import { autoSample } from '../../utils/chartSampling';
+import { PerformanceMonitor } from './PerformanceMonitor';
 
 // ============================================
 // ICONS
@@ -263,33 +275,51 @@ const ChartRenderer: React.FC<ChartProps> = ({ data, type }) => {
       );
 
     case 'table':
+      // Define columns for the advanced table
+      const tableColumns: ColumnDef<any>[] = [
+        {
+          accessorKey: 'name',
+          header: 'Name',
+          cell: info => info.getValue(),
+          enableSorting: true,
+          enableColumnFilter: true,
+        },
+        {
+          accessorKey: 'value',
+          header: 'Value',
+          cell: info => formatValue(info.getValue() as number),
+          enableSorting: true,
+          enableColumnFilter: true,
+        },
+        {
+          id: 'count',
+          accessorKey: 'count',
+          header: 'Count',
+          cell: info => info.getValue() || 'N/A',
+          enableSorting: true,
+          enableColumnFilter: true,
+        },
+      ];
+
       return (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Value</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {data.map((row, i) => (
-                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{row.name}</td>
-                  <td className="px-4 py-3 text-sm text-right font-mono text-gray-900 dark:text-white">{formatValue(row.value)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">Total</td>
-                <td className="px-4 py-3 text-sm text-right font-mono font-bold text-gray-900 dark:text-white">
-                  {formatValue(data.reduce((sum, row) => sum + row.value, 0))}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+        <AdvancedDataTable
+          data={data}
+          columns={tableColumns}
+          enableRowSelection={true}
+          enableMultiSort={true}
+          enableColumnFilters={true}
+          enableGlobalFilter={true}
+          enablePagination={true}
+          pageSize={10}
+          onExport={(selectedRows) => {
+            // Use existing export functionality
+            handleExport('csv');
+          }}
+          onBulkAction={(action, selectedRows) => {
+            console.log(`Bulk action: ${action}`, selectedRows);
+          }}
+          emptyMessage="No data available for this report"
+        />
       );
 
     case 'kpi':
@@ -340,27 +370,212 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
   onToggleFavorite,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showPerformanceMonitor, setShowPerformanceMonitor] = useState(false);
+  const [renderProgress, setRenderProgress] = useState(0);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   // Generate sample data based on data source
-  const data = useMemo(() => {
+  const rawData = useMemo(() => {
     const source = report.dataSource?.table || 'default';
     return generateSampleData(source);
   }, [report.dataSource]);
 
+  // Performance optimization - select rendering strategy
+  const renderStrategy = useMemo(() => {
+    return selectRenderStrategy(rawData.length);
+  }, [rawData.length]);
+
+  // Performance optimization - sample chart data if needed
+  const data = useMemo(() => {
+    const startTime = performance.now();
+    const chartStrategy = selectChartStrategy(rawData.length);
+
+    let sampledData = rawData;
+
+    // Apply sampling for large datasets
+    if (chartStrategy.type === 'lttb' || chartStrategy.type === 'sample') {
+      sampledData = autoSample(rawData, report.visualizationType as any, {
+        maxPoints: chartStrategy.targetPoints,
+        xKey: 'name',
+        yKey: 'value',
+      });
+
+      if (import.meta.env.DEV) {
+        console.log(
+          `[Performance] Chart sampling: ${rawData.length} -> ${sampledData.length} points (${chartStrategy.type})`
+        );
+      }
+    }
+
+    const duration = performance.now() - startTime;
+    globalPerformanceMonitor.recordMetric('data_sampling', duration);
+
+    return sampledData;
+  }, [rawData, report.visualizationType]);
+
+  // Track render performance
+  useEffect(() => {
+    const startTime = performance.now();
+
+    return () => {
+      const duration = performance.now() - startTime;
+      globalPerformanceMonitor.recordMetric('report_render', duration);
+    };
+  }, [data]);
+
+  // Show performance warnings for large datasets
+  const performanceWarning = useMemo(() => {
+    const memoryUsage = estimateMemoryUsage(rawData);
+
+    if (rawData.length > 50000) {
+      return {
+        type: 'critical' as const,
+        message: `Very large dataset (${rawData.length.toLocaleString()} rows). Consider using server-side pagination.`,
+      };
+    } else if (rawData.length > 10000) {
+      return {
+        type: 'warning' as const,
+        message: `Large dataset (${rawData.length.toLocaleString()} rows). Using ${renderStrategy.type} rendering for optimal performance.`,
+      };
+    } else if (memoryUsage > 50 * 1024 * 1024) {
+      return {
+        type: 'warning' as const,
+        message: `High memory usage (${(memoryUsage / 1024 / 1024).toFixed(1)}MB). Consider data optimization.`,
+      };
+    }
+
+    return null;
+  }, [rawData, renderStrategy]);
+
   const categories = reportService.getReportCategories();
   const category = categories.find(c => c.value === report.category);
 
-  const handleExport = (format: 'pdf' | 'excel' | 'csv' | 'png') => {
-    // Placeholder for export functionality
-    alert(`Exporting as ${format.toUpperCase()}...`);
+  const handleExport = async (format: 'pdf' | 'excel' | 'csv' | 'png') => {
+    const startTime = Date.now();
+    setIsExporting(true);
+
+    try {
+      // For large datasets, offer option to export sampled or full data
+      let exportData = data;
+
+      if (rawData.length > 10000 && format !== 'png') {
+        const useSampledData = window.confirm(
+          `This dataset has ${rawData.length.toLocaleString()} rows. ` +
+          `Export sampled data (${data.length.toLocaleString()} rows) for faster processing, ` +
+          `or full dataset?\n\nClick OK for sampled, Cancel for full dataset.`
+        );
+
+        if (!useSampledData) {
+          exportData = rawData;
+        }
+      }
+
+      // Generate filename with report name and date
+      const dateStr = new Date().toISOString().split('T')[0];
+      const sanitizedName = report.name
+        .replace(/[^a-z0-9]/gi, '_')
+        .replace(/_+/g, '_')
+        .toLowerCase();
+      const filename = `${sanitizedName}_${dateStr}`;
+
+      let blob: Blob;
+
+      // Use appropriate export method based on format
+      switch (format) {
+        case 'csv':
+          blob = await exportService.exportToCSV(exportData, `${filename}.csv`);
+          break;
+
+        case 'excel':
+          blob = await exportService.exportToExcel(exportData, `${filename}.xlsx`);
+          break;
+
+        case 'pdf':
+          blob = await exportService.exportToPDF(exportData, `${filename}.pdf`, report.name);
+          break;
+
+        case 'png':
+          if (!chartRef.current) {
+            throw new Error('Chart element not available for PNG export');
+          }
+          blob = await exportService.exportToPNG(chartRef.current, `${filename}.png`);
+          break;
+
+        default:
+          throw new Error(`Unsupported export format: ${format}`);
+      }
+
+      // Download using saveAs
+      saveAs(blob, `${filename}.${format === 'excel' ? 'xlsx' : format}`);
+
+      // Track export using reportService.logExport
+      const executionTime = Date.now() - startTime;
+      await reportService.logExport({
+        reportId: report.id,
+        format,
+        rowCount: exportData.length,
+        executionTimeMs: executionTime,
+        fileSizeBytes: blob.size,
+        success: true,
+      });
+
+      console.log(`Export successful: ${format} (${blob.size} bytes in ${executionTime}ms)`);
+    } catch (error) {
+      // Handle errors with user-friendly messages
+      const executionTime = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
+      console.error('Export failed:', error);
+
+      // Track failed export
+      await reportService.logExport({
+        reportId: report.id,
+        format,
+        rowCount: data.length,
+        executionTimeMs: executionTime,
+        success: false,
+        errorMessage,
+      });
+
+      // Show user-friendly error message
+      alert(`Export failed: ${errorMessage}`);
+    } finally {
+      // Reset loading state
+      setIsExporting(false);
+    }
   };
 
   return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6 overflow-auto' : ''}`}>
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <>
+      <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6 overflow-auto' : ''}`}>
+        {/* Performance Warning */}
+        {performanceWarning && (
+          <div className={`mb-4 p-4 rounded-lg border ${
+            performanceWarning.type === 'critical'
+              ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+              : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
+          }`}>
+            <div className="flex items-start gap-2">
+              <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="flex-1">
+                <p className="font-medium">{performanceWarning.message}</p>
+                {rawData.length !== data.length && (
+                  <p className="text-sm mt-1">
+                    Displaying {data.length.toLocaleString()} of {rawData.length.toLocaleString()} data points for optimal performance.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{report.name}</h1>
@@ -406,18 +621,44 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
           >
             <FullscreenIcon />
           </button>
+          {import.meta.env.DEV && (
+            <button
+              onClick={() => setShowPerformanceMonitor(!showPerformanceMonitor)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-indigo-600"
+              title="Performance Monitor (Dev Only)"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </button>
+          )}
 
           <div className="relative group">
-            <button className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
-              <DownloadIcon />
-              Export
+            <button
+              type="button"
+              disabled={isExporting}
+              className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isExporting ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <DownloadIcon />
+                  Export
+                </>
+              )}
             </button>
             <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 py-1">
               {['PDF', 'Excel', 'CSV', 'PNG'].map((format) => (
                 <button
+                  type="button"
                   key={format}
                   onClick={() => handleExport(format.toLowerCase() as any)}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  disabled={isExporting}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {format}
                 </button>
@@ -453,7 +694,7 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date Range</label>
-              <select className="w-full p-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+              <select aria-label="Date Range" className="w-full p-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white">
                 <option>Last 12 Months</option>
                 <option>Last 6 Months</option>
                 <option>Last 30 Days</option>
@@ -463,7 +704,7 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group By</label>
-              <select className="w-full p-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+              <select aria-label="Group By" className="w-full p-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white">
                 <option>Month</option>
                 <option>Quarter</option>
                 <option>Year</option>
@@ -480,13 +721,36 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
       )}
 
       {/* Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-96">
+          <div className="flex flex-col items-center justify-center h-96 gap-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            {renderProgress > 0 && (
+              <div className="w-64">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${renderProgress}%` }}
+                  />
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+                  Loading... {renderProgress}%
+                </p>
+              </div>
+            )}
           </div>
         ) : (
-          <ChartRenderer data={data} type={report.visualizationType} />
+          <>
+            <ChartRenderer data={data} type={report.visualizationType} />
+            {rawData.length !== data.length && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <span className="font-medium">Performance Mode:</span> Displaying {data.length.toLocaleString()} of {rawData.length.toLocaleString()} data points.
+                  Export to see full dataset.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -494,28 +758,42 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">Total Records</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{data.length}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{rawData.length.toLocaleString()}</p>
+          {rawData.length !== data.length && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              ({data.length.toLocaleString()} displayed)
+            </p>
+          )}
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">Total Value</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-            ${(data.reduce((sum, d) => sum + d.value, 0) / 1000).toFixed(1)}K
+            ${(rawData.reduce((sum, d) => sum + d.value, 0) / 1000).toFixed(1)}K
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">Average</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-            ${(data.reduce((sum, d) => sum + d.value, 0) / data.length / 1000).toFixed(1)}K
+            ${(rawData.reduce((sum, d) => sum + d.value, 0) / rawData.length / 1000).toFixed(1)}K
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-            {new Date().toLocaleDateString()}
+          <p className="text-sm text-gray-500 dark:text-gray-400">Render Strategy</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1 capitalize">
+            {renderStrategy.type}
           </p>
         </div>
       </div>
     </div>
+
+    {/* Performance Monitor (Dev Mode Only) */}
+    <PerformanceMonitor
+      show={showPerformanceMonitor && import.meta.env.DEV}
+      dataSize={rawData.length}
+      renderStrategy={renderStrategy.type}
+      onClose={() => setShowPerformanceMonitor(false)}
+    />
+    </>
   );
 };
 

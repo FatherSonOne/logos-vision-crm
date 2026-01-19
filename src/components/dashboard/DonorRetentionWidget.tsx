@@ -91,11 +91,16 @@ export const DonorRetentionWidget: React.FC = () => {
 
         // Calculate retention for this month
         // (This is a simplified version - you may want to refine the logic)
+        const nextMonth = new Date(date);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        const nextYear = nextMonth.getFullYear();
+        const nextMonthNum = String(nextMonth.getMonth() + 1).padStart(2, '0');
+
         const { data: donations } = await supabase
           .from('donations')
           .select('client_id')
           .gte('donation_date', `${year}-${monthNum}-01`)
-          .lt('donation_date', `${year}-${String(date.getMonth() + 2).padStart(2, '0')}-01`);
+          .lt('donation_date', `${nextYear}-${nextMonthNum}-01`);
 
         const donorCount = new Set(donations?.map(d => d.client_id) || []).size;
 

@@ -2,15 +2,40 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { TeamMember, Project, Activity, CalendarEvent } from '../types';
 import { calendarManager } from '../services/calendar';
 import { EnhancedCalendarEvent } from './calendar/EnhancedCalendarEvent';
-import { LivingTimeline } from './calendar/LivingTimeline';
+import { CalendarTaskModal } from './calendar/CalendarTaskModal';
+import { TaskContextMenu } from './calendar/TaskContextMenu';
+import { MonthDateHoverPreview } from './calendar/MonthDateHoverPreview';
+import { CalendarAnalytics } from './calendar/CalendarAnalytics';
+import { AdvancedFilters } from './calendar/AdvancedFilters';
 import { detectEventType } from './calendar/EventTypeIndicator';
 import type { EventType } from './calendar/EventTypeIndicator';
 import { CalendarSettings } from './CalendarSettings';
+import { RelationshipTimeline } from './relationship';
+
+// Import ExtendedTask type from TaskView
+type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
+type ExtendedTaskStatus = 'new' | 'assigned' | 'in_progress' | 'completed' | 'overdue';
+type Department = 'Consulting' | 'Operations' | 'Finance' | 'HR' | 'Marketing';
+
+interface ExtendedTask {
+    id: string;
+    title: string;
+    description: string;
+    status: ExtendedTaskStatus;
+    priority: TaskPriority;
+    dueDate: string;
+    assignedToId: string;
+    assignedToName: string;
+    department: Department;
+    projectName?: string;
+    clientName?: string;
+}
 
 interface CalendarViewProps {
     teamMembers: TeamMember[];
     projects: Project[];
     activities: Activity[];
+    tasks?: ExtendedTask[];  // NEW: Optional tasks prop
 }
 
 type ViewMode = 'month' | 'week' | 'day' | 'agenda' | 'timeline';
@@ -210,11 +235,76 @@ const eventColors = [
     { name: 'Indigo', value: '#6366f1', bg: 'bg-indigo-500' },
 ];
 
-export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, projects, activities }) => {
+// Sample tasks for demonstration (will be replaced by actual tasks from TaskView or database)
+const sampleTasks: ExtendedTask[] = [
+    {
+        id: 'task-1',
+        title: 'Complete Grant Application Review',
+        description: 'Review and finalize the federal grant application before submission deadline',
+        status: 'in_progress',
+        priority: 'high',
+        dueDate: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString(),
+        assignedToId: '1',
+        assignedToName: 'Sarah Johnson',
+        department: 'Consulting',
+        projectName: 'Federal Grant Project',
+        clientName: 'Hope Harbor Foundation',
+    },
+    {
+        id: 'task-2',
+        title: 'Prepare Board Meeting Materials',
+        description: 'Compile quarterly reports and presentation slides for upcoming board meeting',
+        status: 'new',
+        priority: 'critical',
+        dueDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(),
+        assignedToId: '2',
+        assignedToName: 'Michael Chen',
+        department: 'Operations',
+        projectName: 'Q4 Board Review',
+    },
+    {
+        id: 'task-3',
+        title: 'Update Donor Database',
+        description: 'Import recent donor information and update contact records',
+        status: 'assigned',
+        priority: 'medium',
+        dueDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(),
+        assignedToId: '3',
+        assignedToName: 'Emily Rodriguez',
+        department: 'Finance',
+        clientName: 'Multiple Clients',
+    },
+    {
+        id: 'task-4',
+        title: 'Schedule Client Check-in Calls',
+        description: 'Reach out to all active clients for quarterly check-in meetings',
+        status: 'in_progress',
+        priority: 'medium',
+        dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
+        assignedToId: '1',
+        assignedToName: 'Sarah Johnson',
+        department: 'Consulting',
+    },
+    {
+        id: 'task-5',
+        title: 'Review Marketing Campaign Analytics',
+        description: 'Analyze campaign performance metrics and prepare insights report',
+        status: 'new',
+        priority: 'low',
+        dueDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(),
+        assignedToId: '4',
+        assignedToName: 'David Park',
+        department: 'Marketing',
+        projectName: 'Annual Campaign Analysis',
+    },
+];
+
+export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, projects, activities, tasks }) => {
     const [viewDate, setViewDate] = useState(new Date());
     const [viewMode, setViewMode] = useState<ViewMode>('month');
     const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>(() => teamMembers.map(tm => tm.id));
     const [events, setEvents] = useState<ExtendedCalendarEvent[]>(sampleCalendarEvents);
+    const [showTasks, setShowTasks] = useState(true); // NEW: Toggle to show/hide tasks
     const [isConnected, setIsConnected] = useState(false);
     const [isOutlookConnected, setIsOutlookConnected] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -228,6 +318,34 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
     const [showSidebar, setShowSidebar] = useState(true);
     const [error, setError] = useState<string>('');
     const [successMessage, setSuccessMessage] = useState<string>('');
+    const [selectedTask, setSelectedTask] = useState<ExtendedTask | null>(null);
+    const [showTaskModal, setShowTaskModal] = useState(false);
+
+    // Drag-to-reschedule state
+    const [draggedTask, setDraggedTask] = useState<ExtendedTask | null>(null);
+    const [dragOverDate, setDragOverDate] = useState<Date | null>(null);
+    const [dragOverHour, setDragOverHour] = useState<number | null>(null);
+
+    // Context menu state
+    const [contextMenuTask, setContextMenuTask] = useState<ExtendedTask | null>(null);
+    const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+
+    // Hover preview state
+    const [hoverPreviewDate, setHoverPreviewDate] = useState<Date | null>(null);
+    const [hoverPreviewEvents, setHoverPreviewEvents] = useState<ExtendedCalendarEvent[]>([]);
+    const [hoverPreviewPosition, setHoverPreviewPosition] = useState<{ x: number; y: number } | null>(null);
+
+    // Analytics and Filters state
+    const [showAnalytics, setShowAnalytics] = useState(false);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [advancedFilters, setAdvancedFilters] = useState({
+        search: '',
+        status: [] as ExtendedTaskStatus[],
+        priority: [] as TaskPriority[],
+        dateRange: 'all' as 'all' | 'today' | 'thisWeek' | 'thisMonth' | 'overdue' | 'upcoming',
+        assignee: [] as string[],
+        tags: [] as string[],
+    });
 
     // Timeline view state
     const [timelineZoom, setTimelineZoom] = useState<TimelineZoom>('week');
@@ -273,6 +391,50 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
     const [scheduleDuration, setScheduleDuration] = useState(60);
     const [freeSlots, setFreeSlots] = useState<Array<{ start: Date; end: Date }>>([]);
     const [isFindingSlots, setIsFindingSlots] = useState(false);
+
+    // Convert tasks to calendar events
+    const getPriorityColor = (priority: TaskPriority): EventColor => {
+        switch (priority) {
+            case 'critical':
+                return { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-500' };
+            case 'high':
+                return { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-500' };
+            case 'medium':
+                return { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-500' };
+            case 'low':
+                return { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-400' };
+            default:
+                return { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-400' };
+        }
+    };
+
+    const taskEvents = useMemo(() => {
+        if (!showTasks) return [];
+
+        const tasksToShow = tasks || sampleTasks;
+
+        return tasksToShow
+            .filter(task => task.status !== 'completed') // Don't show completed tasks
+            .map(task => ({
+                id: `task-${task.id}`,
+                title: `📋 ${task.title}`,  // Add task icon
+                start: new Date(task.dueDate),
+                end: new Date(task.dueDate),
+                allDay: true,
+                type: 'task' as const,
+                source: 'local' as const,
+                color: getPriorityColor(task.priority),
+                teamMemberId: task.assignedToId,
+                description: task.description,
+                priority: task.priority,  // Store for display
+                taskData: task,  // Store full task data for click handling
+            }));
+    }, [tasks, showTasks]);
+
+    // Merge calendar events with task events
+    const allEvents = useMemo(() => {
+        return [...events, ...taskEvents];
+    }, [events, taskEvents]);
 
     // Check if Google Calendar is connected
     useEffect(() => {
@@ -517,6 +679,166 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
         setTimeout(() => setSuccessMessage(''), 3000);
     };
 
+    // Handle event/task click
+    const handleEventClick = (event: ExtendedCalendarEvent) => {
+        // Check if this is a task
+        if ((event as any).taskData) {
+            setSelectedTask((event as any).taskData);
+            setShowTaskModal(true);
+        } else {
+            setActiveEvent(event);
+            setShowEventModal(true);
+        }
+    };
+
+    // Handle task modal close
+    const handleTaskModalClose = () => {
+        setShowTaskModal(false);
+        setSelectedTask(null);
+    };
+
+    // Handle edit in tasks (navigate to tasks page)
+    const handleEditInTasks = (taskId: string) => {
+        // Close modal
+        setShowTaskModal(false);
+        setSelectedTask(null);
+        // Navigate to tasks page - in a real app this would use router
+        console.log('Navigate to tasks page to edit:', taskId);
+        setSuccessMessage('Opening task in Tasks page...');
+        setTimeout(() => setSuccessMessage(''), 2000);
+    };
+
+    // Handle task status change from modal
+    const handleTaskStatusChange = (taskId: string, newStatus: string) => {
+        console.log('Update task status:', taskId, newStatus);
+        setSuccessMessage(`Task status updated to ${newStatus}`);
+        setTimeout(() => setSuccessMessage(''), 2000);
+        // In a real app, this would call an update function passed from parent
+    };
+
+    // Handle task priority change from modal
+    const handleTaskPriorityChange = (taskId: string, newPriority: string) => {
+        console.log('Update task priority:', taskId, newPriority);
+        setSuccessMessage(`Task priority updated to ${newPriority}`);
+        setTimeout(() => setSuccessMessage(''), 2000);
+        // In a real app, this would call an update function passed from parent
+    };
+
+    // Drag-to-reschedule handlers
+    const handleTaskDragStart = (e: React.DragEvent, task: ExtendedTask) => {
+        setDraggedTask(task);
+        e.dataTransfer.effectAllowed = 'move';
+        // Add a custom drag image with task title
+        const dragPreview = document.createElement('div');
+        dragPreview.className = 'px-4 py-2 bg-rose-500 text-white rounded-lg shadow-lg font-medium';
+        dragPreview.textContent = `📋 ${task.title}`;
+        dragPreview.style.position = 'absolute';
+        dragPreview.style.top = '-1000px';
+        document.body.appendChild(dragPreview);
+        e.dataTransfer.setDragImage(dragPreview, 0, 0);
+        setTimeout(() => document.body.removeChild(dragPreview), 0);
+    };
+
+    const handleTaskDragEnd = () => {
+        setDraggedTask(null);
+        setDragOverDate(null);
+        setDragOverHour(null);
+    };
+
+    const handleDateDragOver = (e: React.DragEvent, date: Date, hour?: number) => {
+        if (!draggedTask) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDragOverDate(date);
+        setDragOverHour(hour ?? null);
+    };
+
+    const handleDateDragLeave = () => {
+        setDragOverDate(null);
+        setDragOverHour(null);
+    };
+
+    const handleDateDrop = (e: React.DragEvent, date: Date, hour?: number) => {
+        e.preventDefault();
+        if (!draggedTask) return;
+
+        const newDueDate = new Date(date);
+        if (hour !== undefined) {
+            newDueDate.setHours(hour, 0, 0, 0);
+        }
+
+        // In a real app, this would update the task in the database
+        console.log('Rescheduling task:', draggedTask.id, 'to', newDueDate);
+        setSuccessMessage(`Task "${draggedTask.title}" rescheduled to ${newDueDate.toLocaleDateString()}`);
+        setTimeout(() => setSuccessMessage(''), 3000);
+
+        setDraggedTask(null);
+        setDragOverDate(null);
+        setDragOverHour(null);
+    };
+
+    // Context menu handlers
+    const handleTaskContextMenu = (e: React.MouseEvent, task: ExtendedTask) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenuTask(task);
+        setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleContextMenuClose = () => {
+        setContextMenuTask(null);
+        setContextMenuPosition(null);
+    };
+
+    const handleContextMarkComplete = () => {
+        if (!contextMenuTask) return;
+        handleTaskStatusChange(contextMenuTask.id, 'completed');
+    };
+
+    const handleContextEdit = () => {
+        if (!contextMenuTask) return;
+        handleEditInTasks(contextMenuTask.id);
+    };
+
+    const handleContextDelete = () => {
+        if (!contextMenuTask) return;
+        console.log('Delete task:', contextMenuTask.id);
+        setSuccessMessage(`Task "${contextMenuTask.title}" deleted`);
+        setTimeout(() => setSuccessMessage(''), 2000);
+    };
+
+    const handleContextChangePriority = (priority: TaskPriority) => {
+        if (!contextMenuTask) return;
+        handleTaskPriorityChange(contextMenuTask.id, priority);
+    };
+
+    const handleContextChangeStatus = (status: ExtendedTaskStatus) => {
+        if (!contextMenuTask) return;
+        handleTaskStatusChange(contextMenuTask.id, status);
+    };
+
+    const handleContextDuplicate = () => {
+        if (!contextMenuTask) return;
+        console.log('Duplicate task:', contextMenuTask.id);
+        setSuccessMessage(`Task "${contextMenuTask.title}" duplicated`);
+        setTimeout(() => setSuccessMessage(''), 2000);
+    };
+
+    // Hover preview handlers
+    const handleDateHoverEnter = (e: React.MouseEvent, date: Date, dayEvents: ExtendedCalendarEvent[]) => {
+        if (dayEvents.length > 0) {
+            setHoverPreviewDate(date);
+            setHoverPreviewEvents(dayEvents);
+            setHoverPreviewPosition({ x: e.clientX + 10, y: e.clientY + 10 });
+        }
+    };
+
+    const handleDateHoverLeave = () => {
+        setHoverPreviewDate(null);
+        setHoverPreviewEvents([]);
+        setHoverPreviewPosition(null);
+    };
+
     // Find free time slots for team scheduling
     const findFreeTimeSlots = async () => {
         setIsFindingSlots(true);
@@ -716,7 +1038,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
         const endDate = new Date(today);
         endDate.setDate(endDate.getDate() + 14);
 
-        return events
+        return allEvents
             .filter(event => {
                 const eventStart = new Date(event.start);
                 return eventStart >= today && eventStart <= endDate;
@@ -727,7 +1049,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                 return true;
             })
             .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-    }, [events, filterSource, searchQuery]);
+    }, [allEvents, filterSource, searchQuery]);
 
     // Group agenda events by date
     const groupedAgendaEvents = useMemo(() => {
@@ -748,7 +1070,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
         const dayEnd = new Date(date);
         dayEnd.setHours(23, 59, 59, 999);
 
-        return events.filter(event => {
+        return allEvents.filter(event => {
             if (event.source === 'local' && event.teamMemberId && !selectedTeamMembers.includes(event.teamMemberId)) {
                 return false;
             }
@@ -767,7 +1089,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
         const hourEnd = new Date(date);
         hourEnd.setHours(hour, 59, 59, 999);
 
-        return events.filter(event => {
+        return allEvents.filter(event => {
             if (event.allDay) return false;
             if (event.source === 'local' && event.teamMemberId && !selectedTeamMembers.includes(event.teamMemberId)) {
                 return false;
@@ -989,6 +1311,62 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                             </div>
                         </div>
 
+                        {/* Show Tasks Toggle */}
+                        <div>
+                            <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                Tasks
+                            </h4>
+                            <label className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={showTasks}
+                                    onChange={(e) => setShowTasks(e.target.checked)}
+                                    className="w-4 h-4 text-rose-500 border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-rose-500 focus:ring-offset-0"
+                                />
+                                <span className="text-sm text-slate-700 dark:text-slate-300 flex-1">
+                                    Show Tasks on Calendar
+                                </span>
+                                {showTasks && (
+                                    <svg className="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </label>
+                            {showTasks && (() => {
+                                const tasksToShow = tasks || sampleTasks;
+                                const upcomingCount = tasksToShow.filter(t => t.status !== 'completed').length;
+                                return (
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 px-3">
+                                        📋 {upcomingCount} upcoming task{upcomingCount !== 1 ? 's' : ''}
+                                    </p>
+                                );
+                            })()}
+
+                            {/* Analytics & Filters Buttons */}
+                            {showTasks && (
+                                <div className="mt-3 space-y-2">
+                                    <button
+                                        onClick={() => setShowAnalytics(true)}
+                                        className="w-full px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-medium rounded-lg transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                        </svg>
+                                        Analytics
+                                    </button>
+                                    <button
+                                        onClick={() => setShowAdvancedFilters(true)}
+                                        className="w-full px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white text-sm font-medium rounded-lg transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                        </svg>
+                                        Filters
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         {/* Team Members */}
                         <div>
                             <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
@@ -1081,7 +1459,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                                 </svg>
                             </button>
 
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white min-w-[200px]">
+                            <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white min-w-[150px] md:min-w-[200px] truncate">
                                 {viewMode === 'month' && formatDate(viewDate)}
                                 {viewMode === 'week' && formatWeekRange(viewDate)}
                                 {viewMode === 'day' && formatDayDate(viewDate)}
@@ -1100,9 +1478,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
 
                             <button
                                 onClick={goToToday}
-                                className="px-3 py-1.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors border border-rose-200 dark:border-rose-800"
+                                className="px-2 md:px-3 py-1.5 text-xs md:text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors border border-rose-200 dark:border-rose-800"
                             >
-                                Today
+                                <span className="hidden sm:inline">Today</span>
+                                <span className="sm:hidden">•</span>
                             </button>
                         </div>
 
@@ -1114,7 +1493,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                                     <button
                                         key={mode}
                                         onClick={() => mode === 'timeline' ? setShowTimeline(true) : setViewMode(mode)}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                                        className={`flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium rounded transition-colors ${
                                             (mode === 'timeline' ? showTimeline : viewMode === mode)
                                                 ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-sm'
                                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -1204,18 +1583,30 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                                     const isCurrentDay = isToday(date);
                                     const isCurrentMonthDay = isCurrentMonth(date);
 
+                                    const isDragOver = dragOverDate &&
+                                        dragOverDate.getDate() === date.getDate() &&
+                                        dragOverDate.getMonth() === date.getMonth() &&
+                                        dragOverDate.getFullYear() === date.getFullYear();
+
                                     return (
                                         <div
                                             key={index}
                                             className={`bg-white dark:bg-slate-900 min-h-[100px] p-2 relative cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
                                                 isCurrentDay ? 'ring-2 ring-rose-500 ring-inset' : ''
-                                            } ${!isCurrentMonthDay ? 'opacity-40' : ''}`}
+                                            } ${!isCurrentMonthDay ? 'opacity-40' : ''} ${
+                                                isDragOver ? 'ring-2 ring-blue-500 ring-inset bg-blue-50 dark:bg-blue-900/20' : ''
+                                            }`}
                                             onClick={() => {
                                                 setViewDate(date);
                                                 setViewMode('day');
                                             }}
+                                            onMouseEnter={(e) => handleDateHoverEnter(e, date, dayEvents)}
+                                            onMouseLeave={handleDateHoverLeave}
+                                            onDragOver={(e) => handleDateDragOver(e, date)}
+                                            onDragLeave={handleDateDragLeave}
+                                            onDrop={(e) => handleDateDrop(e, date)}
                                         >
-                                            <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center justify-between mb-2">
                                                 <span className={`text-sm font-medium ${
                                                     isCurrentDay
                                                         ? 'w-7 h-7 flex items-center justify-center bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-full'
@@ -1225,35 +1616,63 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                                                 }`}>
                                                     {date.getDate()}
                                                 </span>
-                                                {dayEvents.length > 3 && (
-                                                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                                                        +{dayEvents.length - 3}
-                                                    </span>
-                                                )}
+
+                                                {/* Task and Event Count Badges */}
+                                                <div className="flex items-center gap-1">
+                                                    {(() => {
+                                                        const taskCount = dayEvents.filter(e => (e as any).taskData).length;
+                                                        const eventCount = dayEvents.filter(e => !(e as any).taskData).length;
+                                                        return (
+                                                            <>
+                                                                {taskCount > 0 && (
+                                                                    <span className="text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 px-1.5 py-0.5 rounded shadow-sm" title={`${taskCount} task${taskCount !== 1 ? 's' : ''}`}>
+                                                                        📋 {taskCount}
+                                                                    </span>
+                                                                )}
+                                                                {eventCount > 0 && (
+                                                                    <span className="text-xs font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500 px-1.5 py-0.5 rounded shadow-sm" title={`${eventCount} event${eventCount !== 1 ? 's' : ''}`}>
+                                                                        📅 {eventCount}
+                                                                    </span>
+                                                                )}
+                                                                {dayEvents.length > 3 && (
+                                                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
+                                                                        +{dayEvents.length - 3}
+                                                                    </span>
+                                                                )}
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </div>
                                             </div>
 
                                             <div className="space-y-1">
-                                                {dayEvents.slice(0, 3).map((event, eventIndex) => (
-                                                    <EnhancedCalendarEvent
-                                                        key={eventIndex}
-                                                        event={{
-                                                            id: event.id,
-                                                            title: event.title,
-                                                            start: event.start,
-                                                            end: event.end,
-                                                            allDay: event.allDay,
-                                                            description: event.description,
-                                                            location: event.location,
-                                                            attendees: event.attendees,
-                                                            type: detectEventType(event.title, event.description)
-                                                        }}
-                                                        onClick={() => {
-                                                            setActiveEvent(event);
-                                                            setShowEventModal(true);
-                                                        }}
-                                                        className="mb-1"
-                                                    />
-                                                ))}
+                                                {dayEvents.slice(0, 3).map((event, eventIndex) => {
+                                                    const isTask = !!(event as any).taskData;
+                                                    return (
+                                                        <EnhancedCalendarEvent
+                                                            key={eventIndex}
+                                                            event={{
+                                                                id: event.id,
+                                                                title: event.title,
+                                                                start: event.start,
+                                                                end: event.end,
+                                                                allDay: event.allDay,
+                                                                description: event.description,
+                                                                location: event.location,
+                                                                attendees: event.attendees,
+                                                                type: detectEventType(event.title, event.description),
+                                                                taskData: (event as any).taskData,
+                                                                priority: (event as any).priority
+                                                            }}
+                                                            onClick={() => handleEventClick(event)}
+                                                            onContextMenu={isTask ? (e) => handleTaskContextMenu(e, (event as any).taskData) : undefined}
+                                                            className="mb-1"
+                                                            draggable={isTask}
+                                                            onDragStart={isTask ? (e) => handleTaskDragStart(e, (event as any).taskData) : undefined}
+                                                            onDragEnd={isTask ? handleTaskDragEnd : undefined}
+                                                        />
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     );
@@ -1265,12 +1684,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                     {/* WEEK VIEW */}
                     {viewMode === 'week' && (
                         <div className="h-full flex flex-col">
+                            {/* Week Header with Days */}
                             <div className="grid grid-cols-8 gap-px bg-slate-200 dark:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-t-lg overflow-hidden">
-                                <div className="bg-slate-50 dark:bg-slate-800 p-2 text-center"></div>
+                                <div className="bg-slate-50 dark:bg-slate-800 p-2 text-center sticky top-0 z-10"></div>
                                 {weekDays.map((day, idx) => {
                                     const isCurrentDay = isToday(day);
                                     return (
-                                        <div key={idx} className={`bg-slate-50 dark:bg-slate-800 p-2 text-center ${isCurrentDay ? 'bg-rose-50 dark:bg-rose-900/20' : ''}`}>
+                                        <div key={idx} className={`bg-slate-50 dark:bg-slate-800 p-2 text-center sticky top-0 z-10 ${isCurrentDay ? 'bg-rose-50 dark:bg-rose-900/20' : ''}`}>
                                             <div className="text-xs text-slate-500 dark:text-slate-400">
                                                 {day.toLocaleDateString('en-US', { weekday: 'short' })}
                                             </div>
@@ -1282,21 +1702,139 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                                 })}
                             </div>
 
-                            <div className="flex-1 overflow-auto">
+                            {/* Week Grid with Hourly Slots */}
+                            <div className="flex-1 overflow-auto relative">
                                 <div className="grid grid-cols-8 gap-px bg-slate-200 dark:bg-slate-700">
-                                    {hours.slice(6, 20).map(hour => (
-                                        <React.Fragment key={hour}>
-                                            <div className="bg-slate-50 dark:bg-slate-800 p-2 text-xs text-slate-500 dark:text-slate-400 text-right border-r border-slate-200 dark:border-slate-700 w-16">
+                                    {hours.map(hour => {
+                                        const isBusinessHour = hour >= 9 && hour < 17;
+                                        const now = new Date();
+                                        const currentHour = now.getHours();
+                                        const currentMinutes = now.getMinutes();
+
+                                        return (
+                                            <React.Fragment key={hour}>
+                                                {/* Time Label */}
+                                                <div className={`p-2 text-xs text-slate-500 dark:text-slate-400 text-right border-r border-slate-200 dark:border-slate-700 w-16 sticky left-0 z-10 ${
+                                                    isBusinessHour ? 'bg-slate-100 dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-900/50'
+                                                }`}>
+                                                    {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                                                </div>
+
+                                                {/* Day Cells */}
+                                                {weekDays.map((day, dayIdx) => {
+                                                    const hourEvents = getEventsForHour(day, hour);
+                                                    const isCurrentDayAndHour = isToday(day) && currentHour === hour;
+                                                    const isDragOver = dragOverDate &&
+                                                        dragOverDate.getDate() === day.getDate() &&
+                                                        dragOverDate.getMonth() === day.getMonth() &&
+                                                        dragOverDate.getFullYear() === day.getFullYear() &&
+                                                        dragOverHour === hour;
+
+                                                    return (
+                                                        <div
+                                                            key={dayIdx}
+                                                            className={`p-1 min-h-[60px] relative border-r border-b border-slate-200 dark:border-slate-700 transition-colors ${
+                                                                isBusinessHour
+                                                                    ? 'bg-white dark:bg-slate-900'
+                                                                    : 'bg-slate-50/50 dark:bg-slate-900/30'
+                                                            } ${isCurrentDayAndHour ? 'bg-rose-50/30 dark:bg-rose-900/10' : ''} ${
+                                                                isDragOver ? 'ring-2 ring-inset ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''
+                                                            }`}
+                                                            onDragOver={(e) => handleDateDragOver(e, day, hour)}
+                                                            onDragLeave={handleDateDragLeave}
+                                                            onDrop={(e) => handleDateDrop(e, day, hour)}
+                                                        >
+                                                            {/* Current Time Indicator */}
+                                                            {isCurrentDayAndHour && (
+                                                                <div
+                                                                    className="absolute left-0 right-0 h-0.5 bg-rose-500 shadow-sm z-20"
+                                                                    style={{ top: `${(currentMinutes / 60) * 100}%` }}
+                                                                >
+                                                                    <div className="absolute -left-1 -top-1 w-2 h-2 bg-rose-500 rounded-full"></div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Events */}
+                                                            <div className="space-y-1">
+                                                                {hourEvents.map((event, eventIdx) => {
+                                                                    const isTask = !!(event as any).taskData;
+                                                                    return (
+                                                                        <EnhancedCalendarEvent
+                                                                            key={eventIdx}
+                                                                            event={{
+                                                                                id: event.id,
+                                                                                title: event.title,
+                                                                                start: event.start,
+                                                                                end: event.end,
+                                                                                allDay: event.allDay,
+                                                                                description: event.description,
+                                                                                location: event.location,
+                                                                                attendees: event.attendees,
+                                                                                type: detectEventType(event.title, event.description),
+                                                                                priority: (event as any).priority,
+                                                                                taskData: (event as any).taskData
+                                                                            }}
+                                                                            onClick={() => handleEventClick(event)}
+                                                                            onContextMenu={isTask ? (e) => handleTaskContextMenu(e, (event as any).taskData) : undefined}
+                                                                            className="text-xs"
+                                                                            draggable={isTask}
+                                                                            onDragStart={isTask ? (e) => handleTaskDragStart(e, (event as any).taskData) : undefined}
+                                                                            onDragEnd={isTask ? handleTaskDragEnd : undefined}
+                                                                        />
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DAY VIEW */}
+                    {viewMode === 'day' && (
+                        <div className="h-full overflow-auto">
+                            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                                {hours.map(hour => {
+                                    const hourEvents = getEventsForHour(viewDate, hour);
+                                    const now = new Date();
+                                    const isCurrentHour = isToday(viewDate) && now.getHours() === hour;
+                                    const isBusinessHour = hour >= 9 && hour < 17;
+
+                                    return (
+                                        <div key={hour} className={`grid grid-cols-12 border-b border-slate-200 dark:border-slate-700 last:border-b-0 ${isCurrentHour ? 'bg-rose-50 dark:bg-rose-900/10' : ''}`}>
+                                            <div className={`col-span-1 p-3 text-sm text-slate-500 dark:text-slate-400 text-right border-r border-slate-200 dark:border-slate-700 ${
+                                                isBusinessHour ? 'bg-slate-100 dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-900/50'
+                                            }`}>
                                                 {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
                                             </div>
-                                            {weekDays.map((day, dayIdx) => {
-                                                const hourEvents = getEventsForHour(day, hour);
-                                                return (
-                                                    <div
-                                                        key={dayIdx}
-                                                        className="bg-white dark:bg-slate-900 p-1 min-h-[50px] relative border-r border-slate-200 dark:border-slate-700"
-                                                    >
-                                                        {hourEvents.map((event, eventIdx) => (
+                                            <div
+                                                className={`col-span-11 p-2 min-h-[70px] relative ${
+                                                    isBusinessHour ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/50 dark:bg-slate-900/30'
+                                                } ${
+                                                    dragOverDate &&
+                                                    dragOverDate.getDate() === viewDate.getDate() &&
+                                                    dragOverDate.getMonth() === viewDate.getMonth() &&
+                                                    dragOverDate.getFullYear() === viewDate.getFullYear() &&
+                                                    dragOverHour === hour
+                                                        ? 'ring-2 ring-inset ring-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                        : ''
+                                                }`}
+                                                onDragOver={(e) => handleDateDragOver(e, viewDate, hour)}
+                                                onDragLeave={handleDateDragLeave}
+                                                onDrop={(e) => handleDateDrop(e, viewDate, hour)}
+                                            >
+                                                {isCurrentHour && (
+                                                    <div className="absolute left-0 right-0 h-0.5 bg-rose-500" style={{ top: `${(now.getMinutes() / 60) * 100}%` }} />
+                                                )}
+                                                <div className="flex flex-wrap gap-2">
+                                                    {hourEvents.map((event, eventIdx) => {
+                                                        const isTask = !!(event as any).taskData;
+                                                        return (
                                                             <EnhancedCalendarEvent
                                                                 key={eventIdx}
                                                                 event={{
@@ -1308,65 +1846,19 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                                                                     description: event.description,
                                                                     location: event.location,
                                                                     attendees: event.attendees,
-                                                                    type: detectEventType(event.title, event.description)
+                                                                    type: detectEventType(event.title, event.description),
+                                                                    taskData: (event as any).taskData,
+                                                                    priority: (event as any).priority
                                                                 }}
-                                                                onClick={() => {
-                                                                    setActiveEvent(event);
-                                                                    setShowEventModal(true);
-                                                                }}
-                                                                className="mb-1"
+                                                                onClick={() => handleEventClick(event)}
+                                                                onContextMenu={isTask ? (e) => handleTaskContextMenu(e, (event as any).taskData) : undefined}
+                                                                className="flex-1 min-w-[200px]"
+                                                                draggable={isTask}
+                                                                onDragStart={isTask ? (e) => handleTaskDragStart(e, (event as any).taskData) : undefined}
+                                                                onDragEnd={isTask ? handleTaskDragEnd : undefined}
                                                             />
-                                                        ))}
-                                                    </div>
-                                                );
-                                            })}
-                                        </React.Fragment>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* DAY VIEW */}
-                    {viewMode === 'day' && (
-                        <div className="h-full">
-                            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-                                {hours.slice(6, 22).map(hour => {
-                                    const hourEvents = getEventsForHour(viewDate, hour);
-                                    const now = new Date();
-                                    const isCurrentHour = isToday(viewDate) && now.getHours() === hour;
-
-                                    return (
-                                        <div key={hour} className={`grid grid-cols-12 border-b border-slate-200 dark:border-slate-700 last:border-b-0 ${isCurrentHour ? 'bg-rose-50 dark:bg-rose-900/10' : ''}`}>
-                                            <div className="col-span-1 bg-slate-50 dark:bg-slate-800 p-3 text-sm text-slate-500 dark:text-slate-400 text-right border-r border-slate-200 dark:border-slate-700">
-                                                {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
-                                            </div>
-                                            <div className="col-span-11 bg-white dark:bg-slate-900 p-2 min-h-[70px] relative">
-                                                {isCurrentHour && (
-                                                    <div className="absolute left-0 right-0 h-0.5 bg-rose-500" style={{ top: `${(now.getMinutes() / 60) * 100}%` }} />
-                                                )}
-                                                <div className="flex flex-wrap gap-2">
-                                                    {hourEvents.map((event, eventIdx) => (
-                                                        <EnhancedCalendarEvent
-                                                            key={eventIdx}
-                                                            event={{
-                                                                id: event.id,
-                                                                title: event.title,
-                                                                start: event.start,
-                                                                end: event.end,
-                                                                allDay: event.allDay,
-                                                                description: event.description,
-                                                                location: event.location,
-                                                                attendees: event.attendees,
-                                                                type: detectEventType(event.title, event.description)
-                                                            }}
-                                                            onClick={() => {
-                                                                setActiveEvent(event);
-                                                                setShowEventModal(true);
-                                                            }}
-                                                            className="flex-1 min-w-[200px]"
-                                                        />
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         </div>
@@ -1422,10 +1914,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                                                 {dayEvents.map((event, idx) => (
                                                     <div
                                                         key={idx}
-                                                        onClick={() => {
-                                                            setActiveEvent(event);
-                                                            setShowEventModal(true);
-                                                        }}
+                                                        onClick={() => handleEventClick(event)}
                                                         className="px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors"
                                                     >
                                                         <div className="flex items-start gap-4">
@@ -1857,59 +2346,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                                 </button>
                             </div>
                             <div className="flex-1 overflow-hidden">
-                                <LivingTimeline
-                                    events={events.map(e => ({
-                                        id: e.id,
-                                        title: e.title,
-                                        start: e.start,
-                                        end: e.end,
-                                        type: detectEventType(e.title, e.description),
-                                        color: 'from-blue-500 to-blue-600',
-                                        description: e.description,
-                                        location: e.location,
-                                    }))}
-                                    pins={timelinePins}
-                                    onAddPin={(date, title, type) => {
-                                        const newPin = {
-                                            id: `pin-${Date.now()}`,
-                                            date,
-                                            title: title || 'Planning Marker',
-                                            color: 'from-pink-500 to-rose-600',
-                                            userId: 'current-user',
-                                            userName: 'You'
-                                        };
-                                        setTimelinePins([...timelinePins, newPin]);
-                                    }}
-                                    onRemovePin={(pinId) => setTimelinePins(pins => pins.filter(p => p.id !== pinId))}
-                                    onCreateEvent={(type, date) => {
-                                        setNewEvent({
-                                            ...newEvent,
-                                            title: getDefaultTitleForType(type),
-                                            startDate: date.toISOString().split('T')[0],
-                                            startTime: date.toTimeString().slice(0, 5),
-                                            endDate: date.toISOString().split('T')[0],
-                                            endTime: new Date(date.getTime() + 60 * 60 * 1000).toTimeString().slice(0, 5),
-                                        });
-                                        setShowCreateModal(true);
-                                    }}
-                                    onEventClick={(event) => {
-                                        const fullEvent = events.find(e => e.id === event.id);
-                                        if (fullEvent) {
-                                            setActiveEvent(fullEvent);
-                                            setShowEventModal(true);
-                                        }
-                                    }}
-                                    onEventDrag={(eventId, newStart, newEnd) => {
-                                        setEvents(prev => prev.map(e =>
-                                            e.id === eventId
-                                                ? { ...e, start: newStart, end: newEnd }
-                                                : e
-                                        ));
-                                    }}
-                                    viewDate={viewDate}
-                                    zoom={timelineZoom}
-                                    onZoomChange={setTimelineZoom}
-                                    onDateChange={setViewDate}
+                                <RelationshipTimeline
+                                    entityId="all"
+                                    entityName="All Activities"
+                                    entityType="project"
+                                    teamMembers={teamMembers}
+                                    projects={projects}
                                 />
                             </div>
                         </div>
@@ -2009,6 +2451,62 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ teamMembers, project
                     </div>
                 </div>
             )}
+
+            {/* TASK DETAIL MODAL */}
+            {selectedTask && (
+                <CalendarTaskModal
+                    task={selectedTask}
+                    isOpen={showTaskModal}
+                    onClose={handleTaskModalClose}
+                    onEditInTasks={handleEditInTasks}
+                    onStatusChange={handleTaskStatusChange as any}
+                    onPriorityChange={handleTaskPriorityChange as any}
+                />
+            )}
+
+            {/* Task Context Menu */}
+            {contextMenuTask && contextMenuPosition && (
+                <TaskContextMenu
+                    position={contextMenuPosition}
+                    taskId={contextMenuTask.id}
+                    taskTitle={contextMenuTask.title}
+                    currentStatus={contextMenuTask.status}
+                    currentPriority={contextMenuTask.priority}
+                    onClose={handleContextMenuClose}
+                    onMarkComplete={handleContextMarkComplete}
+                    onEdit={handleContextEdit}
+                    onDelete={handleContextDelete}
+                    onChangePriority={handleContextChangePriority}
+                    onChangeStatus={handleContextChangeStatus}
+                    onDuplicate={handleContextDuplicate}
+                />
+            )}
+
+            {/* Month Date Hover Preview */}
+            {hoverPreviewDate && hoverPreviewPosition && hoverPreviewEvents.length > 0 && (
+                <MonthDateHoverPreview
+                    date={hoverPreviewDate}
+                    events={hoverPreviewEvents as any}
+                    position={hoverPreviewPosition}
+                />
+            )}
+
+            {/* Analytics Panel */}
+            <CalendarAnalytics
+                tasks={tasks || sampleTasks}
+                isOpen={showAnalytics}
+                onClose={() => setShowAnalytics(false)}
+            />
+
+            {/* Advanced Filters Panel */}
+            <AdvancedFilters
+                isOpen={showAdvancedFilters}
+                onClose={() => setShowAdvancedFilters(false)}
+                filters={advancedFilters}
+                onFiltersChange={setAdvancedFilters}
+                availableAssignees={teamMembers.map(tm => ({ id: tm.id, name: tm.name }))}
+                availableTags={[]}
+            />
         </div>
     );
 };

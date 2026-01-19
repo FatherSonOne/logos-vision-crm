@@ -1841,6 +1841,7 @@ export type Page =
   | 'donor-pipeline'
   | 'cultivation'
   | 'touchpoints'
+  | 'relationship-timeline'
   | 'search-results'
   | 'pulse-settings'
   | 'entomate-sync'
@@ -2247,4 +2248,109 @@ export const CLIENT_TYPE_LABELS: Record<ClientType, string> = {
   individual: 'Individual',
   organization: 'Organization',
   nonprofit: 'Nonprofit',
+};
+
+// ============================================
+// RELATIONSHIP TIMELINE TYPES
+// ============================================
+
+export type TimelineEventSource =
+  | 'activity'           // calls, emails, meetings, notes
+  | 'touchpoint'         // donor cultivation interactions
+  | 'task'               // task created/completed/updated
+  | 'project_milestone'  // project milestones
+  | 'calendar_event'     // calendar integration
+  | 'communication_log'  // email/call/text tracking
+  | 'donation';          // donation records
+
+export interface UnifiedTimelineEvent {
+  // Core identification
+  id: string;              // Composite: "activity-123"
+  eventId: string;         // Original ID in source table
+  source: TimelineEventSource;
+
+  // Display
+  title: string;
+  description?: string;
+  timestamp: Date;
+
+  // Relationships
+  clientId?: string;
+  projectId?: string;
+  donorMoveId?: string;
+
+  // Classification
+  eventType: string;       // call, email, meeting, task_created, etc.
+  status?: string;
+  priority?: 'low' | 'medium' | 'high' | 'critical';
+
+  // People
+  createdBy?: string;
+  createdByName?: string;
+  participants?: string[];
+
+  // Rich metadata
+  attachments?: number;
+  comments?: number;
+  amount?: number;         // For donations
+  sentiment?: TouchpointSentiment;
+  engagementLevel?: TouchpointEngagementLevel;
+
+  // UI hints
+  color?: string;
+  icon?: string;
+}
+
+export interface TimelineFilters {
+  entityType: 'contact' | 'organization' | 'project';
+  entityId: string;
+  eventSources: TimelineEventSource[];
+  eventTypes: string[];
+  dateFrom?: Date;
+  dateTo?: Date;
+  teamMemberIds?: string[];
+  projectIds?: string[];
+  statusFilters?: string[];
+  priorityFilters?: string[];
+  searchQuery?: string;
+}
+
+export interface TimelinePaginationCursor {
+  timestamp: Date;
+  eventId: string;
+}
+
+export interface TimelinePageResult {
+  events: UnifiedTimelineEvent[];
+  nextCursor?: TimelinePaginationCursor;
+  hasMore: boolean;
+  totalCount: number;
+}
+
+export interface TimelineSummaryStats {
+  totalEvents: number;
+  eventCounts: Record<TimelineEventSource, number>;
+  dateRange: { earliest: Date; latest: Date };
+  topParticipants: { id: string; name: string; count: number }[];
+  recentActivity: number; // Events in last 30 days
+}
+
+export const TIMELINE_EVENT_SOURCE_LABELS: Record<TimelineEventSource, string> = {
+  activity: 'Activities',
+  touchpoint: 'Touchpoints',
+  task: 'Tasks',
+  project_milestone: 'Milestones',
+  calendar_event: 'Calendar Events',
+  communication_log: 'Communications',
+  donation: 'Donations',
+};
+
+export const TIMELINE_EVENT_SOURCE_COLORS: Record<TimelineEventSource, string> = {
+  activity: '#3b82f6',        // blue
+  touchpoint: '#8b5cf6',      // purple
+  task: '#f59e0b',            // amber
+  project_milestone: '#10b981', // green
+  calendar_event: '#06b6d4',  // cyan
+  communication_log: '#ec4899', // pink
+  donation: '#22c55e',        // green
 };

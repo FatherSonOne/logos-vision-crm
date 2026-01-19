@@ -22,6 +22,17 @@ const ConnectHubIcon = () => (
   </svg>
 );
 
+// Timeline icon - vertical timeline/activity feed
+const TimelineIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="5" r="2" />
+    <circle cx="12" cy="12" r="2" />
+    <circle cx="12" cy="19" r="2" />
+    <line x1="12" y1="7" x2="12" y2="10" />
+    <line x1="12" y1="14" x2="12" y2="17" />
+  </svg>
+);
+
 // --- CONFIGURATION ---
 
 export interface NavItemConfig {
@@ -78,6 +89,7 @@ export const navigationSections: NavSectionConfig[] = [
         items: [
             { pageId: 'tasks', label: 'Tasks', icon: <CheckSquareIcon /> },
             { pageId: 'calendar', label: 'Calendar', icon: <CalendarIcon /> },
+            { pageId: 'relationship-timeline', label: 'Timeline', icon: <TimelineIcon /> },
             { pageId: 'documents', label: 'Documents', icon: <DocumentsIcon /> },
             { pageId: 'reports', label: 'Reports', icon: <ReportsIcon /> },
             // Impact now includes Impact Reports as internal tab

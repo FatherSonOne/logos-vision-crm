@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Report, reportService, ReportCategory, VisualizationType } from '../../services/reportService';
+import { VisualReportBuilder } from './VisualReportBuilder';
 
 // ============================================
 // ICONS
@@ -20,6 +21,24 @@ const ChevronLeftIcon = () => (
 const ChevronRightIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+  </svg>
+);
+
+const VisualIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+  </svg>
+);
+
+const WizardIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+  </svg>
+);
+
+const SparklesIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
   </svg>
 );
 
@@ -123,36 +142,61 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onSte
   const currentIndex = steps.findIndex(s => s.id === currentStep);
 
   return (
-    <div className="flex items-center justify-center mb-8">
-      {steps.map((step, index) => {
-        const isCompleted = index < currentIndex;
-        const isCurrent = step.id === currentStep;
+    <div className="mb-12">
+      <div className="flex items-center justify-center">
+        {steps.map((step, index) => {
+          const isCompleted = index < currentIndex;
+          const isCurrent = step.id === currentStep;
 
-        return (
-          <React.Fragment key={step.id}>
-            <button
-              onClick={() => isCompleted && onStepClick(step.id)}
-              disabled={!isCompleted}
-              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
-                isCompleted
-                  ? 'bg-indigo-600 border-indigo-600 text-white cursor-pointer hover:bg-indigo-700'
-                  : isCurrent
-                  ? 'border-indigo-600 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
-                  : 'border-gray-300 text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-600'
-              }`}
-            >
-              {isCompleted ? <CheckIcon /> : index + 1}
-            </button>
-            {index < steps.length - 1 && (
-              <div
-                className={`w-16 h-1 mx-2 rounded ${
-                  index < currentIndex ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
-                }`}
-              />
-            )}
-          </React.Fragment>
-        );
-      })}
+          return (
+            <React.Fragment key={step.id}>
+              <div className="flex flex-col items-center">
+                <button
+                  type="button"
+                  onClick={() => isCompleted && onStepClick(step.id)}
+                  disabled={!isCompleted}
+                  className={`relative flex items-center justify-center w-14 h-14 rounded-full transition-all font-bold text-lg mb-3 ${
+                    isCompleted
+                      ? 'bg-indigo-600 border-indigo-600 text-white cursor-pointer hover:bg-indigo-700 hover:scale-110 shadow-lg border-3'
+                      : isCurrent
+                      ? 'border-indigo-600 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 shadow-lg ring-4 ring-indigo-200 dark:ring-indigo-900/40 border-3'
+                      : 'border-gray-300 text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-600 border-3'
+                  }`}
+                >
+                  {isCompleted ? (
+                    <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    index + 1
+                  )}
+                </button>
+                <div className={`text-sm font-semibold transition-colors ${
+                  isCurrent
+                    ? 'text-indigo-600 dark:text-indigo-400'
+                    : isCompleted
+                    ? 'text-gray-700 dark:text-gray-300'
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  {step.label}
+                </div>
+              </div>
+              {index < steps.length - 1 && (
+                <div className="relative flex items-center mx-4 mb-10" style={{ width: '100px' }}>
+                  <div className="h-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        index < currentIndex ? 'bg-indigo-600' : 'bg-transparent'
+                      }`}
+                      style={{ width: index < currentIndex ? '100%' : '0%' }}
+                    />
+                  </div>
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -614,15 +658,17 @@ const PreviewStep: React.FC<PreviewStepProps> = ({
 // ============================================
 
 export const ReportBuilder: React.FC<ReportBuilderProps> = ({ report, onSave, onCancel }) => {
+  const [builderMode, setBuilderMode] = useState<'wizard' | 'visual'>('visual');
   const [currentStep, setCurrentStep] = useState<Step>('source');
   const [dataSource, setDataSource] = useState(report?.dataSource?.table || '');
   const [category, setCategory] = useState<ReportCategory | null>(report?.category || null);
   const [visualizationType, setVisualizationType] = useState<VisualizationType>(report?.visualizationType || 'bar');
   const [filters, setFilters] = useState<Record<string, any>>(report?.filters || {});
-  const [groupBy, setGroupBy] = useState('');
-  const [metric, setMetric] = useState('');
+  const [groupBy, setGroupBy] = useState(report?.filters?.groupBy || '');
+  const [metric, setMetric] = useState(report?.filters?.metric || '');
   const [name, setName] = useState(report?.name || '');
   const [description, setDescription] = useState(report?.description || '');
+  const [isFromTemplate] = useState(report && !report.id && report.icon !== undefined);
 
   const steps: { id: Step; label: string }[] = [
     { id: 'source', label: 'Data Source' },
@@ -682,17 +728,62 @@ export const ReportBuilder: React.FC<ReportBuilderProps> = ({ report, onSave, on
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-          {report ? 'Edit Report' : 'Create New Report'}
-        </h2>
+    <div className="max-w-7xl mx-auto h-full flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 flex-1 flex flex-col">
+        {/* Header with Mode Toggle */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              {report?.id ? 'Edit Report' : 'Create New Report'}
+            </h2>
+            {isFromTemplate && report?.name && (
+              <div className="flex items-center gap-2 mt-2">
+                <SparklesIcon />
+                <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+                  Using template: {report.name}
+                </span>
+              </div>
+            )}
+          </div>
 
-        <StepIndicator
-          steps={steps}
-          currentStep={currentStep}
-          onStepClick={setCurrentStep}
-        />
+          <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+            <button
+              onClick={() => setBuilderMode('visual')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                builderMode === 'visual'
+                  ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <VisualIcon />
+              Visual Builder
+            </button>
+            <button
+              onClick={() => setBuilderMode('wizard')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                builderMode === 'wizard'
+                  ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <WizardIcon />
+              Step-by-Step Wizard
+            </button>
+          </div>
+        </div>
+
+        {/* Conditional Rendering Based on Mode */}
+        {builderMode === 'visual' ? (
+          <div className="flex-1 min-h-0">
+            <VisualReportBuilder report={report} onSave={onSave} onCancel={onCancel} />
+          </div>
+        ) : (
+          <>
+            <StepIndicator
+              steps={steps}
+              currentStep={currentStep}
+              onStepClick={setCurrentStep}
+            />
 
         <div className="min-h-[400px]">
           {currentStep === 'source' && (
@@ -778,6 +869,8 @@ export const ReportBuilder: React.FC<ReportBuilderProps> = ({ report, onSave, on
             )}
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

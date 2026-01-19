@@ -1,81 +1,97 @@
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, lazy, Suspense } from 'react';
 import { syncProjectToChannel, syncAll } from './services/logosSync';
 import { syncPulseToLogosAll } from './services/pulseToLogosSync';
-import { Header } from './components/Header';
-import { Sidebar } from './components/Sidebar';
-import { Dashboard } from './components/Dashboard';
-import { ProjectList } from './components/ProjectList';
-import { ProjectDetail } from './components/ProjectDetail';
-import { ProjectHub } from './components/ProjectHub';
-import { ProjectsCommandCenter } from './components/ProjectsCommandCenter';
+import { taskManagementService, type ExtendedTask as TaskViewExtendedTask } from './services/taskManagementService';
 import { portalDbService } from './services/portalDbService';
 import { performAdvancedSearch } from './services/geminiService';
 import { performLocalSearch } from './services/localSearchService';
-// FIX: Correctly alias Document as AppDocument on import.
-import type { Client, TeamMember, Project, EnrichedTask, Activity, ChatRoom, ChatMessage, Donation, Volunteer, Case, Document as AppDocument, Webpage, CaseComment, Event, PortalLayout, EmailCampaign, WebSearchResult, SearchResults, AiProjectPlan, Task, RecentItem } from './types';
-import { ProjectStatus, TaskStatus, ActivityType, ActivityStatus, CaseStatus, DocumentCategory } from './types';
-import type { Page } from './types';
-import { getBreadcrumbsForPage, type BreadcrumbItem } from './components/ui/Breadcrumbs';
-import { Contacts } from './components/Contacts';
-import { ContactDetail } from './components/ContactDetail';
-import { OrganizationList } from './components/OrganizationList';
-import { HouseholdList, HouseholdDetail, HouseholdModal } from './components/households';
-import { PledgeList, PledgeModal, PledgeDetail } from './components/pledges';
-import { OrganizationDetail } from './components/OrganizationDetail';
-import { TeamMemberList } from './components/ConsultantList';
-import { ActivityFeed } from './components/ActivityFeed';
-import { ActivityDialog } from './components/ActivityDialog';
-import { PulseChat } from './components/PulseChat';
-import { PulseIntegrationSettings } from './components/PulseIntegrationSettings';
-import { SyncStatusWidget } from './components/SyncStatusWidget';
-import { CreateRoomDialog } from './components/CreateRoomDialog';
-import { VideoConference } from './components/VideoConference';
-import { AddTeamMemberDialog } from './components/AddTeamMemberDialog';
-import { AddContactDialog } from './components/AddContactDialog';
-import { Donations } from './components/Donations';
-import { Stewardship } from './components/Stewardship';
-import { CampaignManagement } from './components/CampaignManagement';
-import { CalendarView } from './components/CalendarView';
-import { TaskView } from './components/TaskView';
-import { FormGenerator } from './components/FormGenerator';
-import { VolunteerList } from './components/VolunteerList';
-import { AddVolunteerDialog } from './components/AddVolunteerDialog';
-import { CharityTracker } from './components/CharityTracker';
-import CharityHub from './components/CharityHub';
-import { CaseManagement } from './components/CaseManagement';
-import { DocumentLibrary } from './components/DocumentLibrary';
-import { WebManagement } from './components/WebManagement';
-import { GoldPages } from './components/GoldPages';
-import { WebpageStatus } from './types';
-import { AiChatBot } from './components/AiChatBot';
-import { AiTools } from './components/AiTools';
-import { LiveChat } from './components/LiveChat';
-import { CaseDialog } from './components/CaseDialog';
-import { SearchResultsPage } from './components/SearchResultsPage';
-import { CaseDetail } from './components/CaseDetail';
-import { EventEditor } from './components/EventEditor';
-import { ReportsHub } from './components/reports/ReportsHub';
-import { AnalyticsDashboard } from './components/AnalyticsDashboard';
-import { PortalBuilder } from './components/PortalBuilder';
-import { ClientPortalLogin } from './components/ClientPortalLogin';
-import { ClientPortal } from './components/ClientPortal';
-import { EmailCampaigns } from './components/EmailCampaigns';
-import { GrantAssistant } from './components/GrantAssistant';
-import { CalendarIntegration } from './components/CalendarIntegration';
-import { ImpactDashboard } from './components/ImpactDashboard';
-import { ImpactReportBuilder } from './components/ImpactReportBuilder';
-import { DonorPipeline } from './components/DonorPipeline';
-import { CultivationPlanBuilder } from './components/CultivationPlanBuilder';
-import { TouchpointTracker } from './components/TouchpointTracker';
-import { Settings } from './components/Settings';
-import { OutreachHub } from './components/OutreachHub';
-import { ConnectHub } from './components/ConnectHub';
-import { DesignPreview } from './components/DesignPreview';
-import { QuickActions, useQuickActions } from './components/QuickActions';
+
+// Core layout components (not lazy loaded - needed immediately)
+import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
+import { Dashboard } from './components/Dashboard';
 import { ErrorBoundary, PageErrorBoundary, LoadingState } from './components/ErrorBoundary';
 import { useToast } from './components/ui/Toast';
-import { GuidedTour } from './components/GuidedTour';
+import { QuickActions, useQuickActions } from './components/QuickActions';
+
+// Types
+import type { Client, TeamMember, Project, EnrichedTask, Activity, ChatRoom, ChatMessage, Donation, Volunteer, Case, Document as AppDocument, Webpage, CaseComment, Event, PortalLayout, EmailCampaign, WebSearchResult, SearchResults, AiProjectPlan, Task, RecentItem } from './types';
+import { ProjectStatus, TaskStatus, ActivityType, ActivityStatus, CaseStatus, DocumentCategory, WebpageStatus } from './types';
+import type { Page } from './types';
+import { getBreadcrumbsForPage, type BreadcrumbItem } from './components/ui/Breadcrumbs';
+
+// Lazy-loaded page components for better performance
+const ProjectList = lazy(() => import('./components/ProjectList').then(m => ({ default: m.ProjectList })));
+const ProjectDetail = lazy(() => import('./components/ProjectDetail').then(m => ({ default: m.ProjectDetail })));
+const ProjectHub = lazy(() => import('./components/ProjectHub').then(m => ({ default: m.ProjectHub })));
+const ProjectsCommandCenter = lazy(() => import('./components/ProjectsCommandCenter').then(m => ({ default: m.ProjectsCommandCenter })));
+const Contacts = lazy(() => import('./components/Contacts').then(m => ({ default: m.Contacts })));
+const ContactDetail = lazy(() => import('./components/ContactDetail').then(m => ({ default: m.ContactDetail })));
+const OrganizationList = lazy(() => import('./components/OrganizationList').then(m => ({ default: m.OrganizationList })));
+const OrganizationDetail = lazy(() => import('./components/OrganizationDetail').then(m => ({ default: m.OrganizationDetail })));
+const TeamMemberList = lazy(() => import('./components/ConsultantList').then(m => ({ default: m.TeamMemberList })));
+const ActivityFeed = lazy(() => import('./components/ActivityFeed').then(m => ({ default: m.ActivityFeed })));
+const CalendarView = lazy(() => import('./components/CalendarView').then(m => ({ default: m.CalendarView })));
+const TaskView = lazy(() => import('./components/TaskView').then(m => ({ default: m.TaskView })));
+const Donations = lazy(() => import('./components/Donations').then(m => ({ default: m.Donations })));
+const Stewardship = lazy(() => import('./components/Stewardship').then(m => ({ default: m.Stewardship })));
+const CampaignManagement = lazy(() => import('./components/CampaignManagement').then(m => ({ default: m.CampaignManagement })));
+const FormGenerator = lazy(() => import('./components/FormGenerator').then(m => ({ default: m.FormGenerator })));
+const VolunteerList = lazy(() => import('./components/VolunteerList').then(m => ({ default: m.VolunteerList })));
+const CharityTracker = lazy(() => import('./components/CharityTracker').then(m => ({ default: m.CharityTracker })));
+const CharityHub = lazy(() => import('./components/CharityHub'));
+const CaseManagement = lazy(() => import('./components/CaseManagement').then(m => ({ default: m.CaseManagement })));
+const DocumentLibrary = lazy(() => import('./components/DocumentLibrary').then(m => ({ default: m.DocumentLibrary })));
+const DocumentsHub = lazy(() => import('./components/documents/DocumentsHub').then(m => ({ default: m.default })));
+const WebManagement = lazy(() => import('./components/WebManagement').then(m => ({ default: m.WebManagement })));
+const GoldPages = lazy(() => import('./components/GoldPages').then(m => ({ default: m.GoldPages })));
+const AiChatBot = lazy(() => import('./components/AiChatBot').then(m => ({ default: m.AiChatBot })));
+const AiTools = lazy(() => import('./components/AiTools').then(m => ({ default: m.AiTools })));
+const LiveChat = lazy(() => import('./components/LiveChat').then(m => ({ default: m.LiveChat })));
+const SearchResultsPage = lazy(() => import('./components/SearchResultsPage').then(m => ({ default: m.SearchResultsPage })));
+const CaseDetail = lazy(() => import('./components/CaseDetail').then(m => ({ default: m.CaseDetail })));
+const EventEditor = lazy(() => import('./components/EventEditor').then(m => ({ default: m.EventEditor })));
+const ReportsHub = lazy(() => import('./components/reports/ReportsHub').then(m => ({ default: m.ReportsHub })));
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
+const PortalBuilder = lazy(() => import('./components/PortalBuilder').then(m => ({ default: m.PortalBuilder })));
+const ClientPortalLogin = lazy(() => import('./components/ClientPortalLogin').then(m => ({ default: m.ClientPortalLogin })));
+const ClientPortal = lazy(() => import('./components/ClientPortal').then(m => ({ default: m.ClientPortal })));
+const EmailCampaigns = lazy(() => import('./components/EmailCampaigns').then(m => ({ default: m.EmailCampaigns })));
+const GrantAssistant = lazy(() => import('./components/GrantAssistant').then(m => ({ default: m.GrantAssistant })));
+const CalendarIntegration = lazy(() => import('./components/CalendarIntegration').then(m => ({ default: m.CalendarIntegration })));
+const ImpactDashboard = lazy(() => import('./components/ImpactDashboard').then(m => ({ default: m.ImpactDashboard })));
+const ImpactReportBuilder = lazy(() => import('./components/ImpactReportBuilder').then(m => ({ default: m.ImpactReportBuilder })));
+const DonorPipeline = lazy(() => import('./components/DonorPipeline').then(m => ({ default: m.DonorPipeline })));
+const CultivationPlanBuilder = lazy(() => import('./components/CultivationPlanBuilder').then(m => ({ default: m.CultivationPlanBuilder })));
+const TouchpointTracker = lazy(() => import('./components/TouchpointTracker').then(m => ({ default: m.TouchpointTracker })));
+const TimelineDemo = lazy(() => import('./components/TimelineDemo').then(m => ({ default: m.TimelineDemo })));
+const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
+const OutreachHub = lazy(() => import('./components/OutreachHub').then(m => ({ default: m.OutreachHub })));
+const ConnectHub = lazy(() => import('./components/ConnectHub').then(m => ({ default: m.ConnectHub })));
+const DesignPreview = lazy(() => import('./components/DesignPreview').then(m => ({ default: m.DesignPreview })));
+const GuidedTour = lazy(() => import('./components/GuidedTour').then(m => ({ default: m.GuidedTour })));
+const ConversationalAssistant = lazy(() => import('./components/ConversationalAssistant').then(m => ({ default: m.ConversationalAssistant })));
+
+// Dialogs and modals (lazy loaded when needed)
+const ActivityDialog = lazy(() => import('./components/ActivityDialog').then(m => ({ default: m.ActivityDialog })));
+const PulseChat = lazy(() => import('./components/PulseChat').then(m => ({ default: m.PulseChat })));
+const PulseIntegrationSettings = lazy(() => import('./components/PulseIntegrationSettings').then(m => ({ default: m.PulseIntegrationSettings })));
+const SyncStatusWidget = lazy(() => import('./components/SyncStatusWidget').then(m => ({ default: m.SyncStatusWidget })));
+const CreateRoomDialog = lazy(() => import('./components/CreateRoomDialog').then(m => ({ default: m.CreateRoomDialog })));
+const VideoConference = lazy(() => import('./components/VideoConference').then(m => ({ default: m.VideoConference })));
+const AddTeamMemberDialog = lazy(() => import('./components/AddTeamMemberDialog').then(m => ({ default: m.AddTeamMemberDialog })));
+const AddContactDialog = lazy(() => import('./components/AddContactDialog').then(m => ({ default: m.AddContactDialog })));
+const AddVolunteerDialog = lazy(() => import('./components/AddVolunteerDialog').then(m => ({ default: m.AddVolunteerDialog })));
+const CaseDialog = lazy(() => import('./components/CaseDialog').then(m => ({ default: m.CaseDialog })));
+
+// Household and Pledge components
+const HouseholdList = lazy(() => import('./components/households').then(m => ({ default: m.HouseholdList })));
+const HouseholdDetail = lazy(() => import('./components/households').then(m => ({ default: m.HouseholdDetail })));
+const HouseholdModal = lazy(() => import('./components/households').then(m => ({ default: m.HouseholdModal })));
+const PledgeList = lazy(() => import('./components/pledges').then(m => ({ default: m.PledgeList })));
+const PledgeModal = lazy(() => import('./components/pledges').then(m => ({ default: m.PledgeModal })));
+const PledgeDetail = lazy(() => import('./components/pledges').then(m => ({ default: m.PledgeDetail })));
 import { OnboardingFlow, useOnboarding } from '../components/OnboardingFlow';
 import {
   BottomNav,
@@ -170,7 +186,7 @@ const App: React.FC = () => {
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<TaskViewExtendedTask[]>([]);
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -245,12 +261,12 @@ async function loadAllData() {
     setIsLoadingCases(false);
   }
 
-  // Load tasks
+  // Load tasks - Use taskManagementService for ExtendedTask format
   try {
     setIsLoadingTasks(true);
-    loadedTasks = USE_SAMPLE_DATA ? [] : await taskService.getAll();
-    setTasks(loadedTasks);
-    console.log('✅ Loaded', loadedTasks.length, 'tasks from', USE_SAMPLE_DATA ? 'Sample Data' : 'Supabase');
+    const enrichedTasks = await taskManagementService.getAllEnriched();
+    setTasks(enrichedTasks);
+    console.log('✅ Loaded', enrichedTasks.length, 'tasks from', USE_SAMPLE_DATA ? 'Sample Data' : 'Supabase');
   } catch (error) {
     console.error('❌ Error loading tasks:', error);
     showToast('Failed to load tasks', 'error');
@@ -350,6 +366,23 @@ async function loadAllData() {
     console.error('❌ syncAll threw error', e);
   }
 }
+
+// Task callback functions for real-time updates
+const handleTasksUpdate = useCallback((updatedTasks: TaskViewExtendedTask[]) => {
+  setTasks(updatedTasks);
+}, []);
+
+const handleTaskCreate = useCallback(async (newTask: TaskViewExtendedTask) => {
+  setTasks(prev => [...prev, newTask]);
+}, []);
+
+const handleTaskUpdate = useCallback(async (updatedTask: TaskViewExtendedTask) => {
+  setTasks(prev => prev.map(task => task.id === updatedTask.id ? updatedTask : task));
+}, []);
+
+const handleTaskDelete = useCallback(async (taskId: string) => {
+  setTasks(prev => prev.filter(task => task.id !== taskId));
+}, []);
 
 // Load data on mount
 useEffect(() => {
@@ -1547,16 +1580,20 @@ useEffect(() => {
             const client = clients.find(c => c.id === project.clientId);
             const projectTeamMembers = teamMembers.filter(c => project.teamMemberIds.includes(c.id));
             const projectCases = cases.filter(c => c.clientId === project.clientId);
-            return <ProjectDetail 
-              project={project} 
-              client={client} 
-              projectTeamMembers={projectTeamMembers} 
-              allTeamMembers={teamMembers} 
+            return (
+                <Suspense fallback={<LoadingState message="Loading project details..." />}>
+                    <ProjectDetail
+              project={project}
+              client={client}
+              projectTeamMembers={projectTeamMembers}
+              allTeamMembers={teamMembers}
               cases={projectCases}
               volunteers={volunteers}
               onBack={handleBackToList}
               onUpdateTaskNote={handleUpdateTaskNote}
             />
+                </Suspense>
+            );
         }
     }
     
@@ -1720,12 +1757,18 @@ useEffect(() => {
         return <Stewardship />;
       case 'campaigns':
         return <CampaignManagement />;
-      case 'calendar': 
-        return <CalendarView teamMembers={teamMembers} projects={projects} activities={activities} />;
+      case 'calendar':
+        return <CalendarView teamMembers={teamMembers} projects={projects} activities={activities} tasks={tasks} />;
       case 'calendar-settings':
         return <CalendarIntegration />;
-      case 'tasks': 
-        return <TaskView projects={projects} teamMembers={teamMembers} onSelectTask={handleSelectProject} />;
+      case 'tasks':
+        return <TaskView
+          projects={projects}
+          teamMembers={teamMembers}
+          onSelectTask={handleSelectProject}
+          tasks={tasks}
+          onTasksUpdate={handleTasksUpdate}
+        />;
       case 'form-generator':
         return <FormGenerator clients={clients} />;
       case 'grant-assistant':
@@ -1803,8 +1846,8 @@ useEffect(() => {
                   onSelectCase={handleSelectCase}
                   onUpdateCaseStatus={handleUpdateCaseStatus}
                 />;
-      case 'documents': 
-        return <DocumentLibrary 
+      case 'documents':
+        return <DocumentsHub
                   documents={documents}
                   clients={clients}
                   projects={projects}
@@ -1897,6 +1940,8 @@ useEffect(() => {
           return <CultivationPlanBuilder clients={clients} />;
       case 'touchpoints':
           return <TouchpointTracker clients={clients} />;
+      case 'relationship-timeline':
+          return <TimelineDemo />;
       case 'outreach-hub':
           return <OutreachHub
             clients={clients}
@@ -2073,6 +2118,18 @@ useEffect(() => {
             isOpen={isAiChatOpen}
             onClose={() => setIsAiChatOpen(false)}
         />
+        <Suspense fallback={null}>
+          <ConversationalAssistant
+            isOpen={isAiChatOpen}
+            onClose={() => setIsAiChatOpen(false)}
+            context={{
+              tasks,
+              projects,
+              contacts: clients,
+              currentUser: teamMembers.find(m => m.id === currentUserId),
+            }}
+          />
+        </Suspense>
         <QuickActions
             isOpen={quickActionsState.isOpen}
             onClose={quickActionsState.close}

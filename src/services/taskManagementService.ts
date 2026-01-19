@@ -150,10 +150,10 @@ export const taskManagementService = {
             name,
             role
           ),
-          project:projects (
+          project:projects!project_id (
             id,
             name,
-            client:clients (
+            client:clients!client_id (
               id,
               name
             )
