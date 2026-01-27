@@ -51,7 +51,19 @@ export const MeetingAssistantModal: React.FC<MeetingAssistantModalProps> = ({
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = () => resolve((reader.result as string).split(',')[1]);
+            reader.onload = () => {
+                const result = reader.result as string;
+                if (!result) {
+                    reject(new Error('Failed to read file'));
+                    return;
+                }
+                const base64Data = result.includes(',') ? result.split(',')[1] : result;
+                if (!base64Data || base64Data.trim().length === 0) {
+                    reject(new Error('Invalid base64 data extracted from file'));
+                    return;
+                }
+                resolve(base64Data);
+            };
             reader.onerror = error => reject(error);
         });
     };

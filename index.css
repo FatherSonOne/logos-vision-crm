@@ -2,6 +2,9 @@
 /* Import Design System Tokens */
 @import './src/styles/design-tokens.css';
 
+/* Import Contacts Design System */
+@import './src/styles/contacts.css';
+
 /* Note: Most styles use Tailwind CSS utilities inline for flexibility */
 
 /* Shimmer animation for progress bars */

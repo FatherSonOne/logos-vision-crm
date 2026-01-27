@@ -105,11 +105,11 @@ export const navigationSections: NavSectionConfig[] = [
         ]
     },
     {
-        title: 'Forge',
+        title: 'Create',
         items: [
-            // Consolidated AI tools: AI Tools, Form Generator, Grant Assistant
-            // Internal navigation within Forge component
-            { pageId: 'forge', label: 'AI Forge', icon: <ForgeIcon /> },
+            // AI Content Studio - CRM-integrated content creation
+            // Includes: Communications, Campaigns, Grants, Media Analysis
+            { pageId: 'forge', label: 'Content Studio', icon: <ForgeIcon /> },
         ]
     },
     {

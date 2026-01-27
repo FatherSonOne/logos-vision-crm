@@ -8,6 +8,7 @@ import { decodeAudioData, decode } from '../utils/audio';
 import { getDeadlineStatus } from '../utils/dateHelpers';
 import { AiEnhancedTextarea } from './AiEnhancedTextarea';
 import { ClockIcon, SparklesIcon, ShieldExclamationIcon, ShieldExclamationIconSolid, ShieldCheckIconSolid, NoteIcon, SoundWaveIcon, PlayIcon } from './icons';
+import { CommentThread, ActivityFeed as CollaborationActivityFeed, WatchEntityButton, CollaborationErrorBoundary } from './collaboration';
 
 const StatusBadge: React.FC<{ status: ProjectStatus | TaskStatus }> = ({ status }) => {
   const colors = {
@@ -31,6 +32,8 @@ const StatusBadge: React.FC<{ status: ProjectStatus | TaskStatus }> = ({ status 
 interface ProjectDetailProps {
   project: Project;
   client?: Client;
+  currentUser: TeamMember;
+  teamMembers: TeamMember[];
   projectTeamMembers: TeamMember[];
   allTeamMembers: TeamMember[];
   cases: Case[];
@@ -38,7 +41,7 @@ interface ProjectDetailProps {
   onUpdateTaskNote: (projectId: string, taskId: string, notes: string) => void;
 }
 
-export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, client, projectTeamMembers, allTeamMembers, cases, onBack, onUpdateTaskNote }) => {
+export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, client, currentUser, teamMembers, projectTeamMembers, allTeamMembers, cases, onBack, onUpdateTaskNote }) => {
     const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
     const [aiSummary, setAiSummary] = useState('');
     const [summarySources, setSummarySources] = useState<any[]>([]);
@@ -171,31 +174,35 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, client, p
                     </div>
                 </div>
 
-                {/* Body Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                    {/* Left Column: Details */}
-                    <div className="lg:col-span-2">
-                        <h3 className="text-lg font-semibold text-slate-800 mb-3 dark:text-slate-200">Project Description</h3>
-                        <p className="text-slate-600 mb-6 dark:text-slate-300">{project.description}</p>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                            <div>
-                                <p className="text-slate-500 dark:text-slate-400">Start Date</p>
-                                <p className="font-medium text-slate-800 dark:text-slate-200">{new Date(project.startDate).toLocaleDateString()}</p>
-                            </div>
-                             <div>
-                                <p className="text-slate-500 dark:text-slate-400">End Date</p>
-                                <p className="font-medium text-slate-800 dark:text-slate-200">{new Date(project.endDate).toLocaleDateString()}</p>
-                            </div>
-                            <div className="col-span-1 sm:col-span-2">
-                                <p className="text-slate-500 dark:text-slate-400">Assigned Team Members</p>
-                                <p className="font-medium text-slate-800 dark:text-slate-200">{projectTeamMembers.map(c => c.name).join(', ') || 'None'}</p>
-                            </div>
-                        </div>
-                    </div>
+                {/* Body Grid - Main Content and Collaboration Sidebar */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    {/* Main Content - 2 columns */}
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* Project Details and AI Tools Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Left Column: Details */}
+                            <div className="lg:col-span-2">
+                                <h3 className="text-lg font-semibold text-slate-800 mb-3 dark:text-slate-200">Project Description</h3>
+                                <p className="text-slate-600 mb-6 dark:text-slate-300">{project.description}</p>
 
-                    {/* Right Column: AI Tools */}
-                    <div className="space-y-8">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                                    <div>
+                                        <p className="text-slate-500 dark:text-slate-400">Start Date</p>
+                                        <p className="font-medium text-slate-800 dark:text-slate-200">{new Date(project.startDate).toLocaleDateString()}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-slate-500 dark:text-slate-400">End Date</p>
+                                        <p className="font-medium text-slate-800 dark:text-slate-200">{new Date(project.endDate).toLocaleDateString()}</p>
+                                    </div>
+                                    <div className="col-span-1 sm:col-span-2">
+                                        <p className="text-slate-500 dark:text-slate-400">Assigned Team Members</p>
+                                        <p className="font-medium text-slate-800 dark:text-slate-200">{projectTeamMembers.map(c => c.name).join(', ') || 'None'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Column: AI Tools */}
+                            <div className="space-y-8">
                         <div className="bg-gradient-to-br from-cyan-50 to-sky-100 p-6 rounded-lg border border-cyan-200/50 dark:bg-gradient-to-br dark:from-slate-800/50 dark:to-slate-900/50 dark:border-white/10">
                             <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">AI Project Summary</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Let Gemini create a status report with the latest relevant news.</p>
@@ -256,11 +263,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, client, p
                                 </div>
                             )}
                         </div>
-                    </div>
-                </div>
+                            </div>
+                        </div>
 
-                {/* Task Section */}
-                <div>
+                        {/* Task Section */}
+                        <div>
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                         <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Tasks</h3>
                          <div className="flex items-center gap-1 p-1 bg-black/10 dark:bg-black/20 rounded-lg border border-white/20">
@@ -326,6 +333,69 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, client, p
                     ) : (
                         <TaskTimeline project={project} allTeamMembers={allTeamMembers} />
                     )}
+                        </div>
+                    </div>
+
+                    {/* Collaboration Sidebar - 1 column */}
+                    <div className="space-y-4">
+                        {currentUser && (
+                            <>
+                                <WatchEntityButton
+                                    entityType="project"
+                                    entityId={project.id}
+                                    currentUserId={currentUser.id}
+                                />
+
+                                <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                                    {!currentUser ? (
+                                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                                            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                                                Please log in to view and participate in discussions.
+                                            </p>
+                                        </div>
+                                    ) : !teamMembers || teamMembers.length === 0 ? (
+                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                Loading team members...
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <CollaborationErrorBoundary>
+                                            <CommentThread
+                                                entityType="project"
+                                                entityId={project.id}
+                                                currentUser={currentUser}
+                                                teamMembers={teamMembers}
+                                                title="Project Discussion"
+                                                placeholder="Comment on this project... Use @ to mention team members"
+                                            />
+                                        </CollaborationErrorBoundary>
+                                    )}
+                                </div>
+
+                                <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                                    {!currentUser ? (
+                                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                                            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                                                Please log in to view activity.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <CollaborationErrorBoundary>
+                                            <CollaborationActivityFeed
+                                                entityType="project"
+                                                entityId={project.id}
+                                                currentUser={currentUser}
+                                                title="Recent Activity"
+                                                limit={10}
+                                                compact={true}
+                                            />
+                                        </CollaborationErrorBoundary>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 

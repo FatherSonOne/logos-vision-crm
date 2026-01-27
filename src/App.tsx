@@ -6,6 +6,8 @@ import { taskManagementService, type ExtendedTask as TaskViewExtendedTask } from
 import { portalDbService } from './services/portalDbService';
 import { performAdvancedSearch } from './services/geminiService';
 import { performLocalSearch } from './services/localSearchService';
+import { authService } from './services/authService';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 // Core layout components (not lazy loaded - needed immediately)
 import { Header } from './components/Header';
@@ -14,6 +16,7 @@ import { Dashboard } from './components/Dashboard';
 import { ErrorBoundary, PageErrorBoundary, LoadingState } from './components/ErrorBoundary';
 import { useToast } from './components/ui/Toast';
 import { QuickActions, useQuickActions } from './components/QuickActions';
+import { Login } from './components/Login';
 
 // Types
 import type { Client, TeamMember, Project, EnrichedTask, Activity, ChatRoom, ChatMessage, Donation, Volunteer, Case, Document as AppDocument, Webpage, CaseComment, Event, PortalLayout, EmailCampaign, WebSearchResult, SearchResults, AiProjectPlan, Task, RecentItem } from './types';
@@ -28,6 +31,7 @@ const ProjectHub = lazy(() => import('./components/ProjectHub').then(m => ({ def
 const ProjectsCommandCenter = lazy(() => import('./components/ProjectsCommandCenter').then(m => ({ default: m.ProjectsCommandCenter })));
 const Contacts = lazy(() => import('./components/Contacts').then(m => ({ default: m.Contacts })));
 const ContactDetail = lazy(() => import('./components/ContactDetail').then(m => ({ default: m.ContactDetail })));
+const ContactsPageNew = lazy(() => import('./components/contacts/ContactsPage').then(m => ({ default: m.ContactsPage })));
 const OrganizationList = lazy(() => import('./components/OrganizationList').then(m => ({ default: m.OrganizationList })));
 const OrganizationDetail = lazy(() => import('./components/OrganizationDetail').then(m => ({ default: m.OrganizationDetail })));
 const TeamMemberList = lazy(() => import('./components/ConsultantList').then(m => ({ default: m.TeamMemberList })));
@@ -47,7 +51,7 @@ const DocumentsHub = lazy(() => import('./components/documents/DocumentsHub').th
 const WebManagement = lazy(() => import('./components/WebManagement').then(m => ({ default: m.WebManagement })));
 const GoldPages = lazy(() => import('./components/GoldPages').then(m => ({ default: m.GoldPages })));
 const AiChatBot = lazy(() => import('./components/AiChatBot').then(m => ({ default: m.AiChatBot })));
-const AiTools = lazy(() => import('./components/AiTools').then(m => ({ default: m.AiTools })));
+const AiContentStudio = lazy(() => import('./components/AiContentStudio').then(m => ({ default: m.AiContentStudio })));
 const LiveChat = lazy(() => import('./components/LiveChat').then(m => ({ default: m.LiveChat })));
 const SearchResultsPage = lazy(() => import('./components/SearchResultsPage').then(m => ({ default: m.SearchResultsPage })));
 const CaseDetail = lazy(() => import('./components/CaseDetail').then(m => ({ default: m.CaseDetail })));
@@ -115,6 +119,7 @@ import { clientService } from './services/clientService';
 import { taskService } from './services/taskService';
 import { teamMemberService } from './services/teamMemberService';
 import { volunteerService } from './services/volunteerService';
+import { documentService } from './services/documentService';
 import { caseService } from './services/caseService';
 import { donationService } from './services/donationService';
 import * as mockData from './data/mockData';
@@ -143,7 +148,12 @@ window.syncPulseToLogosAll = syncPulseToLogosAll;
 
 const App: React.FC = () => {
   const { showToast } = useToast();
-  
+
+  // Authentication state
+  const [authUser, setAuthUser] = useState<SupabaseUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   // All state now starts empty and loads from Supabase
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(true);
@@ -212,6 +222,37 @@ const App: React.FC = () => {
   
   // Set to Frank Messana's ID by default (Lead Developer/Admin)
   const [currentUserId, setCurrentUserId] = useState<string>('tm-5');
+
+// Helper function to map authenticated user to TeamMember
+const mapAuthUserToTeamMember = useCallback((user: SupabaseUser | null): TeamMember | null => {
+  if (!user) return null;
+
+  // First, try to find existing team member by email
+  const existingMember = teamMembers.find(
+    (tm) => tm.email.toLowerCase() === user.email?.toLowerCase()
+  );
+
+  if (existingMember) {
+    return existingMember;
+  }
+
+  // If not found, create a new team member from auth user metadata
+  const newMember: TeamMember = {
+    id: `auth-${user.id}`,
+    name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+    email: user.email || '',
+    role: user.user_metadata?.role || 'Team Member',
+    permission: user.user_metadata?.permission || 'viewer',
+    profilePicture: user.user_metadata?.avatar_url || user.user_metadata?.picture,
+    isActive: true,
+    lastActiveAt: new Date().toISOString()
+  };
+
+  // Add the new team member to the list
+  setTeamMembers(prev => [...prev, newMember]);
+
+  return newMember;
+}, [teamMembers]);
 
 // Load all data from Supabase or mock data
 async function loadAllData() {
@@ -331,16 +372,27 @@ async function loadAllData() {
     }
   }
 
+  // Load documents from Supabase
+  try {
+    const documentsData = USE_SAMPLE_DATA
+      ? (mockData.mockDocuments || [])
+      : await documentService.getAll();
+    setDocuments(documentsData);
+    console.log('✅ Loaded', documentsData.length, 'documents from', USE_SAMPLE_DATA ? 'Sample Data' : 'Supabase');
+  } catch (error) {
+    console.error('❌ Error loading documents:', error);
+    setDocuments([]);
+  }
+
   // Load additional mock-only data
   if (USE_SAMPLE_DATA) {
-    setDocuments(mockData.mockDocuments || []);
     setEvents(mockData.mockEvents || []);
     setWebpages(mockData.mockWebpages || []);
     setEmailCampaigns(mockData.mockEmailCampaigns || []);
     setChatRooms(mockData.mockChatRooms || []);
     setChatMessages(mockData.mockChatMessages || []);
     setPortalLayouts(mockData.mockPortalLayouts || []);
-    console.log('✅ Loaded additional sample data (documents, events, webpages, campaigns, chat)');
+    console.log('✅ Loaded additional sample data (events, webpages, campaigns, chat)');
   }
 
   // 👇 ADDITIONAL TEST: run syncAll and log result (helpful to prove sync runs)
@@ -367,6 +419,87 @@ async function loadAllData() {
   }
 }
 
+// Authentication handlers
+const handleLogin = async (email: string, password: string) => {
+  try {
+    const { user, error } = await authService.signIn(email, password);
+    if (error) {
+      showToast(error.message || 'Failed to sign in', 'error');
+      return { error };
+    }
+    if (user) {
+      showToast('Welcome back!', 'success');
+    }
+    return { error: null };
+  } catch (error: any) {
+    showToast(error.message || 'An error occurred', 'error');
+    return { error };
+  }
+};
+
+const handleSignUp = async (email: string, password: string, name: string) => {
+  try {
+    const { user, error } = await authService.signUp(email, password, { name, role: 'Team Member' });
+    if (error) {
+      showToast(error.message || 'Failed to sign up', 'error');
+      return { error };
+    }
+    showToast('Account created! Please sign in.', 'success');
+    return { error: null };
+  } catch (error: any) {
+    showToast(error.message || 'An error occurred', 'error');
+    return { error };
+  }
+};
+
+const handleGoogleSignIn = async () => {
+  try {
+    const { error } = await authService.signInWithOAuth('google');
+    if (error) {
+      showToast(error.message || 'Failed to sign in with Google', 'error');
+      return { error };
+    }
+    return { error: null };
+  } catch (error: any) {
+    showToast(error.message || 'An error occurred', 'error');
+    return { error };
+  }
+};
+
+const handleSignOut = async () => {
+  try {
+    const userEmail = authUser?.email;
+    const { error } = await authService.signOut({
+      revokeGoogle: true,
+      userEmail: userEmail || undefined
+    });
+
+    if (error) {
+      showToast('Failed to sign out', 'error');
+    } else {
+      showToast('Signed out successfully', 'success');
+      // Clear all app state
+      setClients([]);
+      setProjects([]);
+      setTasks([]);
+      setActivities([]);
+      setDonations([]);
+      setVolunteers([]);
+      setCases([]);
+      setDocuments([]);
+      setWebpages([]);
+      setEvents([]);
+      setEmailCampaigns([]);
+      setChatRooms([]);
+      setChatMessages([]);
+      setPortalLayouts([]);
+    }
+  } catch (error: any) {
+    console.error('Error signing out:', error);
+    showToast('An error occurred while signing out', 'error');
+  }
+};
+
 // Task callback functions for real-time updates
 const handleTasksUpdate = useCallback((updatedTasks: TaskViewExtendedTask[]) => {
   setTasks(updatedTasks);
@@ -384,10 +517,93 @@ const handleTaskDelete = useCallback(async (taskId: string) => {
   setTasks(prev => prev.filter(task => task.id !== taskId));
 }, []);
 
-// Load data on mount
+// Check authentication state on mount
 useEffect(() => {
-  loadAllData();
+  const checkAuth = async () => {
+    try {
+      setAuthLoading(true);
+
+      // Get current user
+      const user = await authService.getCurrentUser();
+
+      if (user) {
+        setAuthUser(user);
+        setIsAuthenticated(true);
+
+        // Map to team member and set current user
+        const teamMember = mapAuthUserToTeamMember(user);
+        if (teamMember) {
+          setCurrentUserId(teamMember.id);
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      console.error('Error checking auth state:', error);
+      setIsAuthenticated(false);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  checkAuth();
+
+  // Listen for auth state changes
+  const { data: authListener } = authService.onAuthStateChange(async (event, session) => {
+    console.log('Auth state changed:', event, session);
+
+    if (session?.user) {
+      setAuthUser(session.user);
+      setIsAuthenticated(true);
+
+      // Map to team member and set current user
+      const teamMember = mapAuthUserToTeamMember(session.user);
+      if (teamMember) {
+        setCurrentUserId(teamMember.id);
+      }
+
+      // Load data when user signs in
+      if (event === 'SIGNED_IN') {
+        loadAllData();
+      }
+    } else {
+      setAuthUser(null);
+      setIsAuthenticated(false);
+    }
+  });
+
+  // Cleanup listener on unmount
+  return () => {
+    authListener?.subscription?.unsubscribe();
+  };
   // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+// Load data on mount (only if authenticated)
+useEffect(() => {
+  if (isAuthenticated && !authLoading) {
+    loadAllData();
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [isAuthenticated, authLoading]);
+
+// Listen for document updates and reload documents
+useEffect(() => {
+  const handleDocumentsUpdated = async () => {
+    try {
+      console.log('🔄 Reloading documents...');
+      const documentsData = USE_SAMPLE_DATA
+        ? (mockData.mockDocuments || [])
+        : await documentService.getAll();
+      setDocuments(documentsData);
+      console.log('✅ Reloaded', documentsData.length, 'documents');
+    } catch (error) {
+      console.error('❌ Error reloading documents:', error);
+    }
+  };
+
+  window.addEventListener('documents-updated', handleDocumentsUpdated);
+  return () => window.removeEventListener('documents-updated', handleDocumentsUpdated);
 }, []);
 
 // Run a one-time sync to Supabase when real data is loaded (skip sample data)
@@ -699,7 +915,7 @@ useEffect(() => {
     'web-management': 'Web Management',
     'portal-builder': 'Portal Builder',
     'client-portal': 'Client Portal',
-    'ai-tools': 'AI Tools',
+    'ai-tools': 'Content Studio',
     'grant-assistant': 'Grant Assistant',
     'live-chat': 'Live Chat',
     'stewardship': 'Stewardship',
@@ -715,7 +931,7 @@ useEffect(() => {
     'entomate-sync': 'Entomate Sync',
     'settings': 'Settings',
     'outreach-hub': 'Outreach Hub',
-    'forge': 'AI Forge',
+    'forge': 'Content Studio',
     'connect': 'Connect Hub',
     'design-preview': 'Logo Preview'
   }), []);
@@ -870,6 +1086,55 @@ useEffect(() => {
   const handleBackFromContact = useCallback(() => {
     setSelectedContactId(null);
   }, []);
+
+  // Notification navigation handler
+  const handleNotificationNavigate = useCallback((url: string) => {
+    try {
+      const urlObj = new URL(url, window.location.origin);
+      const path = urlObj.pathname.slice(1); // Remove leading /
+      const params = new URLSearchParams(urlObj.search);
+
+      switch(path) {
+        case 'tasks':
+          navigateToPage('tasks');
+          // If there's a task ID, we could select it here
+          const taskId = params.get('id');
+          if (taskId) {
+            // Task selection logic if needed in the future
+          }
+          break;
+        case 'projects':
+          navigateToPage('projects');
+          const projectId = params.get('id');
+          if (projectId) {
+            handleSelectProject(projectId);
+          }
+          break;
+        case 'cases':
+          navigateToPage('case-management');
+          const caseId = params.get('id');
+          if (caseId) {
+            handleSelectCase(caseId);
+          }
+          break;
+        case 'contacts':
+          navigateToPage('contacts');
+          const contactId = params.get('id');
+          if (contactId) {
+            setSelectedContactId(contactId);
+          }
+          break;
+        case 'documents':
+          navigateToPage('documents');
+          break;
+        default:
+          // If unknown path, just try to navigate to it as a page
+          navigateToPage(path as Page);
+      }
+    } catch (error) {
+      console.error('Error navigating from notification:', error);
+    }
+  }, [navigateToPage, handleSelectProject, handleSelectCase]);
 
   // Household handlers
   const handleSelectHousehold = useCallback((householdId: string) => {
@@ -1339,7 +1604,7 @@ useEffect(() => {
     setSearchResults(null);
 
     const searchStartTime = performance.now();
-    const hasApiKey = !!import.meta.env.VITE_API_KEY;
+    const hasApiKey = !!import.meta.env.VITE_GEMINI_API_KEY;
 
     try {
         const allTasks: EnrichedTask[] = projects.flatMap(p =>
@@ -1585,10 +1850,11 @@ useEffect(() => {
                     <ProjectDetail
               project={project}
               client={client}
+              currentUser={currentUser!}
+              teamMembers={teamMembers}
               projectTeamMembers={projectTeamMembers}
               allTeamMembers={teamMembers}
               cases={projectCases}
-              volunteers={volunteers}
               onBack={handleBackToList}
               onUpdateTaskNote={handleUpdateTaskNote}
             />
@@ -1599,7 +1865,8 @@ useEffect(() => {
     
     if (currentPage === 'case' && selectedCaseId) {
         const caseItem = cases.find(c => c.id === selectedCaseId);
-        if (caseItem) {
+        const currentUser = teamMembers.find(tm => tm.id === currentUserId);
+        if (caseItem && currentUser) {
             const client = clients.find(c => c.id === caseItem.clientId);
             const assignee = teamMembers.find(tm => tm.id === caseItem.assignedToId);
             return <CaseDetail
@@ -1608,9 +1875,9 @@ useEffect(() => {
                 assignee={assignee}
                 activities={activities.filter(a => a.caseId === selectedCaseId)}
                 teamMembers={teamMembers}
+                currentUser={currentUser}
                 onBack={handleBackFromCase}
                 onAddComment={handleAddCaseComment}
-                currentUserId={currentUserId}
             />
         }
     }
@@ -1636,7 +1903,7 @@ useEffect(() => {
     }
 
     if (currentPage === 'contacts' && selectedContactId) {
-        return <ContactDetail contactId={selectedContactId} onBack={handleBackFromContact} onNavigateToHousehold={handleSelectHousehold} />;
+        return <ContactDetail contactId={selectedContactId} currentUser={currentUser!} teamMembers={teamMembers} onBack={handleBackFromContact} onNavigateToHousehold={handleSelectHousehold} />;
     }
 
     if (currentPage === 'households' && selectedHouseholdId) {
@@ -1730,7 +1997,10 @@ useEffect(() => {
                   onOpenPulseSettings={() => navigateToPage('pulse-settings')}
                 />;
       case 'contacts':
-        // Unified contacts view - shows all with toggle to filter by type
+        // New redesigned contacts view with relationship intelligence
+        return <ContactsPageNew />;
+      case 'contacts-old':
+        // Legacy contacts view - kept for reference
         return <Contacts
           defaultType="all"
           onSelectContact={handleSelectContact}
@@ -1765,6 +2035,7 @@ useEffect(() => {
         return <TaskView
           projects={projects}
           teamMembers={teamMembers}
+          currentUser={teamMembers.find(tm => tm.id === currentUserId) || teamMembers[0]}
           onSelectTask={handleSelectProject}
           tasks={tasks}
           onTasksUpdate={handleTasksUpdate}
@@ -1852,6 +2123,7 @@ useEffect(() => {
                   clients={clients}
                   projects={projects}
                   teamMembers={teamMembers}
+                  currentUser={currentUser}
                 />;
       case 'web-management':
         return <WebManagement 
@@ -1861,10 +2133,9 @@ useEffect(() => {
                   onEditPage={handleEditPage} 
                 />;
       case 'ai-tools':
-        return <AiTools />;
       case 'forge':
-        // AI Forge - consolidated AI tools workspace
-        return <AiTools />;
+        // AI Content Studio - CRM-integrated content creation workspace
+        return <AiContentStudio />;
       case 'live-chat':
         return <LiveChat />;
       case 'search-results':
@@ -1973,7 +2244,7 @@ useEffect(() => {
             onSyncComplete={() => loadAllData()}
           />;
       case 'settings':
-          return <Settings />;
+          return <Settings onSignOut={handleSignOut} currentUser={currentUser} />;
       case 'design-preview':
           return <DesignPreview />;
       default:
@@ -1990,6 +2261,32 @@ useEffect(() => {
                 />;
     }
   };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-violet-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <Login
+        onLogin={handleLogin}
+        onSignUp={handleSignUp}
+        onGoogleSignIn={handleGoogleSignIn}
+      />
+    );
+  }
+
+  // Get current user as TeamMember
+  const currentUser = teamMembers.find(tm => tm.id === currentUserId);
 
   // CMF tokens handle light/dark via CSS, no need for inline isDark checks
   return (
@@ -2011,6 +2308,8 @@ useEffect(() => {
             onSearch={handleSearch}
             isSearching={isSearching}
             currentPage={currentPage}
+            currentUser={currentUser}
+            onNavigate={handleNotificationNavigate}
             breadcrumbs={currentBreadcrumbs}
             onGoBack={goBack}
             onGoForward={goForward}

@@ -1,5 +1,18 @@
 import '@testing-library/jest-dom';
 
+// Polyfill import.meta for Jest
+(global as any).import = {
+  meta: {
+    env: {
+      VITE_PULSE_API_URL: '',
+      VITE_PULSE_API_KEY: '',
+      DEV: true,
+      PROD: false,
+      MODE: 'test',
+    },
+  },
+};
+
 // Mock HTML2Canvas
 global.HTMLCanvasElement.prototype.toBlob = jest.fn((callback) => {
   callback(new Blob(['mock-canvas-data'], { type: 'image/png' }));
@@ -42,3 +55,13 @@ global.fetch = jest.fn();
 // Suppress console errors in tests
 global.console.error = jest.fn();
 global.console.warn = jest.fn();
+
+// Mock the logger module to avoid import.meta issues
+jest.mock('../utils/logger', () => ({
+  logger: {
+    error: jest.fn((...args) => console.error('[ERROR]', ...args)),
+    warn: jest.fn((...args) => console.warn('[WARN]', ...args)),
+    info: jest.fn((...args) => console.log('[INFO]', ...args)),
+    debug: jest.fn((...args) => console.log('[DEBUG]', ...args)),
+  }
+}));

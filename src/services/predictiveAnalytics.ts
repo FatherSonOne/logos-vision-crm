@@ -70,7 +70,7 @@ class PredictiveAnalyticsService {
   private model: any;
 
   constructor() {
-    const apiKey = import.meta.env.VITE_API_KEY || '';
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
     this.genai = new GoogleGenerativeAI(apiKey);
     this.model = this.genai.getGenerativeModel({
       model: 'gemini-2.0-flash-exp',

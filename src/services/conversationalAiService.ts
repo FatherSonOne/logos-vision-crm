@@ -46,7 +46,7 @@ class ConversationalAiService {
     if (this.initialized) return;
 
     try {
-      const apiKey = import.meta.env.VITE_API_KEY || '';
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 
       if (!apiKey) {
         console.warn('Google Gemini API key not found. AI features will be disabled.');
@@ -85,7 +85,7 @@ class ConversationalAiService {
     if (!this.model) {
       console.warn('AI model not available. Using fallback response.');
       return {
-        content: "AI features are currently unavailable. Please ensure the VITE_API_KEY environment variable is set with a valid Google Gemini API key.",
+        content: "AI features are currently unavailable. Please ensure the VITE_GEMINI_API_KEY environment variable is set with a valid Google Gemini API key.",
         intent: 'error',
         entities: {},
         confidence: 0,

@@ -56,6 +56,7 @@ import {
   Zap,
   Sparkles,
 } from 'lucide-react';
+import { CommentThread, ActivityFeed as CollaborationActivityFeed, CollaborationErrorBoundary } from './collaboration';
 
 // ============================================================================
 // TYPES
@@ -63,7 +64,7 @@ import {
 
 type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 type ExtendedTaskStatus = 'new' | 'assigned' | 'in_progress' | 'completed' | 'overdue';
-type Department = 'Consulting' | 'Operations' | 'Finance' | 'HR' | 'Marketing';
+type Department = 'Consulting' | 'Operations' | 'Finance' | 'HR' | 'Marketing' | 'Unassigned';
 type ViewMode = 'list' | 'kanban' | 'timeline' | 'department' | 'calendar';
 
 interface ExtendedTask {
@@ -121,6 +122,7 @@ const departmentConfig: Record<Department, { color: string; icon: React.ReactNod
   Finance: { color: 'bg-emerald-500', icon: <Building className="w-4 h-4" /> },
   HR: { color: 'bg-pink-500', icon: <Users className="w-4 h-4" /> },
   Marketing: { color: 'bg-purple-500', icon: <Building className="w-4 h-4" /> },
+  Unassigned: { color: 'bg-gray-500', icon: <Building className="w-4 h-4" /> },
 };
 
 // ============================================================================
@@ -195,6 +197,7 @@ const initialTasks: ExtendedTask[] = [
 interface TaskViewProps {
   projects: Project[];
   teamMembers: TeamMember[];
+  currentUser: TeamMember; // Current logged-in user for collaboration features
   onSelectTask: (projectId: string) => void;
   tasks?: ExtendedTask[]; // Optional: shared tasks from parent
   onTasksUpdate?: (tasks: ExtendedTask[]) => void; // Callback to update parent tasks
@@ -204,7 +207,7 @@ interface TaskViewProps {
 // MAIN COMPONENT
 // ============================================================================
 
-export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSelectTask, tasks: propTasks, onTasksUpdate }) => {
+export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, currentUser, onSelectTask, tasks: propTasks, onTasksUpdate }) => {
   // Core state - manage tasks internally and sync with parent if callback provided
   const [tasks, setTasksState] = useState<ExtendedTask[]>([]);
 
@@ -364,7 +367,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
         timeEstimate: taskData.timeEstimate || 4,
         timeSpent: taskData.timeSpent || 0,
         tags: taskData.tags || [],
-      });
+      }, currentUser);
 
       if (newTask) {
         setTasks(prev => [newTask, ...prev]);
@@ -376,7 +379,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
       showToast('Failed to create task', 'error');
       setError('Failed to create task. Please try again.');
     }
-  }, [showToast]);
+  }, [showToast, currentUser]);
 
   const updateTask = useCallback(async (id: string, updates: Partial<ExtendedTask>) => {
     // Optimistic update
@@ -386,7 +389,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
     }
 
     try {
-      await taskManagementService.update(id, updates);
+      await taskManagementService.update(id, updates, currentUser);
       showToast('Task updated successfully');
     } catch (err) {
       console.error('Error updating task:', err);
@@ -395,7 +398,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
       loadTasks();
       setError('Failed to update task. Please try again.');
     }
-  }, [selectedTask, showToast, loadTasks]);
+  }, [selectedTask, showToast, loadTasks, currentUser]);
 
   const deleteTask = useCallback(async (id: string) => {
     // Optimistic update
@@ -971,6 +974,8 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, onSel
           onUpdate={updateTask}
           onDelete={deleteTask}
           assignees={assignees}
+          currentUser={currentUser}
+          teamMembers={teamMembers}
           aiEnabled={aiEnabled}
           taskSummary={taskSummaries[selectedTask.id] || null}
           loadingTaskSummary={loadingTaskSummary}
@@ -1943,6 +1948,8 @@ const TaskDetailModal: React.FC<{
   onUpdate: (id: string, updates: Partial<ExtendedTask>) => void;
   onDelete: (id: string) => void;
   assignees: { id: string; name: string }[];
+  currentUser: TeamMember;
+  teamMembers: TeamMember[];
   aiEnabled?: boolean;
   taskSummary?: TaskSummary | null;
   loadingTaskSummary?: boolean;
@@ -1954,13 +1961,15 @@ const TaskDetailModal: React.FC<{
   onUpdate,
   onDelete,
   assignees,
+  currentUser,
+  teamMembers,
   aiEnabled = false,
   taskSummary,
   loadingTaskSummary = false,
   onRequestTaskSummary,
   taskRisk,
 }) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'subtasks' | 'activity'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'subtasks' | 'activity' | 'comments'>('details');
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(task);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -2100,7 +2109,7 @@ const TaskDetailModal: React.FC<{
         {/* Tabs */}
         <div className="border-b border-gray-200 dark:border-slate-700">
           <div className="flex">
-            {(['details', 'subtasks', 'activity'] as const).map(tab => (
+            {(['details', 'subtasks', 'comments', 'activity'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -2303,33 +2312,53 @@ const TaskDetailModal: React.FC<{
           )}
 
           {activeTab === 'activity' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Plus className="w-4 h-4 text-blue-600" />
+            <div className="-m-6">
+              {!currentUser ? (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    Please log in to view activity.
+                  </p>
                 </div>
-                <div>
-                  <p className="text-gray-900 dark:text-white">Task created</p>
-                  <p className="text-xs text-gray-500">{new Date(task.createdAt).toLocaleString()}</p>
-                </div>
-              </div>
-              {task.completedAt && (
-                <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-gray-900 dark:text-white">Task completed</p>
-                    <p className="text-xs text-gray-500">{new Date(task.completedAt).toLocaleString()}</p>
-                  </div>
-                </div>
+              ) : (
+                <CollaborationErrorBoundary>
+                  <CollaborationActivityFeed
+                    entityType="task"
+                    entityId={task.id}
+                    currentUser={currentUser}
+                    title=""
+                    compact={true}
+                  />
+                </CollaborationErrorBoundary>
               )}
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <MessageSquare className="w-4 h-4" />
-                {task.comments} comments
-                <Paperclip className="w-4 h-4 ml-4" />
-                {task.attachments} attachments
-              </div>
+            </div>
+          )}
+
+          {activeTab === 'comments' && (
+            <div className="-m-6">
+              {!currentUser ? (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    Please log in to view and participate in discussions.
+                  </p>
+                </div>
+              ) : !teamMembers || teamMembers.length === 0 ? (
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Loading team members...
+                  </p>
+                </div>
+              ) : (
+                <CollaborationErrorBoundary>
+                  <CommentThread
+                    entityType="task"
+                    entityId={task.id}
+                    currentUser={currentUser}
+                    teamMembers={teamMembers}
+                    title=""
+                    placeholder="Add a comment... Use @ to mention a team member"
+                  />
+                </CollaborationErrorBoundary>
+              )}
             </div>
           )}
         </div>

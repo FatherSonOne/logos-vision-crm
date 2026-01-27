@@ -67,7 +67,7 @@ const SearchStatusIndicator: React.FC<{ meta?: SearchMeta }> = ({ meta }) => {
                         backgroundColor: 'var(--cmf-surface-2)',
                         color: 'var(--cmf-text-muted)',
                     }}
-                    title="Configure VITE_API_KEY to enable AI-powered search"
+                    title="Configure VITE_GEMINI_API_KEY to enable AI-powered search"
                 >
                     <Cpu className="w-3.5 h-3.5 opacity-50" />
                     <span className="font-medium opacity-50">AI Disabled</span>

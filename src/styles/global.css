@@ -1,0 +1,834 @@
+/* ========================================
+   LOGOS VISION CRM - GLOBAL STYLES
+   ======================================== */
+
+/* Font Family */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* ========================================
+   REFINED COLOR SYSTEM
+   ======================================== */
+
+:root {
+    /* Primary Brand Colors - Cyan/Teal */
+    --color-primary-50: #ecfeff;
+    --color-primary-100: #cffafe;
+    --color-primary-200: #a5f3fc;
+    --color-primary-300: #67e8f9;
+    --color-primary-400: #22d3ee;
+    --color-primary-500: #06b6d4;
+    --color-primary-600: #0891b2;
+    --color-primary-700: #0e7490;
+    --color-primary-800: #155e75;
+    --color-primary-900: #164e63;
+
+    /* Secondary Colors - Indigo */
+    --color-secondary-50: #eef2ff;
+    --color-secondary-100: #e0e7ff;
+    --color-secondary-200: #c7d2fe;
+    --color-secondary-300: #a5b4fc;
+    --color-secondary-400: #818cf8;
+    --color-secondary-500: #6366f1;
+    --color-secondary-600: #4f46e5;
+    --color-secondary-700: #4338ca;
+    --color-secondary-800: #3730a3;
+    --color-secondary-900: #312e81;
+
+    /* Success Colors */
+    --color-success-50: #ecfdf5;
+    --color-success-100: #d1fae5;
+    --color-success-200: #a7f3d0;
+    --color-success-300: #6ee7b7;
+    --color-success-400: #34d399;
+    --color-success-500: #10b981;
+    --color-success-600: #059669;
+    --color-success-700: #047857;
+    --color-success-800: #065f46;
+    --color-success-900: #064e3b;
+
+    /* Warning Colors */
+    --color-warning-50: #fffbeb;
+    --color-warning-100: #fef3c7;
+    --color-warning-200: #fde68a;
+    --color-warning-300: #fcd34d;
+    --color-warning-400: #fbbf24;
+    --color-warning-500: #f59e0b;
+    --color-warning-600: #d97706;
+    --color-warning-700: #b45309;
+    --color-warning-800: #92400e;
+    --color-warning-900: #78350f;
+
+    /* Error Colors */
+    --color-error-50: #fef2f2;
+    --color-error-100: #fee2e2;
+    --color-error-200: #fecaca;
+    --color-error-300: #fca5a5;
+    --color-error-400: #f87171;
+    --color-error-500: #ef4444;
+    --color-error-600: #dc2626;
+    --color-error-700: #b91c1c;
+    --color-error-800: #991b1b;
+    --color-error-900: #7f1d1d;
+
+    /* Info Colors */
+    --color-info-50: #eff6ff;
+    --color-info-100: #dbeafe;
+    --color-info-200: #bfdbfe;
+    --color-info-300: #93c5fd;
+    --color-info-400: #60a5fa;
+    --color-info-500: #3b82f6;
+    --color-info-600: #2563eb;
+    --color-info-700: #1d4ed8;
+    --color-info-800: #1e40af;
+    --color-info-900: #1e3a8a;
+
+    /* Neutral Colors - Enhanced Contrast */
+    --color-neutral-50: #f8fafc;
+    --color-neutral-100: #f1f5f9;
+    --color-neutral-200: #e2e8f0;
+    --color-neutral-300: #cbd5e1;
+    --color-neutral-400: #94a3b8;
+    --color-neutral-500: #64748b;
+    --color-neutral-600: #475569;
+    --color-neutral-700: #334155;
+    --color-neutral-800: #1e293b;
+    --color-neutral-900: #0f172a;
+
+    /* Surface Colors (Light Mode) */
+    --color-surface-base: #ffffff;
+    --color-surface-elevated: rgba(255, 255, 255, 0.9);
+    --color-surface-overlay: rgba(255, 255, 255, 0.7);
+
+    /* Text Colors (Light Mode) */
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #334155;
+    --color-text-tertiary: #64748b;
+    --color-text-muted: #94a3b8;
+
+    /* Border Colors (Light Mode) */
+    --color-border-primary: rgba(226, 232, 240, 0.8);
+    --color-border-secondary: rgba(203, 213, 225, 0.6);
+
+    /* Background Gradients */
+    --gradient-primary: linear-gradient(135deg, #ecfeff 0%, #cffafe 50%, #e0e7ff 100%);
+    --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+}
+
+/* Dark Mode Color Overrides - Nothing/Pulse Matte Black Style */
+html.dark {
+    /* Surface Colors (Dark Mode) - Pure Matte Black */
+    --color-surface-base: #000000;
+    --color-surface-elevated: #0a0a0a;
+    --color-surface-overlay: #0f0f0f;
+
+    /* Text Colors (Dark Mode) - High Contrast */
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #b3b3b3;
+    --color-text-tertiary: #808080;
+    --color-text-muted: #4d4d4d;
+
+    /* Border Colors (Dark Mode) - Subtle Matte */
+    --color-border-primary: #1a1a1a;
+    --color-border-secondary: #2a2a2a;
+
+    /* Background - Solid Matte Black (no gradient) */
+    --gradient-primary: #000000;
+    --gradient-card: #0a0a0a;
+
+    /* Light Blue Accent (Nothing Brand) */
+    --color-accent-nothing: #7dd3fc;
+    --color-accent-nothing-hover: #a5f3fc;
+}
+
+/* Aero background - Using new color system */
+body.light-mode {
+     background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 25%, #dbeafe 50%, #ecfeff 75%, #f1f5f9 100%);
+     background-size: 400% 400%;
+     animation: animatedGradient 30s ease infinite;
+     background-attachment: fixed;
+}
+body.dark-mode {
+    background: #000000 !important;
+    background-size: auto;
+    animation: none;
+}
+
+/* Improve text readability over transparent backgrounds */
+.dark .text-shadow-strong { text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+.text-shadow-strong { text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+/* ========================================
+   MODERN ACRYLIC GLASS EFFECTS
+   ======================================== */
+
+/* Acrylic card base style */
+.acrylic-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+}
+
+html.dark .acrylic-card {
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* Acrylic sidebar */
+.acrylic-sidebar {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border-right: 1px solid rgba(226, 232, 240, 0.4);
+}
+
+html.dark .acrylic-sidebar {
+    background: #000000;
+    border-right: 1px solid #1a1a1a;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* Acrylic header */
+.acrylic-header {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+html.dark .acrylic-header {
+    background: #000000;
+    border-bottom: 1px solid #1a1a1a;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* Acrylic modal/dialog */
+.acrylic-modal {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+html.dark .acrylic-modal {
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* Frosted glass button */
+.frosted-btn {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.frosted-btn:hover {
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+html.dark .frosted-btn {
+    background: #0f0f0f;
+    border: 1px solid #1a1a1a;
+}
+
+html.dark .frosted-btn:hover {
+    background: #1a1a1a;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border-color: #7dd3fc;
+}
+
+/* Custom Scrollbar for Aero Theme */
+::-webkit-scrollbar {
+    width: 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+html.dark ::-webkit-scrollbar {
+    background-color: #000000;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+    background-color: #1a1a1a;
+    border: 2px solid #000000;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+    background-color: #2a2a2a;
+}
+
+/* Utility to hide scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* --- Micro-interaction Animations --- */
+@keyframes animatedGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.fade-in {
+    opacity: 0; /* Start hidden */
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeInPage {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.page-content-wrapper {
+    animation: fadeInPage 0.35s ease-out forwards;
+}
+
+.btn-hover-scale {
+    transition: transform 0.2s ease-in-out;
+}
+.btn-hover-scale:hover {
+    transform: scale(1.03);
+}
+
+/* ========================================
+   CARD HOVER EFFECTS - Subtle Lift System
+   ======================================== */
+
+/* Base card lift effect */
+.card-lift {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+html.dark .card-lift:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+    border-color: #2a2a2a;
+}
+
+/* Subtle card lift (less dramatic) */
+.card-lift-subtle {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.3s ease;
+}
+
+.card-lift-subtle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.08),
+                0 8px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+html.dark .card-lift-subtle:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    border-color: #2a2a2a;
+}
+
+/* Interactive card (for clickable cards) */
+.card-interactive {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.3s ease;
+    cursor: pointer;
+}
+
+.card-interactive:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.12),
+                0 15px 15px -5px rgba(0, 0, 0, 0.06);
+}
+
+html.dark .card-interactive:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+    border-color: #7dd3fc;
+}
+
+.card-interactive:active {
+    transform: translateY(-2px) scale(0.99);
+}
+
+/* Glow effect on hover */
+.card-glow {
+    position: relative;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-glow:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(34, 211, 238, 0.15),
+                0 10px 10px -5px rgba(34, 211, 238, 0.08);
+}
+
+html.dark .card-glow:hover {
+    box-shadow: 0 0 20px rgba(125, 211, 252, 0.15),
+                0 8px 16px rgba(0, 0, 0, 0.4);
+    border-color: #7dd3fc;
+}
+
+/* Scale and lift combo */
+.card-scale-lift {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-scale-lift:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.12),
+                0 15px 15px -5px rgba(0, 0, 0, 0.06);
+}
+
+html.dark .card-scale-lift:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+    border-color: #2a2a2a;
+}
+
+/* Animate in utility */
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-in {
+  animation-fill-mode: both;
+}
+
+.slide-in-from-right {
+  animation-name: slide-in-from-right;
+}
+
+.duration-300 {
+  animation-duration: 300ms;
+}
+
+/* ========================================
+   LOADING & TRANSITION ANIMATIONS
+   ======================================== */
+
+@keyframes loading-bar {
+  0% {
+    left: -33%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Page transition animations */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes page-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: page-slide-up 0.4s ease-out forwards;
+}
+
+/* Staggered fade-in for list items */
+@keyframes stagger-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-item {
+  opacity: 0;
+  animation: stagger-fade-in 0.4s ease-out forwards;
+}
+
+/* Shimmer effect for progress bars */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* ========================================
+   ADVANCED MICRO-INTERACTIONS
+   ======================================== */
+
+/* Toast notifications */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Modal animations */
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-backdrop {
+  animation: modal-fade-in 0.2s ease-out forwards;
+}
+
+/* ========================================
+   COMMAND PALETTE ANIMATIONS
+   ======================================== */
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.modal-content {
+  animation: modal-scale-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Button ripple effect */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-ripple:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Pulse animation for attention */
+@keyframes pulse-attention {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-attention {
+  animation: pulse-attention 2s ease-in-out infinite;
+}
+
+/* Success checkmark animation */
+@keyframes success-check {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-success-check {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: success-check 0.6s ease-out forwards;
+}
+
+/* Shake animation for errors */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Bounce in animation */
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Slide in from bottom */
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up-fade {
+  animation: slide-up-fade 0.4s ease-out forwards;
+}
+
+/* Glow pulse for primary actions - Light blue accent */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(125, 211, 252, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(125, 211, 252, 0.5), 0 0 25px rgba(125, 211, 252, 0.2);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Context menu scale-in animation */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Tutorial animations */
+@keyframes bounce-horizontal {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-10px);
+  }
+}
+
+.animate-bounce-horizontal {
+  animation: bounce-horizontal 1s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Slide in from right for collaboration panel */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ========================================
+   COLLAPSIBLE SIDEBAR ENHANCEMENTS
+   ======================================== */
+
+/* Custom scrollbar for sidebar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.5);
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #1a1a1a;
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #2a2a2a;
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+/* Smooth sidebar width transition */
+#main-sidebar {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Logo smooth transition */
+.logo-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced tooltip positioning */
+.sidebar-tooltip {
+  transition: opacity 0.2s, visibility 0.2s;
+  transition-delay: 0.3s;
+}

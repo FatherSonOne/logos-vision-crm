@@ -9,10 +9,13 @@ import { getStoredThemeMode, setThemeMode, resolveTheme } from '../theme/theme';
 import { getUserSettings, saveUserSettings, defaultSettings, type UserSettings } from '../services/settingsService';
 import { DataImportExport } from '../../components/DataImportExport';
 import { PulseIntegrationSettings } from './PulseIntegrationSettings';
+import type { TeamMember } from '../types';
 
 interface SettingsProps {
     userEmail?: string;
     organizationName?: string;
+    onSignOut?: () => void;
+    currentUser?: TeamMember | null;
 }
 
 interface SettingsSection {
@@ -98,7 +101,9 @@ const ComputerIcon = () => (
 
 export const Settings: React.FC<SettingsProps> = ({
     userEmail,
-    organizationName = 'My Organization'
+    organizationName = 'My Organization',
+    onSignOut,
+    currentUser
 }) => {
     const [activeSection, setActiveSection] = useState('account');
     const [searchQuery, setSearchQuery] = useState('');
@@ -315,7 +320,7 @@ export const Settings: React.FC<SettingsProps> = ({
                             <div className="space-y-4">
                                 <div className="flex items-center gap-6">
                                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-rose-400 to-rose-600 flex items-center justify-center text-white text-2xl font-bold">
-                                        {settings.displayName ? settings.displayName.charAt(0).toUpperCase() : userEmail?.charAt(0).toUpperCase() || 'U'}
+                                        {(settings.displayName || currentUser?.name || userEmail || 'U').charAt(0).toUpperCase()}
                                     </div>
                                     <div>
                                         <Button variant="outline" size="sm">Upload Photo</Button>
@@ -328,7 +333,7 @@ export const Settings: React.FC<SettingsProps> = ({
                                     </label>
                                     <input
                                         type="text"
-                                        value={settings.displayName}
+                                        value={settings.displayName || currentUser?.name || ''}
                                         onChange={(e) => updateSetting('displayName', e.target.value)}
                                         placeholder="Enter your display name"
                                         className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent"
@@ -340,7 +345,7 @@ export const Settings: React.FC<SettingsProps> = ({
                                     </label>
                                     <input
                                         type="email"
-                                        value={userEmail || ''}
+                                        value={userEmail || currentUser?.email || ''}
                                         readOnly
                                         className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400"
                                     />
@@ -352,6 +357,19 @@ export const Settings: React.FC<SettingsProps> = ({
                                     <h4 className="font-medium text-gray-900 dark:text-white mb-3">Password</h4>
                                     <Button variant="outline" size="sm">Change Password</Button>
                                 </div>
+                                {onSignOut && (
+                                    <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
+                                        <h4 className="font-medium text-gray-900 dark:text-white mb-3">Account Actions</h4>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={onSignOut}
+                                            className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/20"
+                                        >
+                                            Sign Out
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

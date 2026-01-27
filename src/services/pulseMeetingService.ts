@@ -85,9 +85,9 @@ export interface MeetingRoomInfo {
 // PULSE API CONFIGURATION
 // ============================================
 
-const PULSE_BASE_URL = 'http://localhost:5174'; // Local Pulse app
-const PULSE_SUPABASE_URL = 'https://ucaeuszgoihoyrvhewxk.supabase.co';
-const PULSE_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjYWV1c3pnb2lob3lydmhld3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjg5ODYsImV4cCI6MjA4MDgwNDk4Nn0.0VGjpsPBYjyk6QTG5rAQX4_NcpfBTyR85ofE5jiHTKo';
+const PULSE_BASE_URL = import.meta.env.VITE_PULSE_API_URL || 'http://localhost:5174'; // Local Pulse app
+const PULSE_SUPABASE_URL = import.meta.env.VITE_PULSE_SUPABASE_URL || import.meta.env.HUB_SUPABASE_URL;
+const PULSE_SUPABASE_KEY = import.meta.env.VITE_PULSE_SUPABASE_KEY || import.meta.env.HUB_SUPABASE_ANON_KEY;
 
 // ============================================
 // ROW MAPPERS

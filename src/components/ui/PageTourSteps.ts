@@ -276,18 +276,42 @@ export const pulseChatTourSteps: TourStep[] = [
   }
 ];
 
-// AI Tools tour steps
-export const aiToolsTourSteps: TourStep[] = [
+// AI Content Studio tour steps
+export const contentStudioTourSteps: TourStep[] = [
   {
     selector: '#main-sidebar',
     title: 'Navigation',
-    content: 'You are viewing AI Tools. Get intelligent assistance for your work.',
+    content: 'You are viewing the AI Content Studio. Create compelling content powered by your CRM data.',
     position: 'right'
   },
   {
     selector: '#global-search',
     title: 'Search',
-    content: 'AI can help you find information across your entire CRM.',
+    content: 'Search across your CRM to find contacts, projects, and data to use in your content.',
+    position: 'bottom'
+  },
+  {
+    selector: '[data-tab-id="communications"]',
+    title: 'Communications',
+    content: 'Generate personalized donor thank-you letters, appeal letters, and follow-up emails.',
+    position: 'bottom'
+  },
+  {
+    selector: '[data-tab-id="campaigns"]',
+    title: 'Campaigns',
+    content: 'Create newsletter content, social media posts, and event materials.',
+    position: 'bottom'
+  },
+  {
+    selector: '[data-tab-id="grants"]',
+    title: 'Grants',
+    content: 'Generate grant narratives, impact stories, and proposal sections.',
+    position: 'bottom'
+  },
+  {
+    selector: '[data-tab-id="media"]',
+    title: 'Media Analysis',
+    content: 'Analyze images, videos, and transcribe audio using AI.',
     position: 'bottom'
   },
   {
@@ -335,7 +359,8 @@ export const pageTourStepsMap: Record<string, TourStep[]> = {
   'volunteers': volunteersTourSteps,
   'settings': settingsTourSteps,
   'pulse-chat': pulseChatTourSteps,
-  'ai-tools': aiToolsTourSteps,
+  'ai-tools': contentStudioTourSteps,
+  'forge': contentStudioTourSteps,
 };
 
 // Get tour steps for a specific page

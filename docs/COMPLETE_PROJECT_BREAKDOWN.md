@@ -474,8 +474,8 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 VITE_DEV_MODE=true
 
 # Google Services
-VITE_API_KEY=AIzaSyAxjKjbzJTzOEg2dQ_S7z6NciiPUqFrX7o
-VITE_GOOGLE_MAPS_KEY=AIzaSyD3CAVYUQfY2cQ0tqF00ABSRJZUxVcCMF0
+VITE_API_KEY=your_gemini_api_key_here
+VITE_GOOGLE_MAPS_KEY=your_google_maps_api_key_here
 ```
 
 **Important:** All variables must start with `VITE_` to be accessible in client code.

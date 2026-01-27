@@ -179,7 +179,7 @@ Return ONLY a valid JSON object:
   try {
     const ai = await import('@google/genai');
     const GoogleGenAI = ai.GoogleGenAI;
-    const apiKey = import.meta.env.VITE_API_KEY;
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
       return {
         shouldEscalate: false,
@@ -487,7 +487,7 @@ Return ONLY a valid JSON array:
 
     const ai = await import('@google/genai');
     const GoogleGenAI = ai.GoogleGenAI;
-    const apiKey = import.meta.env.VITE_API_KEY;
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
       return [];
     }

@@ -19,10 +19,17 @@ async function getAI() {
     // Dynamically import the library only when needed
     const genai = await import('@google/genai');
     GoogleGenAI = genai.GoogleGenAI;
-    
-    const apiKey = import.meta.env.VITE_API_KEY;
+
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    console.log('[DEBUG] API Key check:', {
+      found: !!apiKey,
+      length: apiKey?.length,
+      prefix: apiKey?.substring(0, 10),
+      envVarName: 'VITE_GEMINI_API_KEY'
+    });
+
     if (!apiKey) {
-      console.warn('VITE_API_KEY not found. AI features will be disabled.');
+      console.warn('VITE_GEMINI_API_KEY not found. AI features will be disabled.');
       ai = new GoogleGenAI({ apiKey: 'not-configured' });
     } else {
       ai = new GoogleGenAI({ apiKey });
@@ -38,7 +45,7 @@ export async function generateProjectSummary(
   client: Client,
   allTeamMembers: TeamMember[],
 ): Promise<{ summary: string; sources: any[] }> {
-  if (!import.meta.env.VITE_API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     return { summary: "API key is not configured.", sources: [] };
   }
     
@@ -100,7 +107,7 @@ export async function analyzeProjectRisk(
   project: Project,
   cases: Case[]
 ): Promise<RiskAnalysisResult> {
-  if (!import.meta.env.VITE_API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     return { riskLevel: 'Low', explanation: 'API key not configured.' };
   }
 
@@ -180,7 +187,7 @@ const projectPlanSchema = {
 };
 
 export async function generateProjectPlan(goal: string): Promise<AiProjectPlan> {
-    if (!import.meta.env.VITE_API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
         return { projectName: 'Error', description: 'API key not configured.', phases: [] };
     }
 
@@ -265,7 +272,7 @@ export async function generateDonorInsights(
     activities: Activity[],
     events: Event[]
 ): Promise<DonorInsightsResult> {
-    if (!import.meta.env.VITE_API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
         return { insights: 'API Key not configured.', suggestion: { text: '', actionType: 'None' } };
     }
 
@@ -308,7 +315,7 @@ export async function generateDonorInsights(
 
 
 export async function generateSpokenText(text: string): Promise<string | null> {
-    if (!import.meta.env.VITE_API_KEY) return null;
+    if (!import.meta.env.VITE_GEMINI_API_KEY) return null;
     try {
         const response = await (await getAI()).models.generateContent({
             model: "gemini-2.5-flash-preview-tts",
@@ -358,7 +365,7 @@ export async function generateFormFromDescription(
   formDescription: string,
   client: Client | null,
 ): Promise<string> {
-    if (!import.meta.env.VITE_API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
         return JSON.stringify({ error: "API key is not configured." });
     }
     const prompt = `
@@ -402,7 +409,7 @@ const subjectLinesSchema = {
 
 
 export async function generateEmailContent(prompt: string): Promise<{ subject: string, body: string }> {
-    if (!import.meta.env.VITE_API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
         return { subject: "Error", body: "API key is not configured." };
     }
     const fullPrompt = `
@@ -431,7 +438,7 @@ export async function generateFollowUpEmail(
     insight: string,
     senderName: string,
 ): Promise<{ subject: string, body: string }> {
-    if (!import.meta.env.VITE_API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
         return { subject: "Error", body: "API key is not configured." };
     }
 
@@ -468,7 +475,7 @@ export async function generateFollowUpEmail(
 }
 
 export async function generateSubjectLineVariations(prompt: string): Promise<{ subjectA: string, subjectB: string }> {
-    if (!import.meta.env.VITE_API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
         return { subjectA: "Error: API Key not configured", subjectB: "" };
     }
     const fullPrompt = `
@@ -496,7 +503,7 @@ export async function generateGrantNarrative(
   prompt: string,
   contextData?: string
 ): Promise<string> {
-  if (!import.meta.env.VITE_API_KEY) return "API key not configured.";
+  if (!import.meta.env.VITE_GEMINI_API_KEY) return "API key not configured.";
   
   const fullPrompt = `
     You are an expert grant writer for non-profit organizations. Your tone is professional, persuasive, and data-driven.
@@ -543,7 +550,7 @@ const colorPaletteSchema = {
 };
 
 export async function generateColorPalette(themeDescription: string): Promise<string> {
-    if (!import.meta.env.VITE_API_KEY) return JSON.stringify({ error: "API key is not configured." });
+    if (!import.meta.env.VITE_GEMINI_API_KEY) return JSON.stringify({ error: "API key is not configured." });
     const prompt = `Generate a cohesive color palette for a webpage based on the theme: "${themeDescription}". Provide hex codes.`;
     try {
         const response = await (await getAI()).models.generateContent({
@@ -559,7 +566,7 @@ export async function generateColorPalette(themeDescription: string): Promise<st
 }
 
 export async function generateWebpageText(prompt: string): Promise<string> {
-    if (!import.meta.env.VITE_API_KEY) return "API key not configured.";
+    if (!import.meta.env.VITE_GEMINI_API_KEY) return "API key not configured.";
     const fullPrompt = `You are a web copywriter. Write a short, compelling piece of text (e.g., a headline or paragraph) for a non-profit's website based on the following instruction: "${prompt}"`;
     try {
         const response = await (await getAI()).models.generateContent({ model: 'gemini-2.5-flash', contents: fullPrompt });
@@ -571,7 +578,7 @@ export async function generateWebpageText(prompt: string): Promise<string> {
 }
 
 export async function generateImage(prompt: string, aspectRatio: string): Promise<string | null> {
-    if (!import.meta.env.VITE_API_KEY) return null;
+    if (!import.meta.env.VITE_GEMINI_API_KEY) return null;
     try {
         const response = await (await getAI()).models.generateImages({
             model: 'imagen-4.0-generate-001',
@@ -586,7 +593,7 @@ export async function generateImage(prompt: string, aspectRatio: string): Promis
 }
 
 export async function analyzeSeo(content: WebpageComponent[]): Promise<string> {
-    if (!import.meta.env.VITE_API_KEY) return "API key not configured.";
+    if (!import.meta.env.VITE_GEMINI_API_KEY) return "API key not configured.";
     const textContent = content.map(c => c.content.text || c.content.headline || '').join('\n');
     const prompt = `
         As an SEO expert, analyze the following webpage content for a non-profit organization.
@@ -619,7 +626,7 @@ export async function chatWithBot(
   newMessage: string,
   systemInstruction?: string,
 ): Promise<string> {
-    if (!import.meta.env.VITE_API_KEY) return "API key not configured.";
+    if (!import.meta.env.VITE_GEMINI_API_KEY) return "API key not configured.";
     
     const chatHistory = history.map(msg => ({
         role: msg.senderId === 'USER' ? 'user' : 'model',
@@ -646,7 +653,7 @@ export async function summarizeChatHistory(
   messages: ChatMessage[],
   teamMembers: TeamMember[],
 ): Promise<string> {
-  if (!import.meta.env.VITE_API_KEY) return "API key not configured.";
+  if (!import.meta.env.VITE_GEMINI_API_KEY) return "API key not configured.";
 
   const getSenderName = (senderId: string) => {
     return teamMembers.find(m => m.id === senderId)?.name || 'Unknown User';
@@ -705,7 +712,7 @@ export async function generateSmartReplies(
   chatHistory: ChatMessage[],
   teamMembers: TeamMember[],
 ): Promise<string[]> {
-  if (!import.meta.env.VITE_API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     return [];
   }
 
@@ -778,7 +785,7 @@ export async function recommendVolunteers(
   taskDescription: string,
   volunteers: Volunteer[],
 ): Promise<RecommendedVolunteer[]> {
-  if (!import.meta.env.VITE_API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     return [];
   }
 
@@ -829,7 +836,7 @@ export async function generateOnboardingPacket(
   project: Project,
   teamMembers: TeamMember[],
 ): Promise<string> {
-  if (!import.meta.env.VITE_API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     return "API key not configured.";
   }
 
@@ -885,7 +892,7 @@ export async function generateOnboardingPacket(
 
 
 export async function processTextWithAction(text: string, action: 'improve' | 'summarize' | 'clarify'): Promise<string> {
-  if (!import.meta.env.VITE_API_KEY) return "API key not configured.";
+  if (!import.meta.env.VITE_GEMINI_API_KEY) return "API key not configured.";
   
   let prompt = '';
   switch (action) {
@@ -913,7 +920,14 @@ export async function processTextWithAction(text: string, action: 'improve' | 's
 // --- AI Tools ---
 
 export async function analyzeImage(imageDataB64: string, mimeType: string, prompt: string): Promise<string> {
-    if (!import.meta.env.VITE_API_KEY) return "API key not configured.";
+    if (!import.meta.env.VITE_GEMINI_API_KEY) return "API key not configured.";
+    
+    // Validate base64 data
+    if (!imageDataB64 || typeof imageDataB64 !== 'string' || imageDataB64.trim().length === 0) {
+        console.error("Invalid base64 image data provided");
+        return "Error: Invalid or empty image data.";
+    }
+    
     try {
         const imagePart = { inlineData: { data: imageDataB64, mimeType } };
         const response = await (await getAI()).models.generateContent({
@@ -928,7 +942,7 @@ export async function analyzeImage(imageDataB64: string, mimeType: string, promp
 }
 
 export async function transcribeAudio(audioDataB64: string, mimeType: string): Promise<string> {
-    if (!import.meta.env.VITE_API_KEY) return "API key not configured.";
+    if (!import.meta.env.VITE_GEMINI_API_KEY) return "API key not configured.";
     try {
         const audioPart = { inlineData: { data: audioDataB64, mimeType } };
         const textPart = { text: "Transcribe the following audio recording accurately." };
@@ -973,7 +987,7 @@ const meetingAnalysisSchema = {
 };
 
 export async function analyzeTranscript(transcript: string): Promise<MeetingAnalysisResult> {
-    if (!import.meta.env.VITE_API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
         return { summary: "API key not configured.", actionItems: [] };
     }
 
@@ -1013,7 +1027,7 @@ export async function analyzeTranscript(transcript: string): Promise<MeetingAnal
 
 
 export async function findNearbyPlaces(lat: number, lng: number, query: string): Promise<{ text: string, sources: any[] }> {
-  if (!import.meta.env.VITE_API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     return { text: "API key is not configured.", sources: [] };
   }
   const prompt = `Find the following near the provided location: "${query}"`;
@@ -1041,7 +1055,7 @@ export async function generateReportSummary(
   reportGoal: string,
   dataSourceName: string
 ): Promise<string> {
-  if (!import.meta.env.VITE_API_KEY) return "API key not configured.";
+  if (!import.meta.env.VITE_GEMINI_API_KEY) return "API key not configured.";
 
   const prompt = `
     You are a data analyst for Logos Vision, a consulting firm for non-profits.
@@ -1080,7 +1094,7 @@ export async function generateChartInsights(
   groupBy: string,
   metric: string,
 ): Promise<string> {
-  if (!import.meta.env.VITE_API_KEY) return "- API key is not configured.";
+  if (!import.meta.env.VITE_GEMINI_API_KEY) return "- API key is not configured.";
 
   const prompt = `
     You are a data analyst assistant. Analyze the following summarized data and provide 2-3 concise, insightful bullet points.
@@ -1173,7 +1187,7 @@ export async function performAdvancedSearch(
     allData: AllData,
     includeWebSearch: boolean
 ): Promise<{ internalResults: SearchIdResults, webResults: WebSearchResult[] }> {
-    if (!import.meta.env.VITE_API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
         console.error("API key is not configured.");
         return { internalResults: {}, webResults: [] };
     }
@@ -1368,7 +1382,7 @@ const dailyBriefingSchema = {
 };
 
 export async function generateDailyBriefing(data: BriefingData): Promise<DailyBriefingResult> {
-  if (!import.meta.env.VITE_API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     return {
       greeting: `Good morning, ${data.userName}!`,
       summary: "The AI briefing service is currently unavailable.",
@@ -1501,7 +1515,7 @@ export async function analyzeSentiment(
   clientId: string,
   activities: { date: string; type: string; notes?: string; title: string }[]
 ): Promise<SentimentAnalysisResult> {
-  if (!import.meta.env.VITE_API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     return {
       clientId,
       clientName,
@@ -1584,7 +1598,7 @@ export async function generateOpportunityPitch(
   opportunityType: 'high_capacity_low_engagement' | 'lapsed_major_donor' | 'rising_star',
   details: string
 ): Promise<{ subject: string; pitch: string; suggestedAction: string }> {
-  if (!import.meta.env.VITE_API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     return {
       subject: "Connect with " + clientName,
       pitch: "Please configure the AI service to generate a personalized pitch.",
@@ -1634,7 +1648,7 @@ export async function generateMeetingPrep(
   meetingTitle: string,
   lastInteractions: string[]
 ): Promise<{ talkingPoints: string[]; recentContext: string; openQuestions: string[] }> {
-  if (!import.meta.env.VITE_API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     return {
       talkingPoints: ["Ask about their recent project", "Discuss partnership opportunities"],
       recentContext: "AI service unavailable for full context analysis.",
@@ -1674,5 +1688,327 @@ export async function generateMeetingPrep(
       recentContext: "Could not analyze context.",
       openQuestions: []
     };
+  }
+}
+
+// ===================================================================
+// AI CONTENT STUDIO - New Functions for Content Generation
+// ===================================================================
+
+/**
+ * Generate a personalized donor thank-you letter
+ */
+export async function generateDonorThankYou(
+  contact: Client,
+  donation: Donation,
+  options?: { tone?: 'formal' | 'warm' | 'casual' }
+): Promise<{ subject: string; body: string }> {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    return { subject: "Error", body: "API key is not configured." };
+  }
+
+  const tone = options?.tone || 'warm';
+  const contactName = contact.contactPerson || contact.name || 'Valued Donor';
+  const amount = donation.amount?.toLocaleString() || 'your generous donation';
+  const donationDate = donation.date 
+    ? new Date(donation.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    : 'recently';
+
+  const prompt = `
+    You are a nonprofit development professional writing a personalized thank-you letter for a donation.
+    
+    **Donor Information:**
+    - Name: ${contactName}
+    - Organization: ${contact.name || 'N/A'}
+    - Donation Amount: $${amount}
+    - Donation Date: ${donationDate}
+    - Campaign/Fund: ${donation.campaign || donation.fund || 'General Fund'}
+    
+    **Instructions:**
+    1. Write a ${tone} thank-you letter that feels genuine and personal
+    2. Reference the specific donation amount and what it will help accomplish
+    3. Include a brief mention of impact or how the gift will be used
+    4. Keep it concise (3-4 paragraphs)
+    5. End with gratitude and a warm sign-off
+    
+    Return JSON with 'subject' (email subject line) and 'body' (the letter content).
+  `;
+
+  try {
+    const response = await (await getAI()).models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: { responseMimeType: 'application/json', responseSchema: emailSchema }
+    });
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Error generating thank-you letter:", error);
+    return { subject: "Thank You", body: "An error occurred while generating the letter." };
+  }
+}
+
+/**
+ * Generate a fundraising appeal letter
+ */
+export async function generateAppealLetter(
+  contact: Client,
+  campaignOrCause: string,
+  options?: { tone?: 'formal' | 'warm' | 'casual' }
+): Promise<{ subject: string; body: string }> {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    return { subject: "Error", body: "API key is not configured." };
+  }
+
+  const tone = options?.tone || 'warm';
+  const contactName = contact.contactPerson || contact.name || 'Friend';
+
+  const prompt = `
+    You are a nonprofit development professional writing a compelling fundraising appeal letter.
+    
+    **Recipient Information:**
+    - Name: ${contactName}
+    - Organization: ${contact.name || 'N/A'}
+    - Type: ${contact.type || 'Donor'}
+    
+    **Campaign/Cause:**
+    ${campaignOrCause}
+    
+    **Instructions:**
+    1. Write a ${tone} appeal letter that inspires action
+    2. Open with a compelling hook or story
+    3. Clearly explain the need and opportunity
+    4. Include a specific call to action
+    5. Create urgency without being pushy
+    6. Keep it to 4-5 paragraphs
+    
+    Return JSON with 'subject' (email subject line) and 'body' (the letter content).
+  `;
+
+  try {
+    const response = await (await getAI()).models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: { responseMimeType: 'application/json', responseSchema: emailSchema }
+    });
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Error generating appeal letter:", error);
+    return { subject: "Support Our Mission", body: "An error occurred while generating the letter." };
+  }
+}
+
+/**
+ * Generate a newsletter section with impact metrics
+ */
+export async function generateNewsletterSection(
+  projects: Project[],
+  metrics: any,
+  sectionType: string,
+  customPrompt?: string
+): Promise<string> {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    return "API key is not configured.";
+  }
+
+  const projectContext = projects.length > 0 
+    ? projects.map(p => `- ${p.name}: ${p.description || 'No description'} (Status: ${p.status})`).join('\n')
+    : 'No specific projects selected.';
+
+  const sectionInstructions: Record<string, string> = {
+    impact: 'Highlight key achievements, numbers, and outcomes that demonstrate impact.',
+    stories: 'Tell a compelling story about how your work has made a difference.',
+    updates: 'Provide updates on current projects and initiatives.',
+    upcoming: 'Share upcoming events, deadlines, or opportunities for engagement.',
+    cta: 'Create a compelling call to action that inspires readers to get involved or donate.',
+  };
+
+  const prompt = `
+    You are a nonprofit communications specialist writing a newsletter section.
+    
+    **Section Type:** ${sectionType}
+    **Goal:** ${sectionInstructions[sectionType] || 'Create engaging newsletter content.'}
+    
+    **Project Context:**
+    ${projectContext}
+    
+    **Metrics/Data:**
+    ${JSON.stringify(metrics, null, 2)}
+    
+    ${customPrompt ? `**Additional Instructions:** ${customPrompt}` : ''}
+    
+    Write a newsletter section (2-3 paragraphs) that is engaging, professional, and appropriate for a nonprofit audience.
+    Use concrete numbers and examples when available. Format with clear paragraph breaks.
+  `;
+
+  try {
+    const response = await (await getAI()).models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Error generating newsletter section:", error);
+    return "An error occurred while generating the newsletter section.";
+  }
+}
+
+/**
+ * Generate platform-specific social media posts
+ */
+export async function generateSocialPost(
+  content: string,
+  platform: 'twitter' | 'facebook' | 'linkedin' | 'instagram',
+  project?: Project
+): Promise<string> {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    return "API key is not configured.";
+  }
+
+  const platformConfig: Record<string, { maxLength: number; style: string }> = {
+    twitter: { maxLength: 280, style: 'concise, punchy, with relevant hashtags' },
+    facebook: { maxLength: 500, style: 'conversational and engaging, can be slightly longer' },
+    linkedin: { maxLength: 700, style: 'professional, thought-leadership focused' },
+    instagram: { maxLength: 2200, style: 'visual-first, inspiring, with relevant hashtags' },
+  };
+
+  const config = platformConfig[platform];
+  const projectContext = project 
+    ? `Project: ${project.name} - ${project.description || 'No description'}`
+    : '';
+
+  const prompt = `
+    You are a nonprofit social media manager creating a ${platform} post.
+    
+    **Content Theme:**
+    ${content}
+    
+    ${projectContext ? `**Project Context:** ${projectContext}` : ''}
+    
+    **Platform Guidelines for ${platform}:**
+    - Maximum length: ${config.maxLength} characters
+    - Style: ${config.style}
+    
+    Write a single social media post that:
+    1. Captures attention in the first line
+    2. Communicates the key message clearly
+    3. Includes appropriate emojis (2-3 max)
+    4. Includes 2-3 relevant hashtags
+    5. Stays within the character limit
+    
+    Return ONLY the post text, no additional explanation.
+  `;
+
+  try {
+    const response = await (await getAI()).models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt
+    });
+    return response.text.trim();
+  } catch (error) {
+    console.error("Error generating social post:", error);
+    return "An error occurred while generating the social media post.";
+  }
+}
+
+/**
+ * Generate event materials (invitations, programs, follow-ups)
+ */
+export async function generateEventMaterials(
+  eventDetails: { name: string; date: string; location: string },
+  materialType: string,
+  customPrompt?: string
+): Promise<string> {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    return "API key is not configured.";
+  }
+
+  const materialInstructions: Record<string, string> = {
+    invitation: 'Create an engaging event invitation that builds excitement and provides all necessary details.',
+    program: 'Create a clear event program/agenda that outlines what attendees can expect.',
+    reminder: 'Create a friendly reminder that reiterates key details and builds anticipation.',
+    followup: 'Create a post-event thank you and follow-up that references highlights and next steps.',
+    thankyou: 'Create a heartfelt thank you note for event attendees that acknowledges their participation.',
+  };
+
+  const prompt = `
+    You are a nonprofit event coordinator creating ${materialType} content.
+    
+    **Event Details:**
+    - Event Name: ${eventDetails.name}
+    - Date: ${eventDetails.date}
+    - Location: ${eventDetails.location}
+    
+    **Material Type:** ${materialType}
+    **Goal:** ${materialInstructions[materialType] || 'Create professional event communication.'}
+    
+    ${customPrompt ? `**Additional Instructions:** ${customPrompt}` : ''}
+    
+    Write the ${materialType} content that is professional, engaging, and appropriate for a nonprofit event.
+    Format with clear sections and include all relevant information.
+  `;
+
+  try {
+    const response = await (await getAI()).models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Error generating event materials:", error);
+    return "An error occurred while generating the event materials.";
+  }
+}
+
+/**
+ * Generate an impact story from case data
+ */
+export async function generateImpactStory(
+  caseData: Case | { title: string; description?: string },
+  projectData?: Project,
+  customPrompt?: string
+): Promise<string> {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    return "API key is not configured.";
+  }
+
+  const caseContext = `
+    Case/Story Title: ${caseData.title}
+    Description: ${caseData.description || 'No description provided'}
+  `;
+
+  const projectContext = projectData 
+    ? `Related Project: ${projectData.name} - ${projectData.description || 'No description'}`
+    : '';
+
+  const prompt = `
+    You are a nonprofit storyteller creating a compelling impact story for a grant proposal or annual report.
+    
+    **Case Information:**
+    ${caseContext}
+    
+    ${projectContext ? `**Project Context:** ${projectContext}` : ''}
+    
+    ${customPrompt ? `**Additional Instructions:** ${customPrompt}` : ''}
+    
+    **Guidelines:**
+    1. Write a compelling narrative that humanizes the impact (you may use composite/anonymized details)
+    2. Structure with a clear beginning (challenge), middle (intervention), and end (outcome)
+    3. Include specific, believable details that bring the story to life
+    4. Connect individual impact to broader organizational mission
+    5. Keep it to 3-4 paragraphs
+    6. Maintain dignity and respect for the subjects
+    
+    Write the impact story now.
+  `;
+
+  try {
+    const response = await (await getAI()).models.generateContent({
+      model: 'gemini-2.5-pro',
+      contents: prompt
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Error generating impact story:", error);
+    return "An error occurred while generating the impact story.";
   }
 }

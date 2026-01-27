@@ -3,6 +3,8 @@
  * Tracks and reports application performance metrics
  */
 
+import React from 'react';
+
 interface PerformanceMetric {
   name: string;
   value: number;
@@ -315,7 +317,7 @@ export function usePerformanceMonitor(componentName: string) {
 export function withPerformanceMonitoring<P extends object>(
   Component: React.ComponentType<P>,
   componentName: string
-) {
+): React.ComponentType<P> {
   return (props: P) => {
     React.useEffect(() => {
       const startTime = performance.now();
@@ -325,6 +327,6 @@ export function withPerformanceMonitoring<P extends object>(
       };
     }, []);
 
-    return <Component {...props} />;
+    return React.createElement(Component, props);
   };
 }

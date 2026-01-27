@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  logos-vision-crm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        - VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+        - VITE_GOOGLE_REDIRECT_URI=${VITE_GOOGLE_REDIRECT_URI}
+        - VITE_APP_URL=${VITE_APP_URL}
+        - VITE_LOGOS_SUPABASE_KEY=${VITE_LOGOS_SUPABASE_KEY}
+        - VITE_LOGOS_SUPABASE_URL=${VITE_LOGOS_SUPABASE_URL}
+        - VITE_RESEND_API_KEY=${VITE_RESEND_API_KEY}
+        - VITE_DEV_MODE=${VITE_DEV_MODE}
+        - VITE_API_KEY=${VITE_API_KEY}
+        - VITE_GOOGLE_MAPS_KEY=${VITE_GOOGLE_MAPS_KEY}
+        - VITE_SUPABASE_URL_PROD=${VITE_SUPABASE_URL_PROD}
+        - HUB_SUPABASE_URL=${HUB_SUPABASE_URL}
+        - HUB_SUPABASE_ANON_KEY=${HUB_SUPABASE_ANON_KEY}
+        - HUB_SUPABASE_SERVICE_KEY=${HUB_SUPABASE_SERVICE_KEY}
+        - JWT_SECRET=${JWT_SECRET}
+        - LOGOS_CRM_SUPABASE_URL=${LOGOS_CRM_SUPABASE_URL}
+        - LOGOS_CRM_SUPABASE_KEY=${LOGOS_CRM_SUPABASE_KEY}
+        - PORT=${PORT:-5176}
+    container_name: logos-vision-crm
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    environment:
+      - NODE_ENV=production

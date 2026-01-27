@@ -130,7 +130,7 @@ supabase secrets set SUPABASE_URL=https://psjgmdnrehcwvppbeqjy.supabase.co
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY_HERE
 
 # Optional: Set Gemini API key for AI features
-supabase secrets set GEMINI_API_KEY=AIzaSyCtGHT6HIEV2UOCJJO_qs-Vf1A7V4bNkVw
+supabase secrets set GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 **Verify secrets are set:**
@@ -155,7 +155,7 @@ Before setting up automation, let's test each function works:
 
 ```bash
 curl -X POST "https://psjgmdnrehcwvppbeqjy.supabase.co/functions/v1/task-automation-daily" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q" \
+  -H "Authorization: Bearer your_supabase_anon_key_here" \
   -H "Content-Type: application/json"
 ```
 
@@ -174,7 +174,7 @@ curl -X POST "https://psjgmdnrehcwvppbeqjy.supabase.co/functions/v1/task-automat
 
 ```bash
 curl -X POST "https://psjgmdnrehcwvppbeqjy.supabase.co/functions/v1/task-automation-weekly" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q" \
+  -H "Authorization: Bearer your_supabase_anon_key_here" \
   -H "Content-Type: application/json"
 ```
 
@@ -182,7 +182,7 @@ curl -X POST "https://psjgmdnrehcwvppbeqjy.supabase.co/functions/v1/task-automat
 
 ```bash
 curl -X POST "https://psjgmdnrehcwvppbeqjy.supabase.co/functions/v1/task-automation-rebalance" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q" \
+  -H "Authorization: Bearer your_supabase_anon_key_here" \
   -H "Content-Type: application/json"
 ```
 
@@ -190,7 +190,7 @@ curl -X POST "https://psjgmdnrehcwvppbeqjy.supabase.co/functions/v1/task-automat
 
 ```bash
 curl -X POST "https://psjgmdnrehcwvppbeqjy.supabase.co/functions/v1/task-automation-digest" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q" \
+  -H "Authorization: Bearer your_supabase_anon_key_here" \
   -H "Content-Type: application/json"
 ```
 
@@ -247,7 +247,7 @@ Now let's set up the automated scheduling:
      $$
      SELECT net.http_post(
        url := 'https://psjgmdnrehcwvppbeqjy.supabase.co/functions/v1/task-automation-daily',
-       headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q"}'::jsonb,
+       headers := '{"Content-Type": "application/json", "Authorization": "Bearer your_supabase_anon_key_here"}'::jsonb,
        body := '{}'::jsonb
      );
      $$
@@ -262,7 +262,7 @@ Now let's set up the automated scheduling:
      $$
      SELECT net.http_post(
        url := 'https://psjgmdnrehcwvppbeqjy.supabase.co/functions/v1/task-automation-weekly',
-       headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q"}'::jsonb,
+       headers := '{"Content-Type": "application/json", "Authorization": "Bearer your_supabase_anon_key_here"}'::jsonb,
        body := '{}'::jsonb
      );
      $$
@@ -277,7 +277,7 @@ Now let's set up the automated scheduling:
      $$
      SELECT net.http_post(
        url := 'https://psjgmdnrehcwvppbeqjy.supabase.co/functions/v1/task-automation-rebalance',
-       headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q"}'::jsonb,
+       headers := '{"Content-Type": "application/json", "Authorization": "Bearer your_supabase_anon_key_here"}'::jsonb,
        body := '{}'::jsonb
      );
      $$
@@ -292,7 +292,7 @@ Now let's set up the automated scheduling:
      $$
      SELECT net.http_post(
        url := 'https://psjgmdnrehcwvppbeqjy.supabase.co/functions/v1/task-automation-digest',
-       headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q"}'::jsonb,
+       headers := '{"Content-Type": "application/json", "Authorization": "Bearer your_supabase_anon_key_here"}'::jsonb,
        body := '{}'::jsonb
      );
      $$
@@ -449,7 +449,7 @@ supabase functions deploy task-automation-digest
 # Set secrets
 supabase secrets set SUPABASE_URL=https://psjgmdnrehcwvppbeqjy.supabase.co
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-key-here
-supabase secrets set GEMINI_API_KEY=AIzaSyCtGHT6HIEV2UOCJJO_qs-Vf1A7V4bNkVw
+supabase secrets set GEMINI_API_KEY=your_gemini_api_key_here
 
 # View logs
 supabase functions logs task-automation-daily

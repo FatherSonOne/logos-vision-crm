@@ -1,5 +1,6 @@
-const SUPABASE_URL = 'https://ucaeuszgoihoyrvhewxk.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjYWV1c3pnb2lob3lydmhld3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjg5ODYsImV4cCI6MjA4MDgwNDk4Nn0.0VGjpsPBYjyk6QTG5rAQX4_NcpfBTyR85ofE5jiHTKo';
+// Use environment variables for Pulse Supabase credentials
+const SUPABASE_URL = import.meta.env.VITE_PULSE_SUPABASE_URL || import.meta.env.HUB_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_PULSE_SUPABASE_KEY || import.meta.env.HUB_SUPABASE_ANON_KEY;
 
 export async function syncProjectToChannel(project: any) {
   console.log(`🔄 Syncing "${project.name}"...`);

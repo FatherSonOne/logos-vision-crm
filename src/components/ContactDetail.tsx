@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { organizationService } from '../services/organizationService';
-import type { ContactAffiliation } from '../types';
+import { CommentThread, ActivityFeed as CollaborationActivityFeed, CollaborationErrorBoundary } from './collaboration';
+import type { ContactAffiliation, TeamMember } from '../types';
 
 interface Contact {
   id: string;
@@ -53,12 +54,14 @@ interface Activity {
 
 interface ContactDetailProps {
   contactId: string;
+  currentUser: TeamMember;
+  teamMembers: TeamMember[];
   onBack: () => void;
   onNavigateToHousehold?: (householdId: string) => void;
   onNavigateToOrganization?: (organizationId: string) => void;
 }
 
-export const ContactDetail: React.FC<ContactDetailProps> = ({ contactId, onBack, onNavigateToHousehold, onNavigateToOrganization }) => {
+export const ContactDetail: React.FC<ContactDetailProps> = ({ contactId, currentUser, teamMembers, onBack, onNavigateToHousehold, onNavigateToOrganization }) => {
 
   const [contact, setContact] = useState<Contact | null>(null);
   const [donations, setDonations] = useState<Donation[]>([]);
@@ -563,6 +566,58 @@ export const ContactDetail: React.FC<ContactDetailProps> = ({ contactId, onBack,
           )}
         </div>
       </div>
+
+      {/* Team Notes Section */}
+      <section className="mt-6 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold mb-4 text-gray-800">Team Notes</h3>
+        {!currentUser ? (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+              Please log in to view and add team notes.
+            </p>
+          </div>
+        ) : !teamMembers || teamMembers.length === 0 ? (
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Loading team members...
+            </p>
+          </div>
+        ) : (
+          <CollaborationErrorBoundary>
+            <CommentThread
+              entityType="client"
+              entityId={contactId}
+              currentUser={currentUser}
+              teamMembers={teamMembers}
+              title=""
+              placeholder="Add internal notes about this contact... Use @ to mention team members"
+            />
+          </CollaborationErrorBoundary>
+        )}
+      </section>
+
+      {/* Activity History Section */}
+      <section className="mt-6 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold mb-4 text-gray-800">Activity History</h3>
+        {!currentUser ? (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+              Please log in to view activity history.
+            </p>
+          </div>
+        ) : (
+          <CollaborationErrorBoundary>
+            <CollaborationActivityFeed
+              entityType="client"
+              entityId={contactId}
+              currentUser={currentUser}
+              compact={true}
+              limit={15}
+              title=""
+            />
+          </CollaborationErrorBoundary>
+        )}
+      </section>
     </div>
   );
 };

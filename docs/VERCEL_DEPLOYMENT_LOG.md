@@ -47,10 +47,10 @@
 **Variables to add:**
 ```
 VITE_SUPABASE_URL=https://psjgmdnrehcwvppbeqjy.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 VITE_DEV_MODE=false
-VITE_API_KEY=AIzaSyAxjKjbzJTzOEg2dQ_S7z6NciiPUqFrX7o
-VITE_GOOGLE_MAPS_KEY=AIzaSyD3CAVYUQfY2cQ0tqF00ABSRJZUxVcCMF0
+VITE_API_KEY=your_gemini_api_key_here
+VITE_GOOGLE_MAPS_KEY=your_google_maps_api_key_here
 ```
 
 ---

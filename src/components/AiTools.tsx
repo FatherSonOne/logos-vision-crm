@@ -37,21 +37,43 @@ const ImageAnalyzer: React.FC = () => {
         if (file) {
             const reader = new FileReader();
             reader.onload = (readEvent) => {
-                const b64 = (readEvent.target?.result as string).split(',')[1];
+                const result = readEvent.target?.result as string;
+                if (!result) {
+                    console.error('Failed to read file');
+                    return;
+                }
+                const b64 = result.includes(',') ? result.split(',')[1] : result;
+                if (!b64 || b64.trim().length === 0) {
+                    console.error('Invalid base64 data extracted from file');
+                    return;
+                }
                 setImage({ b64, mime: file.type, name: file.name });
                 setResult('');
+            };
+            reader.onerror = () => {
+                console.error('Error reading file');
             };
             reader.readAsDataURL(file);
         }
     };
 
     const handleAnalyze = async () => {
-        if (!image) return;
+        if (!image || !image.b64 || image.b64.trim().length === 0) {
+            console.error('Cannot analyze: Invalid or empty image data');
+            setResult('Error: Invalid or empty image data. Please select a valid image file.');
+            return;
+        }
         setIsLoading(true);
         setResult('');
-        const response = await analyzeImage(image.b64, image.mime, prompt);
-        setResult(response);
-        setIsLoading(false);
+        try {
+            const response = await analyzeImage(image.b64, image.mime, prompt);
+            setResult(response);
+        } catch (error) {
+            console.error('Error analyzing image:', error);
+            setResult('Error: Failed to analyze image. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     }
     
     return (
@@ -72,7 +94,7 @@ const ImageAnalyzer: React.FC = () => {
             />
             <button 
                 onClick={handleAnalyze} 
-                disabled={!image || isLoading} 
+                disabled={!image || !image.b64 || image.b64.trim().length === 0 || isLoading} 
                 className="w-full mt-2 bg-rose-500 text-white p-2 rounded-lg disabled:opacity-50 text-sm font-semibold hover:bg-rose-600 transition-colors shadow-md"
             >
                 {isLoading ? 'Analyzing...' : 'Analyze Image'}
@@ -106,19 +128,44 @@ const VideoAnalyzer: React.FC = () => {
                 canvas.height = videoEl.videoHeight;
                 canvas.getContext('2d')?.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
                 const frameDataUrl = canvas.toDataURL('image/jpeg');
-                setFirstFrame({ b64: frameDataUrl.split(',')[1], mime: 'image/jpeg' });
+                if (!frameDataUrl) {
+                    console.error('Failed to extract frame from video');
+                    URL.revokeObjectURL(url);
+                    return;
+                }
+                const b64 = frameDataUrl.includes(',') ? frameDataUrl.split(',')[1] : frameDataUrl;
+                if (!b64 || b64.trim().length === 0) {
+                    console.error('Invalid base64 data extracted from video frame');
+                    URL.revokeObjectURL(url);
+                    return;
+                }
+                setFirstFrame({ b64, mime: 'image/jpeg' });
                 URL.revokeObjectURL(url); // Clean up
+            };
+            videoEl.onerror = () => {
+                console.error('Error loading video');
+                URL.revokeObjectURL(url);
             };
         }
     };
 
     const handleAnalyze = async () => {
-        if (!firstFrame) return;
+        if (!firstFrame || !firstFrame.b64 || firstFrame.b64.trim().length === 0) {
+            console.error('Cannot analyze: Invalid or empty video frame data');
+            setResult('Error: Invalid or empty video frame data. Please select a valid video file.');
+            return;
+        }
         setIsLoading(true);
         setResult('');
-        const response = await analyzeImage(firstFrame.b64, firstFrame.mime, prompt);
-        setResult(response);
-        setIsLoading(false);
+        try {
+            const response = await analyzeImage(firstFrame.b64, firstFrame.mime, prompt);
+            setResult(response);
+        } catch (error) {
+            console.error('Error analyzing video frame:', error);
+            setResult('Error: Failed to analyze video frame. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -139,7 +186,7 @@ const VideoAnalyzer: React.FC = () => {
             />
             <button 
                 onClick={handleAnalyze} 
-                disabled={!firstFrame || isLoading} 
+                disabled={!firstFrame || !firstFrame.b64 || firstFrame.b64.trim().length === 0 || isLoading} 
                 className="w-full mt-2 bg-rose-500 text-white p-2 rounded-lg disabled:opacity-50 text-sm font-semibold hover:bg-rose-600 transition-colors shadow-md"
             >
                 {isLoading ? 'Analyzing...' : 'Analyze First Frame'}
@@ -162,9 +209,24 @@ const AudioTranscription: React.FC = () => {
             const url = URL.createObjectURL(file);
             const reader = new FileReader();
             reader.onload = (readEvent) => {
-                const b64 = (readEvent.target?.result as string).split(',')[1];
+                const result = readEvent.target?.result as string;
+                if (!result) {
+                    console.error('Failed to read audio file');
+                    URL.revokeObjectURL(url);
+                    return;
+                }
+                const b64 = result.includes(',') ? result.split(',')[1] : result;
+                if (!b64 || b64.trim().length === 0) {
+                    console.error('Invalid base64 data extracted from audio file');
+                    URL.revokeObjectURL(url);
+                    return;
+                }
                 setAudio({ b64, mime: file.type, name: file.name, url });
                 setResult('');
+            };
+            reader.onerror = () => {
+                console.error('Error reading audio file');
+                URL.revokeObjectURL(url);
             };
             reader.readAsDataURL(file);
         }

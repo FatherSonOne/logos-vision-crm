@@ -15,7 +15,7 @@ const config: Config = {
     '!src/services/export/**/*.d.ts',
     '!src/services/export/**/index.ts',
   ],
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 80,
       functions: 80,

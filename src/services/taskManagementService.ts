@@ -2,6 +2,8 @@
 // Handles all CRUD operations, filtering, enrichment, and related operations
 
 import { supabase } from './supabaseClient';
+import { logActivity } from './collaborationService';
+import type { TeamMember } from '../types';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -89,7 +91,7 @@ function dbToExtendedTask(row: any): ExtendedTask {
     projectId: row.project_id,
     projectName: row.project?.name || null,
     clientId: row.project?.client_id || null,
-    clientName: row.project?.client?.name || null,
+    clientName: null, // Client relationship not available in query
     timeEstimate: row.time_estimate_hours || 0,
     timeSpent: row.time_spent_hours || 0,
     tags: row.tags || [],
@@ -153,10 +155,7 @@ export const taskManagementService = {
           project:projects!project_id (
             id,
             name,
-            client:clients!client_id (
-              id,
-              name
-            )
+            client_id
           ),
           subtasks:task_subtasks (
             id,
@@ -213,7 +212,7 @@ export const taskManagementService = {
         .select(`
           *,
           team_member:team_members!assigned_to (*),
-          project:projects (*, client:clients (*)),
+          project:projects (*),
           subtasks:task_subtasks (*)
         `)
         .eq('status', dbStatus)
@@ -238,7 +237,7 @@ export const taskManagementService = {
         .select(`
           *,
           team_member:team_members!assigned_to (*),
-          project:projects (*, client:clients (*)),
+          project:projects (*),
           subtasks:task_subtasks (*)
         `)
         .eq('assigned_to', userId)
@@ -264,7 +263,7 @@ export const taskManagementService = {
         .select(`
           *,
           team_member:team_members!assigned_to (*),
-          project:projects (*, client:clients (*)),
+          project:projects (*),
           subtasks:task_subtasks (*)
         `)
         .lt('due_date', today)
@@ -291,7 +290,7 @@ export const taskManagementService = {
         .select(`
           *,
           team_member:team_members!assigned_to (*),
-          project:projects (*, client:clients (*)),
+          project:projects (*),
           subtasks:task_subtasks (*)
         `)
         .eq('due_date', today)
@@ -341,7 +340,7 @@ export const taskManagementService = {
         .select(`
           *,
           team_member:team_members!assigned_to (*),
-          project:projects (*, client:clients (*)),
+          project:projects (*),
           subtasks:task_subtasks (*)
         `)
         .eq('id', id)
@@ -358,8 +357,9 @@ export const taskManagementService = {
   /**
    * Create a new task
    * @param task - Task data (without id)
+   * @param currentUser - User creating the task (optional, for activity logging)
    */
-  async create(task: Omit<Partial<ExtendedTask>, 'id'>): Promise<ExtendedTask | null> {
+  async create(task: Omit<Partial<ExtendedTask>, 'id'>, currentUser?: TeamMember): Promise<ExtendedTask | null> {
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -378,13 +378,37 @@ export const taskManagementService = {
         .select(`
           *,
           team_member:team_members!assigned_to (*),
-          project:projects (*, client:clients (*)),
+          project:projects (*),
           subtasks:task_subtasks (*)
         `)
         .single();
 
       if (error) throw error;
-      return data ? dbToExtendedTask(data) : null;
+
+      const newTask = data ? dbToExtendedTask(data) : null;
+
+      // Log activity if currentUser is provided
+      if (newTask && currentUser) {
+        try {
+          await logActivity({
+            entityType: 'task',
+            entityId: newTask.id,
+            action: 'created',
+            actor: currentUser,
+            description: `Created task: ${newTask.title}`,
+            metadata: {
+              priority: newTask.priority,
+              status: newTask.status,
+              assignedTo: newTask.assignedToName,
+            }
+          });
+        } catch (activityError) {
+          console.error('Error logging activity for task creation:', activityError);
+          // Don't throw - task was created successfully
+        }
+      }
+
+      return newTask;
     } catch (error) {
       console.error('create error:', error);
       throw error;
@@ -395,9 +419,13 @@ export const taskManagementService = {
    * Update an existing task
    * @param id - Task ID
    * @param updates - Partial task updates
+   * @param currentUser - User making the update (optional, for activity logging)
    */
-  async update(id: string, updates: Partial<ExtendedTask>): Promise<ExtendedTask | null> {
+  async update(id: string, updates: Partial<ExtendedTask>, currentUser?: TeamMember): Promise<ExtendedTask | null> {
     try {
+      // Get the old task for change tracking
+      const oldTask = currentUser ? await this.getById(id) : null;
+
       const dbUpdates: any = {};
 
       if (updates.title !== undefined) dbUpdates.title = updates.title;
@@ -419,13 +447,62 @@ export const taskManagementService = {
         .select(`
           *,
           team_member:team_members!assigned_to (*),
-          project:projects (*, client:clients (*)),
+          project:projects (*),
           subtasks:task_subtasks (*)
         `)
         .single();
 
       if (error) throw error;
-      return data ? dbToExtendedTask(data) : null;
+
+      const updatedTask = data ? dbToExtendedTask(data) : null;
+
+      // Log activity if currentUser is provided
+      if (updatedTask && currentUser && oldTask) {
+        try {
+          // Calculate changes
+          const changes: Record<string, { old: unknown; new: unknown }> = {};
+          const fieldLabels: Record<string, string> = {
+            title: 'Title',
+            description: 'Description',
+            status: 'Status',
+            priority: 'Priority',
+            dueDate: 'Due Date',
+            assignedToName: 'Assigned To',
+            timeEstimate: 'Time Estimate',
+            timeSpent: 'Time Spent',
+            department: 'Department',
+          };
+
+          for (const key of Object.keys(updates)) {
+            if (oldTask[key as keyof ExtendedTask] !== updatedTask[key as keyof ExtendedTask]) {
+              const label = fieldLabels[key] || key;
+              changes[label] = {
+                old: oldTask[key as keyof ExtendedTask],
+                new: updatedTask[key as keyof ExtendedTask],
+              };
+            }
+          }
+
+          if (Object.keys(changes).length > 0) {
+            await logActivity({
+              entityType: 'task',
+              entityId: id,
+              action: 'updated',
+              actor: currentUser,
+              description: `Updated task: ${updatedTask.title}`,
+              changes,
+              metadata: {
+                fieldsChanged: Object.keys(changes),
+              }
+            });
+          }
+        } catch (activityError) {
+          console.error('Error logging activity for task update:', activityError);
+          // Don't throw - task was updated successfully
+        }
+      }
+
+      return updatedTask;
     } catch (error) {
       console.error('update error:', error);
       throw error;

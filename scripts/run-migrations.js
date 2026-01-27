@@ -6,9 +6,15 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Supabase configuration
-const supabaseUrl = 'https://psjgmdnrehcwvppbeqjy.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q';
+// Supabase configuration from environment variables
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://psjgmdnrehcwvppbeqjy.supabase.co';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseKey) {
+  console.error('❌ ERROR: VITE_SUPABASE_ANON_KEY environment variable is required');
+  console.error('Please set it in your .env file or environment');
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 

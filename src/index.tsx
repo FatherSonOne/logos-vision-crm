@@ -9,6 +9,7 @@ import { BrandPaletteProvider } from './contexts/BrandPaletteContext';
 import { FontProvider } from './contexts/FontContext';
 import { initializePWA } from './lib/pwa';
 import './styles/design-tokens.css';
+import './styles/global.css';
 import '../index.css';
 
 // Initialize PWA features (service worker, install prompt)

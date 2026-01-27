@@ -20,7 +20,6 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
     const [targetElement, setTargetElement] = useState<Element | null>(null);
     const [isAnimating, setIsAnimating] = useState(false);
     const stepRef = useRef<HTMLDivElement>(null);
-    const originalStylesRef = useRef<Map<Element, { zIndex: string; position: string; outline: string }>>(new Map());
 
     // Find next valid step (skip steps with missing selectors)
     const findNextValidStep = useCallback((startIndex: number, direction: 'forward' | 'backward'): number => {
@@ -40,34 +39,16 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
 
     // Cleanup function to restore element styles
     const cleanupTargetElement = useCallback(() => {
-        originalStylesRef.current.forEach((styles, element) => {
-            if (element instanceof HTMLElement) {
-                element.style.zIndex = styles.zIndex;
-                element.style.position = styles.position;
-                element.style.outline = styles.outline;
-                element.classList.remove('tour-highlight');
-            }
+        // Remove the tour-highlight class from any elements
+        document.querySelectorAll('.tour-highlight').forEach(element => {
+            element.classList.remove('tour-highlight');
         });
-        originalStylesRef.current.clear();
     }, []);
 
-    // Highlight target element by elevating it above the overlay
+    // Highlight target element (no z-index manipulation needed with SVG mask)
     const highlightTargetElement = useCallback((element: Element) => {
         if (element instanceof HTMLElement) {
-            // Store original styles
-            originalStylesRef.current.set(element, {
-                zIndex: element.style.zIndex,
-                position: element.style.position,
-                outline: element.style.outline
-            });
-
-            // Elevate element above overlay (z-index 10000)
-            const currentPosition = window.getComputedStyle(element).position;
-            if (currentPosition === 'static') {
-                element.style.position = 'relative';
-            }
-            element.style.zIndex = '10002';
-            element.style.outline = '3px solid #7dd3fc';
+            // Just add a class for potential additional styling
             element.classList.add('tour-highlight');
         }
     }, []);
@@ -302,25 +283,39 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, isOpen, onClose, 
 
     return (
         <div className="fixed inset-0 z-[10000] pointer-events-none">
-            {/* Semi-transparent overlay - pointer events enabled so clicking closes the tour */}
-            <div
-                className="absolute inset-0 bg-black/60 dark:bg-black/70 pointer-events-auto"
+            {/* SVG overlay with cutout mask - creates a true transparent hole */}
+            <svg
+                className="absolute inset-0 w-full h-full pointer-events-auto"
                 onClick={onClose}
-            />
-
-            {/* Spotlight cutout - creates a "hole" in the overlay to reveal the target */}
-            <div
-                className="absolute pointer-events-none"
-                style={{
-                    top: `${top - 8}px`,
-                    left: `${left - 8}px`,
-                    width: `${width + 16}px`,
-                    height: `${height + 16}px`,
-                    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
-                    borderRadius: '12px',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-            />
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+            >
+                <defs>
+                    <mask id="tour-spotlight-mask">
+                        {/* White fills the entire screen (visible) */}
+                        <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                        {/* Black creates the cutout hole (transparent) */}
+                        <rect
+                            x={left - 8}
+                            y={top - 8}
+                            width={width + 16}
+                            height={height + 16}
+                            rx="12"
+                            ry="12"
+                            fill="black"
+                        />
+                    </mask>
+                </defs>
+                {/* Apply the mask to create overlay with transparent cutout */}
+                <rect
+                    x="0"
+                    y="0"
+                    width="100%"
+                    height="100%"
+                    fill="rgba(0, 0, 0, 0.7)"
+                    mask="url(#tour-spotlight-mask)"
+                    className="dark:fill-[rgba(0,0,0,0.75)]"
+                />
+            </svg>
 
             {/* Spotlight ring around target - Nothing style light blue glow */}
             <div

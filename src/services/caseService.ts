@@ -1,6 +1,7 @@
 // Case Service - Handles all database operations for Cases
 import { supabase } from './supabaseClient';
-import type { Case, CaseComment } from '../types';
+import type { Case, CaseComment, TeamMember } from '../types';
+import { logActivity } from './collaborationService';
 
 // Helper function to convert database format to app format
 function dbToCase(dbCase: any): Case {
@@ -119,7 +120,7 @@ export const caseService = {
   },
 
   // Create a new case
-  async create(caseData: Partial<Case>): Promise<Case> {
+  async create(caseData: Partial<Case>, currentUser?: TeamMember): Promise<Case> {
     const now = new Date().toISOString();
     const dbCase = caseToDb(caseData);
 
@@ -135,12 +136,38 @@ export const caseService = {
 
     if (error) throw error;
 
+    const newCase = dbToCase({ ...data, comments: [] });
+
+    // Log activity
+    if (currentUser) {
+      try {
+        await logActivity({
+          entityType: 'case',
+          entityId: newCase.id,
+          action: 'created',
+          actor: currentUser,
+          description: `Created case: ${caseData.title}`,
+          metadata: {
+            status: caseData.status,
+            priority: caseData.priority,
+            clientId: caseData.clientId,
+          }
+        });
+      } catch (error) {
+        console.error('Failed to log case creation activity:', error);
+      }
+    }
+
     // Return with empty comments array since it's new
-    return dbToCase({ ...data, comments: [] });
+    return newCase;
   },
 
   // Update a case
-  async update(id: string, updates: Partial<Case>): Promise<Case> {
+  async update(id: string, updates: Partial<Case>, currentUser?: TeamMember): Promise<Case> {
+    // Get the old case data first for comparison
+    const oldCase = await this.getById(id);
+    if (!oldCase) throw new Error('Case not found');
+
     const dbUpdates = caseToDb(updates);
     dbUpdates.updated_at = new Date().toISOString();
 
@@ -155,11 +182,91 @@ export const caseService = {
 
     // Fetch comments for the updated case
     const comments = await this.getComments(id);
-    return dbToCase({ ...data, comments });
+    const updatedCase = dbToCase({ ...data, comments });
+
+    // Log activity if currentUser is provided
+    if (currentUser) {
+      try {
+        // Calculate changes
+        const changes: Record<string, { old: any; new: any }> = {};
+        const relevantFields = ['title', 'description', 'status', 'priority', 'assignedToId', 'clientId'];
+
+        for (const field of relevantFields) {
+          if (field in updates && oldCase[field as keyof Case] !== updates[field as keyof Case]) {
+            changes[field] = {
+              old: oldCase[field as keyof Case],
+              new: updates[field as keyof Case]
+            };
+          }
+        }
+
+        // Special handling for status changes
+        if ('status' in changes) {
+          await logActivity({
+            entityType: 'case',
+            entityId: id,
+            action: 'status_changed',
+            actor: currentUser,
+            description: `Changed case status from ${changes.status.old} to ${changes.status.new}`,
+            metadata: { oldStatus: changes.status.old, newStatus: changes.status.new }
+          });
+        }
+
+        // Special handling for priority changes
+        if ('priority' in changes) {
+          await logActivity({
+            entityType: 'case',
+            entityId: id,
+            action: 'priority_changed',
+            actor: currentUser,
+            description: `Changed case priority from ${changes.priority.old} to ${changes.priority.new}`,
+            metadata: { oldPriority: changes.priority.old, newPriority: changes.priority.new }
+          });
+        }
+
+        // Special handling for assignment changes
+        if ('assignedToId' in changes) {
+          await logActivity({
+            entityType: 'case',
+            entityId: id,
+            action: 'assigned',
+            actor: currentUser,
+            description: changes.assignedToId.new
+              ? `Assigned case to team member`
+              : `Unassigned case`,
+            metadata: { assignedToId: changes.assignedToId.new }
+          });
+        }
+
+        // Log general update if there are other changes
+        const otherChanges = { ...changes };
+        delete otherChanges.status;
+        delete otherChanges.priority;
+        delete otherChanges.assignedToId;
+
+        if (Object.keys(otherChanges).length > 0) {
+          await logActivity({
+            entityType: 'case',
+            entityId: id,
+            action: 'updated',
+            actor: currentUser,
+            description: `Updated case: ${updatedCase.title}`,
+            changes: otherChanges
+          });
+        }
+      } catch (error) {
+        console.error('Failed to log case update activity:', error);
+      }
+    }
+
+    return updatedCase;
   },
 
   // Delete a case
-  async delete(id: string): Promise<void> {
+  async delete(id: string, currentUser?: TeamMember): Promise<void> {
+    // Get case info before deletion for logging
+    const caseItem = currentUser ? await this.getById(id) : null;
+
     // First delete all comments
     await this.deleteAllComments(id);
 
@@ -170,6 +277,25 @@ export const caseService = {
       .eq('id', id);
 
     if (error) throw error;
+
+    // Log activity
+    if (currentUser && caseItem) {
+      try {
+        await logActivity({
+          entityType: 'case',
+          entityId: id,
+          action: 'deleted',
+          actor: currentUser,
+          description: `Deleted case: ${caseItem.title}`,
+          metadata: {
+            status: caseItem.status,
+            priority: caseItem.priority,
+          }
+        });
+      } catch (error) {
+        console.error('Failed to log case deletion activity:', error);
+      }
+    }
   },
 
   // Get comments for a case
@@ -191,7 +317,7 @@ export const caseService = {
   },
 
   // Add a comment to a case
-  async addComment(caseId: string, comment: Omit<CaseComment, 'id' | 'timestamp'>): Promise<CaseComment> {
+  async addComment(caseId: string, comment: Omit<CaseComment, 'id' | 'timestamp'>, currentUser?: TeamMember): Promise<CaseComment> {
     const { data, error } = await supabase
       .from('case_comments')
       .insert([{
@@ -211,12 +337,33 @@ export const caseService = {
       .update({ updated_at: new Date().toISOString() })
       .eq('id', caseId);
 
-    return {
+    const newComment = {
       id: data.id,
       authorId: data.author_id,
       text: data.content,
       timestamp: data.created_at
     };
+
+    // Log activity (legacy comment - new system uses CommentThread which logs automatically)
+    if (currentUser) {
+      try {
+        await logActivity({
+          entityType: 'case',
+          entityId: caseId,
+          action: 'commented',
+          actor: currentUser,
+          description: `Added a comment`,
+          metadata: {
+            commentId: newComment.id,
+            preview: comment.text.substring(0, 100)
+          }
+        });
+      } catch (error) {
+        console.error('Failed to log case comment activity:', error);
+      }
+    }
+
+    return newComment;
   },
 
   // Delete a comment

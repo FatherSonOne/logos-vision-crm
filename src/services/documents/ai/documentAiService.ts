@@ -218,10 +218,23 @@ async function extractTextFromImage(file: File): Promise<TextExtractionResult | 
 
     // Convert file to base64
     const base64 = await fileToBase64(file);
+    
+    // Validate base64 string
+    if (!base64 || typeof base64 !== 'string') {
+      throw new Error('Failed to convert file to base64');
+    }
+    
+    // Extract base64 data (remove data URL prefix if present)
+    const base64Data = base64.includes(',') ? base64.split(',')[1] : base64;
+    
+    // Validate that we have actual base64 data
+    if (!base64Data || base64Data.trim().length === 0) {
+      throw new Error('Base64 image data is empty');
+    }
 
     const imagePart = {
       inlineData: {
-        data: base64.split(',')[1], // Remove data:image/jpeg;base64, prefix
+        data: base64Data,
         mimeType: file.type,
       },
     };

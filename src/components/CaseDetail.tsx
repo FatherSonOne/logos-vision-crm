@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Case, Client, TeamMember, Activity, CaseComment } from '../types';
 import { CaseStatus, CasePriority, ActivityType } from '../types';
 import { AiEnhancedTextarea } from './AiEnhancedTextarea';
+import { CommentThread, ActivityFeed as CollaborationActivityFeed, CollaborationErrorBoundary } from './collaboration';
 
 // --- Helper Components & Icons ---
 
@@ -51,13 +52,13 @@ interface CaseDetailProps {
   assignee?: TeamMember;
   activities: Activity[];
   teamMembers: TeamMember[];
-  currentUserId: string;
+  currentUser: TeamMember;  // Changed from currentUserId: string
   onBack: () => void;
   onAddComment: (caseId: string, text: string) => void;
 }
 
-export const CaseDetail: React.FC<CaseDetailProps> = ({ caseItem, client, assignee, activities, teamMembers, currentUserId, onBack, onAddComment }) => {
-    const [activeTab, setActiveTab] = useState<'activities' | 'comments'>('activities');
+export const CaseDetail: React.FC<CaseDetailProps> = ({ caseItem, client, assignee, activities, teamMembers, currentUser, onBack, onAddComment }) => {
+    const [activeTab, setActiveTab] = useState<'activities' | 'comments' | 'activity'>('activities');
     const [newComment, setNewComment] = useState('');
 
     const getTeamMember = (id: string) => teamMembers.find(tm => tm.id === id);
@@ -139,7 +140,8 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ caseItem, client, assign
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
                     <div className="flex border-b border-slate-200 mb-4">
                         <TabButton active={activeTab === 'activities'} onClick={() => setActiveTab('activities')}>Activities ({activities.length})</TabButton>
-                        <TabButton active={activeTab === 'comments'} onClick={() => setActiveTab('comments')}>Comments ({caseItem.comments?.length || 0})</TabButton>
+                        <TabButton active={activeTab === 'comments'} onClick={() => setActiveTab('comments')}>Comments</TabButton>
+                        <TabButton active={activeTab === 'activity'} onClick={() => setActiveTab('activity')}>Activity Log</TabButton>
                     </div>
                     {activeTab === 'activities' && (
                         <div className="space-y-4">
@@ -155,35 +157,49 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ caseItem, client, assign
                         </div>
                     )}
                     {activeTab === 'comments' && (
-                        <div className="flex flex-col h-full">
-                           <div className="flex-grow space-y-4 overflow-y-auto max-h-96 pr-2 -mr-2">
-                                {caseItem.comments && caseItem.comments.length > 0 ? [...caseItem.comments].reverse().map(comment => {
-                                    const author = getTeamMember(comment.authorId);
-                                    return (
-                                        <div key={comment.id} className="flex items-start gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-sm text-slate-600 flex-shrink-0">{author?.name.charAt(0)}</div>
-                                            <div className="flex-1">
-                                                <div className="flex items-baseline gap-2">
-                                                    <p className="font-semibold text-sm">{author?.name}</p>
-                                                    <p className="text-xs text-slate-400">{timeAgo(comment.timestamp)}</p>
-                                                </div>
-                                                <p className="text-sm text-slate-700 bg-slate-100 p-2 rounded-md mt-1">{comment.text}</p>
-                                            </div>
-                                        </div>
-                                    )
-                                }) : <p className="text-sm text-slate-500 text-center py-4">No comments yet. Start the conversation!</p>}
-                           </div>
-                           <form onSubmit={handleCommentSubmit} className="mt-4 border-t border-slate-200 pt-4">
-                               <AiEnhancedTextarea
-                                   value={newComment}
-                                   onValueChange={setNewComment}
-                                   placeholder="Add a comment..."
-                                   rows={3}
-                                   className="w-full p-2 text-sm bg-slate-50 border border-slate-300 rounded-md focus:ring-violet-500 focus:border-violet-500"
+                        !currentUser ? (
+                            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                                    Please log in to view and participate in discussions.
+                                </p>
+                            </div>
+                        ) : !teamMembers || teamMembers.length === 0 ? (
+                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    Loading team members...
+                                </p>
+                            </div>
+                        ) : (
+                            <CollaborationErrorBoundary>
+                                <CommentThread
+                                    entityType="case"
+                                    entityId={caseItem.id}
+                                    currentUser={currentUser}
+                                    teamMembers={teamMembers}
+                                    title="Case Comments"
+                                    placeholder="Add a comment... Use @ to mention team members"
                                 />
-                               <button type="submit" className="mt-2 w-full bg-violet-600 text-white px-3 py-2 rounded-md text-sm font-semibold hover:bg-violet-700 disabled:bg-violet-300" disabled={!newComment.trim()}>Post Comment</button>
-                           </form>
-                        </div>
+                            </CollaborationErrorBoundary>
+                        )
+                    )}
+                    {activeTab === 'activity' && (
+                        !currentUser ? (
+                            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                                    Please log in to view activity.
+                                </p>
+                            </div>
+                        ) : (
+                            <CollaborationErrorBoundary>
+                                <CollaborationActivityFeed
+                                    entityType="case"
+                                    entityId={caseItem.id}
+                                    currentUser={currentUser}
+                                    title="Case Activity"
+                                    showFilters={true}
+                                />
+                            </CollaborationErrorBoundary>
+                        )
                     )}
                 </div>
             </div>

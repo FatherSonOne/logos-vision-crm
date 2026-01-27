@@ -16,9 +16,9 @@ type LiveSession = Awaited<ReturnType<GoogleGenAI['live']['connect']>>;
 let ai: GoogleGenAI | null = null;
 function getAI(): GoogleGenAI {
   if (!ai) {
-    const apiKey = import.meta.env.VITE_API_KEY;
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error('VITE_API_KEY not found. Please set it in your .env.local file.');
+      throw new Error('VITE_GEMINI_API_KEY not found. Please set it in your .env.local file.');
     }
     ai = new GoogleGenAI({ apiKey });
   }

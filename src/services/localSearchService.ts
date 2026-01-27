@@ -70,8 +70,8 @@ const navSearchIndex: NavSearchResult[] = [
   // Connect section
   { type: 'navigation', pageId: 'connect', label: 'Connect Hub', section: 'Connect', keywords: ['integration', 'sync', 'pulse', 'entomate', 'communication', 'chat'] },
 
-  // Forge section
-  { type: 'navigation', pageId: 'forge', label: 'AI Forge', section: 'Forge', keywords: ['ai', 'artificial intelligence', 'assistant', 'tools', 'generator', 'automation', 'gemini'] },
+  // Create section
+  { type: 'navigation', pageId: 'forge', label: 'Content Studio', section: 'Create', keywords: ['ai', 'artificial intelligence', 'assistant', 'tools', 'generator', 'automation', 'gemini', 'content', 'writing', 'newsletter', 'grant', 'appeal', 'thank you', 'donor', 'social media', 'communications', 'campaign'] },
 
   // System section
   { type: 'navigation', pageId: 'settings', label: 'Settings', section: 'System', keywords: ['preferences', 'configuration', 'options', 'account', 'profile', 'theme'] },

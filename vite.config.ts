@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
     define: {
       // Make API keys available via import.meta.env
       'import.meta.env.VITE_API_KEY': JSON.stringify(env.VITE_API_KEY),
+      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY),
       'import.meta.env.VITE_GOOGLE_MAPS_KEY': JSON.stringify(env.VITE_GOOGLE_MAPS_KEY),
     },
     resolve: {

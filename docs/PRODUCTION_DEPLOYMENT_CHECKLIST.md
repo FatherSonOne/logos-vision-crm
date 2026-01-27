@@ -125,10 +125,10 @@ You'll set these in Vercel/Netlify dashboard (not in `.env.local`):
 
 ```env
 VITE_SUPABASE_URL=https://psjgmdnrehcwvppbeqjy.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 VITE_DEV_MODE=false  # ← MUST be FALSE in production!
-VITE_API_KEY=AIzaSyAxjKjbzJTzOEg2dQ_S7z6NciiPUqFrX7o
-VITE_GOOGLE_MAPS_KEY=AIzaSyD3CAVYUQfY2cQ0tqF00ABSRJZUxVcCMF0
+VITE_API_KEY=your_gemini_api_key_here
+VITE_GOOGLE_MAPS_KEY=your_google_maps_api_key_here
 ```
 
 **Checklist:**
@@ -218,7 +218,7 @@ Value: https://psjgmdnrehcwvppbeqjy.supabase.co
 Environment: Production, Preview, Development
 
 Name: VITE_SUPABASE_ANON_KEY
-Value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q
+Value: your_supabase_anon_key_here
 Environment: Production, Preview, Development
 
 Name: VITE_DEV_MODE
@@ -226,11 +226,11 @@ Value: false
 Environment: Production, Preview, Development
 
 Name: VITE_API_KEY
-Value: AIzaSyAxjKjbzJTzOEg2dQ_S7z6NciiPUqFrX7o
+Value: your_gemini_api_key_here
 Environment: Production, Preview, Development
 
 Name: VITE_GOOGLE_MAPS_KEY
-Value: AIzaSyD3CAVYUQfY2cQ0tqF00ABSRJZUxVcCMF0
+Value: your_google_maps_api_key_here
 Environment: Production, Preview, Development
 ```
 

@@ -11,7 +11,7 @@
 // Note: Using inline AI call since geminiService doesn't export a generic generate function
 // This will be connected to the Gemini service or another AI provider
 
-const getApiKey = () => import.meta.env?.VITE_API_KEY || '';
+const getApiKey = () => import.meta.env?.VITE_GEMINI_API_KEY || '';
 
 async function callGeminiAI(prompt: string): Promise<string> {
   const apiKey = getApiKey();

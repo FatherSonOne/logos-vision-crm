@@ -21,9 +21,9 @@ async function getAI() {
     const genai = await import('@google/genai');
     GoogleGenAI = genai.GoogleGenAI;
 
-    const apiKey = import.meta.env.VITE_API_KEY;
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
-      console.warn('VITE_API_KEY not found. AI features will be disabled.');
+      console.warn('VITE_GEMINI_API_KEY not found. AI features will be disabled.');
       ai = new GoogleGenAI({ apiKey: 'not-configured' });
     } else {
       ai = new GoogleGenAI({ apiKey });

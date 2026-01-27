@@ -1,0 +1,79 @@
+# ==============================================================================
+# DOCKER COMPOSE - LOGOS VISION CRM
+# ==============================================================================
+# Description: Production deployment with Docker Compose
+# Version: 1.0.0
+# Date: 2026-01-25
+#
+# Usage:
+#   docker-compose up -d                # Start in background
+#   docker-compose logs -f app          # View logs
+#   docker-compose down                 # Stop and remove containers
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # ==============================================================================
+  # APPLICATION SERVICE
+  # ==============================================================================
+  app:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+      args:
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        - VITE_PULSE_API_URL=${VITE_PULSE_API_URL}
+        - VITE_PULSE_API_KEY=${VITE_PULSE_API_KEY}
+        - VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
+        - VITE_FEATURE_CONTACTS_REDESIGN=true
+    image: logos-vision-crm:latest
+    container_name: logos-vision-crm
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - app-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ==============================================================================
+  # OPTIONAL: NGINX LOAD BALANCER (for multi-instance deployment)
+  # ==============================================================================
+  # loadbalancer:
+  #   image: nginx:alpine
+  #   container_name: logos-vision-lb
+  #   restart: unless-stopped
+  #   ports:
+  #     - "443:443"
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx-lb.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+# ==============================================================================
+# VOLUMES (if needed for persistent data)
+# ==============================================================================
+# volumes:
+#   nginx-cache:
+#   app-logs:

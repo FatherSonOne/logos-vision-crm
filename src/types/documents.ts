@@ -3,7 +3,7 @@
  * Phase 1: Foundation types for AI, versioning, Pulse integration, and analytics
  */
 
-import type { Document } from './index';
+import type { Document } from '../types';
 
 // ============================================================================
 // Storage Provider Types

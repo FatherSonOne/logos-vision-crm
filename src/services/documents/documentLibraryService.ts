@@ -20,6 +20,8 @@ import type {
   StorageStats,
   DocumentFolder,
   SmartCollection,
+  DocumentAIMetadata,
+  PulseDocumentSource,
 } from '../../types/documents';
 import { DocumentError } from '../../types/documents';
 import { processDocument as processWithAI } from './ai/documentAiService';
@@ -28,12 +30,19 @@ import { processDocument as processWithAI } from './ai/documentAiService';
 // Document Retrieval
 // ============================================================================
 
+export interface GetDocumentsOptions {
+  includeAI?: boolean;
+  includePulse?: boolean;
+  filters?: DocumentFilters;
+}
+
 /**
- * Get all documents with optional filtering
+ * Get all documents with optional filtering and metadata loading
  */
 export async function getDocuments(
-  filters?: DocumentFilters
+  options: GetDocumentsOptions = {}
 ): Promise<EnhancedDocument[]> {
+  const { includeAI = false, includePulse = false, filters } = options;
   try {
     let query = supabase
       .from('documents')
@@ -112,7 +121,39 @@ export async function getDocuments(
 
     if (error) throw error;
 
-    return (data || []) as EnhancedDocument[];
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Load additional metadata if requested
+    const documents = data as EnhancedDocument[];
+
+    // Parallel loading of AI metadata and Pulse data
+    await Promise.all(documents.map(async (doc) => {
+      const promises: Promise<void>[] = [];
+
+      // Load AI metadata if requested and document is AI processed
+      if (includeAI && doc.ai_processed) {
+        promises.push(
+          loadAIMetadata(doc).catch(err => {
+            console.error(`Error loading AI metadata for document ${doc.id}:`, err);
+          })
+        );
+      }
+
+      // Load Pulse data if requested and document is Pulse synced
+      if (includePulse && doc.pulse_synced) {
+        promises.push(
+          loadPulseSource(doc).catch(err => {
+            console.error(`Error loading Pulse data for document ${doc.id}:`, err);
+          })
+        );
+      }
+
+      await Promise.all(promises);
+    }));
+
+    return documents;
   } catch (error) {
     console.error('Error fetching documents:', error);
     throw new DocumentError('Failed to fetch documents', 'FETCH_ERROR', error);
@@ -145,10 +186,58 @@ export async function getDocumentById(
     // Log access for analytics
     await logDocumentAccess(documentId, 'view');
 
-    return data as EnhancedDocument;
+    return data as unknown as EnhancedDocument;
   } catch (error) {
     console.error('Error fetching document:', error);
     return null;
+  }
+}
+
+/**
+ * Get complete document with all metadata
+ */
+export async function getDocumentWithAI(documentId: string): Promise<EnhancedDocument> {
+  try {
+    // Fetch base document
+    const { data, error } = await supabase
+      .from('documents')
+      .select(`
+        *,
+        folder:document_folders(*)
+      `)
+      .eq('id', documentId)
+      .single();
+
+    if (error) throw error;
+    if (!data) {
+      throw new DocumentError('Document not found', 'NOT_FOUND');
+    }
+
+    const document = data as EnhancedDocument;
+
+    // Parallel loading of AI metadata and Pulse data
+    const loadPromises: Promise<void>[] = [];
+
+    // Load AI metadata if document is AI processed
+    if (document.ai_processed) {
+      loadPromises.push(loadAIMetadata(document));
+    }
+
+    // Load Pulse source if document is Pulse synced
+    if (document.pulse_synced) {
+      loadPromises.push(loadPulseSource(document));
+    }
+
+    // Wait for all metadata to load (errors are caught inside helper functions)
+    await Promise.all(loadPromises);
+
+    // Log access for analytics
+    await logDocumentAccess(documentId, 'view');
+
+    return document;
+  } catch (error) {
+    console.error('Error fetching document with AI:', error);
+    throw new DocumentError('Failed to fetch document with metadata', 'FETCH_ERROR', error);
   }
 }
 
@@ -430,7 +519,7 @@ export async function searchDocuments(
 
     // Apply filters
     if (options.filters) {
-      const filtered = await getDocuments(options.filters);
+      const filtered = await getDocuments({ filters: options.filters });
       const ids = filtered.map(d => d.id);
       if (ids.length > 0) {
         query = query.in('id', ids);
@@ -649,6 +738,78 @@ async function processDocumentWithAI(
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/**
+ * Generate storage URL for a document
+ */
+function getStorageUrl(documentId: string, fileName: string): string {
+  // Use Supabase storage public URL
+  const { data } = supabase.storage
+    .from('documents')
+    .getPublicUrl(`${documentId}/${fileName}`);
+  return data.publicUrl;
+}
+
+/**
+ * Load AI metadata for a document (mutates the document object)
+ */
+async function loadAIMetadata(document: EnhancedDocument): Promise<void> {
+  try {
+    const { data, error } = await supabase
+      .from('document_ai_metadata')
+      .select('*')
+      .eq('document_id', document.id)
+      .single();
+
+    if (error) {
+      console.error(`Error loading AI metadata for document ${document.id}:`, error);
+      return;
+    }
+
+    if (data) {
+      document.ai_metadata = data as DocumentAIMetadata;
+      document.extracted_text = data.extracted_text;
+      document.auto_tags = data.auto_tags || [];
+    }
+  } catch (error) {
+    console.error(`Error loading AI metadata for document ${document.id}:`, error);
+    // Don't throw - return partial data
+  }
+}
+
+/**
+ * Load Pulse source data for a document (mutates the document object)
+ */
+async function loadPulseSource(document: EnhancedDocument): Promise<void> {
+  try {
+    const { data, error } = await supabase
+      .from('document_pulse_items')
+      .select('*')
+      .eq('document_id', document.id)
+      .single();
+
+    if (error) {
+      console.error(`Error loading Pulse data for document ${document.id}:`, error);
+      return;
+    }
+
+    if (data) {
+      // Construct pulse_source object with proper structure
+      document.pulse_source = {
+        type: data.pulse_item_type,
+        item_id: data.pulse_item_id,
+        title: document.name, // Use document name as title
+        channel_id: data.pulse_channel_id,
+        channel_name: data.pulse_channel_name,
+        date: data.pulse_created_at || data.created_at,
+        participants: data.pulse_participants || [],
+      };
+    }
+  } catch (error) {
+    console.error(`Error loading Pulse data for document ${document.id}:`, error);
+    // Don't throw - return partial data
+  }
+}
 
 /**
  * Determine file type category from filename

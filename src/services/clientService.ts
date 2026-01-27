@@ -1,7 +1,8 @@
 // Client Service - Handles all database operations for Clients
 import { supabase } from './supabaseClient';
 import { logosSupabase } from '../lib/supabaseLogosClient';
-import type { Client, PreferredContactMethod } from '../types';
+import { logActivity } from './collaborationService';
+import type { Client, PreferredContactMethod, TeamMember } from '../types';
 
 // Helper to map database row to Client type
 const mapClientRow = (row: any): Client => ({
@@ -63,7 +64,7 @@ export const clientService = {
   },
 
   // Create a new client
-  async create(client: Partial<Client>): Promise<Client> {
+  async create(client: Partial<Client>, currentUser?: TeamMember): Promise<Client> {
     // Transform camelCase to snake_case for database
     const insertData: any = {
       name: client.name,
@@ -101,11 +102,39 @@ export const clientService = {
       throw error;
     }
 
-    return mapClientRow(data);
+    const newClient = mapClientRow(data);
+
+    // Log activity
+    if (currentUser) {
+      try {
+        await logActivity({
+          entityType: 'client',
+          entityId: newClient.id,
+          action: 'created',
+          actor: currentUser,
+          description: `Created contact: ${newClient.name}`,
+          metadata: {
+            email: newClient.email,
+            phone: newClient.phone,
+            location: newClient.location,
+          }
+        });
+      } catch (error) {
+        console.error('Failed to log client creation activity:', error);
+        // Don't throw - activity logging failure shouldn't prevent client creation
+      }
+    }
+
+    return newClient;
   },
 
   // Update an existing client
-  async update(id: string, updates: Partial<Client>): Promise<Client> {
+  async update(id: string, updates: Partial<Client>, currentUser?: TeamMember): Promise<Client> {
+    // Get the old client data for change tracking
+    const oldClient = await this.getById(id);
+    if (!oldClient) {
+      throw new Error(`Client with id ${id} not found`);
+    }
     const updateData: any = {};
 
     // Only include fields that are being updated
@@ -138,7 +167,36 @@ export const clientService = {
       throw error;
     }
 
-    return mapClientRow(data);
+    const updatedClient = mapClientRow(data);
+
+    // Calculate changes for activity log
+    const changes: Record<string, { old: any; new: any }> = {};
+    const relevantFields: (keyof Client)[] = ['name', 'email', 'phone', 'location', 'notes', 'contactPerson', 'preferredContactMethod'];
+
+    for (const field of relevantFields) {
+      if (field in updates && oldClient[field] !== updates[field]) {
+        changes[field] = { old: oldClient[field], new: updates[field] };
+      }
+    }
+
+    // Log activity if there are changes
+    if (currentUser && Object.keys(changes).length > 0) {
+      try {
+        await logActivity({
+          entityType: 'client',
+          entityId: id,
+          action: 'updated',
+          actor: currentUser,
+          description: `Updated contact: ${updatedClient.name}`,
+          changes
+        });
+      } catch (error) {
+        console.error('Failed to log client update activity:', error);
+        // Don't throw - activity logging failure shouldn't prevent client update
+      }
+    }
+
+    return updatedClient;
   },
 
   // Delete a client (soft delete - mark as inactive)

@@ -91,7 +91,7 @@ You'll see something like:
 
    **Secret 5:**
    - Name: `VITE_SUPABASE_ANON_KEY`
-   - Value: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q`
+   - Value: `your_supabase_anon_key_here`
    - Click **"Add secret"**
 
    **Secret 6 (Optional, if using AI features):**

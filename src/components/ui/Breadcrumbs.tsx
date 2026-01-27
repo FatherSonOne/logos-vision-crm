@@ -105,7 +105,7 @@ export const getBreadcrumbsForPage = (page: Page, detailContext?: any): Breadcru
     'entomate-sync': 'Entomate Sync',
     'settings': 'Settings',
     'outreach-hub': 'Outreach Hub',
-    'forge': 'AI Forge',
+    'forge': 'Content Studio',
     'connect': 'Connect Hub',
     'design-preview': 'Logo Preview'
   };

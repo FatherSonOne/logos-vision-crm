@@ -80,8 +80,8 @@ Add each of these secrets:
 **From DEPLOYMENT_QUICK_REF.md, your values are:**
 ```
 VITE_SUPABASE_URL=https://psjgmdnrehcwvppbeqjy.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzamdtZG5yZWhjd3ZwcGJlcWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzU4OTksImV4cCI6MjA3OTE1MTg5OX0.IiB4YY9sB0fvEb6Vpm2O_t2YBQ9ORSy-yXtMsnOxZ4Q
-VITE_GEMINI_API_KEY=AIzaSyAxjKjbzJTzOEg2dQ_S7z6NciiPUqFrX7o (or use VITE_API_KEY)
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+VITE_GEMINI_API_KEY=your_gemini_api_key_here (or use VITE_API_KEY)
 ```
 
 ---

@@ -7,6 +7,7 @@ import type {
   OrganizationContactRelation,
   OrganizationRelationshipType,
 } from '../types';
+import { logger } from '../utils/logger';
 
 // ============================================
 // ROW MAPPERS
@@ -72,11 +73,11 @@ export const contactService = {
       .order('name');
 
     if (error) {
-      console.error('Error fetching contacts:', error);
+      logger.error('Error fetching contacts', error);
       throw error;
     }
 
-    console.log('Loaded', data?.length ?? 0, 'contacts');
+    logger.debug(`Loaded ${data?.length ?? 0} contacts`);
     return (data || []).map(mapContactRow);
   },
 
@@ -94,7 +95,7 @@ export const contactService = {
       if (error.code === 'PGRST116') {
         return null; // Not found
       }
-      console.error('Error fetching contact:', error);
+      logger.error('Error fetching contact', error);
       throw error;
     }
 
@@ -130,7 +131,7 @@ export const contactService = {
       .order('is_primary_contact', { ascending: false });
 
     if (error) {
-      console.error('Error fetching contact affiliations:', error);
+      logger.error('Error fetching contact affiliations:', error);
       throw error;
     }
 
@@ -187,11 +188,11 @@ export const contactService = {
       .single();
 
     if (error) {
-      console.error('Error creating contact:', error);
+      logger.error('Error creating contact:', error);
       throw error;
     }
 
-    console.log('Created contact:', data.name);
+    logger.debug('Created contact:', data.name);
     return mapContactRow(data);
   },
 
@@ -233,11 +234,11 @@ export const contactService = {
       .single();
 
     if (error) {
-      console.error('Error updating contact:', error);
+      logger.error('Error updating contact:', error);
       throw error;
     }
 
-    console.log('Updated contact:', data.name);
+    logger.debug('Updated contact:', data.name);
     return mapContactRow(data);
   },
 
@@ -251,11 +252,11 @@ export const contactService = {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting contact:', error);
+      logger.error('Error deleting contact:', error);
       throw error;
     }
 
-    console.log('Deleted contact:', id);
+    logger.debug('Deleted contact:', id);
   },
 
   /**
@@ -268,11 +269,11 @@ export const contactService = {
       .eq('id', id);
 
     if (error) {
-      console.error('Error hard deleting contact:', error);
+      logger.error('Error hard deleting contact:', error);
       throw error;
     }
 
-    console.log('Hard deleted contact:', id);
+    logger.debug('Hard deleted contact:', id);
   },
 
   /**
@@ -288,7 +289,7 @@ export const contactService = {
       .limit(50);
 
     if (error) {
-      console.error('Error searching contacts:', error);
+      logger.error('Error searching contacts:', error);
       throw error;
     }
 
@@ -308,7 +309,7 @@ export const contactService = {
       .order('is_primary_contact', { ascending: false });
 
     if (error) {
-      console.error('Error fetching contacts by organization:', error);
+      logger.error('Error fetching contacts by organization:', error);
       throw error;
     }
 
@@ -329,7 +330,7 @@ export const contactService = {
       .order('total_lifetime_giving', { ascending: false });
 
     if (error) {
-      console.error('Error fetching contacts by engagement:', error);
+      logger.error('Error fetching contacts by engagement:', error);
       throw error;
     }
 
@@ -348,7 +349,7 @@ export const contactService = {
       .order('total_lifetime_giving', { ascending: false });
 
     if (error) {
-      console.error('Error fetching contacts by donor stage:', error);
+      logger.error('Error fetching contacts by donor stage:', error);
       throw error;
     }
 
@@ -368,7 +369,7 @@ export const contactService = {
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching top donors:', error);
+      logger.error('Error fetching top donors:', error);
       throw error;
     }
 
@@ -389,7 +390,7 @@ export const contactService = {
       .order('name');
 
     if (error) {
-      console.error('Error fetching email opt-in contacts:', error);
+      logger.error('Error fetching email opt-in contacts:', error);
       throw error;
     }
 
@@ -410,7 +411,7 @@ export const contactService = {
       .order('name');
 
     if (error) {
-      console.error('Error fetching newsletter subscribers:', error);
+      logger.error('Error fetching newsletter subscribers:', error);
       throw error;
     }
 
@@ -433,7 +434,7 @@ export const contactService = {
       .eq('is_active', true);
 
     if (error) {
-      console.error('Error fetching contact stats:', error);
+      logger.error('Error fetching contact stats:', error);
       throw error;
     }
 
@@ -495,7 +496,7 @@ export const contactService = {
       .single();
 
     if (error) {
-      console.error('Error adding contact to organization:', error);
+      logger.error('Error adding contact to organization:', error);
       throw error;
     }
 
@@ -513,7 +514,7 @@ export const contactService = {
       .eq('organization_id', organizationId);
 
     if (error) {
-      console.error('Error removing contact from organization:', error);
+      logger.error('Error removing contact from organization:', error);
       throw error;
     }
   },
@@ -543,10 +544,46 @@ export const contactService = {
       .single();
 
     if (error) {
-      console.error('Error updating affiliation:', error);
+      logger.error('Error updating affiliation:', error);
       throw error;
     }
 
     return mapAffiliationRow(data);
+  },
+
+  /**
+   * Get recent interactions for a contact from Pulse
+   * Queries the pulse_contact_interactions table
+   */
+  async getRecentInteractions(
+    contactId: string,
+    options?: { limit?: number; days?: number }
+  ): Promise<any[]> {
+    const { limit = 30, days = 90 } = options || {};
+
+    try {
+      // Calculate date threshold
+      const dateThreshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+      const { data, error } = await supabase
+        .from('pulse_contact_interactions')
+        .select('*')
+        .eq('contact_id', contactId)
+        .gte('interaction_date', dateThreshold)
+        .order('interaction_date', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        logger.error('Error fetching interactions:', error);
+        throw error;
+      }
+
+      console.log(`Loaded ${data?.length || 0} interactions for contact ${contactId}`);
+      return data || [];
+    } catch (error) {
+      logger.error('Error fetching recent interactions:', error);
+      // Return empty array on error rather than throwing
+      return [];
+    }
   },
 };

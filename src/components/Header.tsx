@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { GlobalSearch } from './GlobalSearch';
-import type { Page } from '../types';
+import type { Page, TeamMember } from '../types';
 import { Button } from './ui/Button';
 import { ThemeToggle } from './ui/ThemeToggle';
 import { HelpToggle } from './ui/HelpToggle';
 import { InviteTeamModal } from './InviteTeamModal';
 import { UserAvatarMenu } from './UserAvatarMenu';
-import { NotificationCenter } from './NotificationCenter';
+import { NotificationCenter } from './collaboration/NotificationCenter';
 import { UserPlus } from 'lucide-react';
 
 
@@ -21,6 +21,8 @@ interface HeaderProps {
     onSearch: (query: string, includeWeb: boolean) => void;
     isSearching: boolean;
     currentPage: Page;
+    currentUser?: TeamMember | null;  // For collaboration features
+    onNavigate?: (url: string) => void;  // For notification navigation
     // Keep these props for compatibility but don't use them
     breadcrumbs?: any[];
     onGoBack?: () => void;
@@ -33,6 +35,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
     onSearch,
     isSearching,
+    currentUser,
+    onNavigate,
 }) => {
     const [showInviteModal, setShowInviteModal] = useState(false);
 
@@ -85,7 +89,14 @@ export const Header: React.FC<HeaderProps> = ({
                         <UserPlus className="w-4 h-4" aria-hidden="true" />
                         <span className="text-xs font-medium hidden sm:inline">Invite</span>
                     </button>
-                    <NotificationCenter />
+                    {currentUser ? (
+                        <NotificationCenter
+                            currentUser={currentUser}
+                            onNavigate={onNavigate}
+                        />
+                    ) : (
+                        <div className="w-8 h-8 animate-pulse bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    )}
                     <HelpToggle />
                     <ThemeToggle size="sm" />
                     {/* User Avatar Menu */}

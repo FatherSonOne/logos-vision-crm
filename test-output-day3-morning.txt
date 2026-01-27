@@ -1,0 +1,534 @@
+
+> logos-vision-crm@1.0.0 test
+> jest src/components/contacts/__tests__/ --verbose
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Loaded 1 contacts from Pulse API
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:128:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Loaded 1 contacts from Pulse API
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:128:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Loaded 1 contacts from Pulse API
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:128:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Loaded 1 contacts from Pulse API
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:128:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Loaded 0 contacts from Pulse API
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:128:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Loaded 1 contacts from Pulse API
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:128:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Loaded 1 contacts from Pulse API
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:128:17)
+
+  console.log
+    [ContactStoryView] Fetching AI insights for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:48:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded AI insights from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:53:23)
+
+  console.log
+    [ContactStoryView] Fetching recent interactions for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:63:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded 1 interactions from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:71:23)
+
+  console.log
+    [ContactStoryView] Fetching AI insights for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:48:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded AI insights from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:53:23)
+
+  console.log
+    [ContactStoryView] Fetching recent interactions for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:63:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded 1 interactions from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:71:23)
+
+  console.log
+    [ContactStoryView] Fetching AI insights for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:48:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded AI insights from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:53:23)
+
+  console.log
+    [ContactStoryView] Fetching recent interactions for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:63:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded 1 interactions from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:71:23)
+
+  console.log
+    [ContactStoryView] Fetching AI insights for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:48:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded AI insights from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:53:23)
+
+  console.log
+    [ContactStoryView] Fetching recent interactions for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:63:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded 1 interactions from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:71:23)
+
+  console.log
+    [ContactStoryView] Fetching AI insights for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:48:19)
+
+  console.log
+    [ContactStoryView] Fetching recent interactions for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:63:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded 1 interactions from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:71:23)
+
+  console.log
+    [ContactStoryView] Using mock AI insights (no Pulse data available)
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:81:19)
+
+  console.log
+    [ContactStoryView] Fetching AI insights for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:48:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded AI insights from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:53:23)
+
+  console.log
+    [ContactStoryView] Fetching recent interactions for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:63:19)
+
+  console.log
+    [ContactStoryView] Using mock interactions (no Pulse data available)
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:103:19)
+
+  console.log
+    [ContactStoryView] Fetching AI insights for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:48:19)
+
+  console.log
+    [ContactStoryView] No AI insights available for this contact
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:55:23)
+
+  console.log
+    [ContactStoryView] Fetching recent interactions for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:63:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded 1 interactions from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:71:23)
+
+  console.log
+    [ContactStoryView] Using mock AI insights (no Pulse data available)
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:81:19)
+
+  console.log
+    [ContactStoryView] Fetching AI insights for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:48:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded AI insights from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:53:23)
+
+  console.log
+    [ContactStoryView] Fetching recent interactions for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:63:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded 0 interactions from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:71:23)
+
+  console.log
+    [ContactStoryView] Using mock interactions (no Pulse data available)
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:103:19)
+
+  console.log
+    [ContactStoryView] Using mock AI insights (no Pulse data available)
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:81:19)
+
+  console.log
+    [ContactStoryView] Using mock interactions (no Pulse data available)
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:103:19)
+
+  console.log
+    [ContactStoryView] Fetching AI insights for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:48:19)
+
+  console.log
+    Action completed: John Doe
+
+      at handleCompleteAction (src/components/contacts/PrioritiesFeedView.tsx:134:13)
+
+  console.log
+    Action completed: John Doe
+
+      at handleCompleteAction (src/components/contacts/PrioritiesFeedView.tsx:134:13)
+
+  console.log
+    Action completed: John Doe
+
+      at handleCompleteAction (src/components/contacts/PrioritiesFeedView.tsx:134:13)
+
+  console.log
+    [ContactStoryView] Successfully loaded AI insights from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:53:23)
+
+  console.log
+    [ContactStoryView] Fetching recent interactions for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:63:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded 1 interactions from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:71:23)
+
+  console.log
+    [ContactStoryView] Fetching AI insights for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:48:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded AI insights from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:53:23)
+
+  console.log
+    [ContactStoryView] Fetching recent interactions for profile-1...
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:63:19)
+
+  console.log
+    [ContactStoryView] Successfully loaded 1 interactions from Pulse API
+
+      at loadEnrichment (src/components/contacts/ContactStoryView.tsx:71:23)
+
+  console.log
+    Action completed: John Doe
+
+      at handleCompleteAction (src/components/contacts/PrioritiesFeedView.tsx:134:13)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Loaded 1 contacts from Pulse API
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:128:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    Action completed: Jane Smith
+
+      at handleCompleteAction (src/components/contacts/PrioritiesFeedView.tsx:134:13)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    Action completed: John Doe
+
+      at handleCompleteAction (src/components/contacts/PrioritiesFeedView.tsx:134:13)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+
+  console.log
+    [ContactsPage] Fetching relationship profiles from Pulse API...
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:70:17)
+
+  console.log
+    [ContactsPage] Falling back to mock data
+
+      at loadContacts (src/components/contacts/ContactsPage.tsx:134:17)
+

@@ -1,7 +1,8 @@
 // Project Service - Handles all database operations for Projects
 import { supabase } from './supabaseClient';
 import { logosSupabase } from '../lib/supabaseLogosClient';
-import type { Project } from '../types';
+import { logActivity } from './collaborationService';
+import type { Project, TeamMember } from '../types';
 
 // Helper function to convert database format to app format
 function dbToProject(dbProject: any): Project {
@@ -110,7 +111,7 @@ export const projectService = {
   },
 
   // Create a new project (with tasks if provided)
-  async create(project: Partial<Project>): Promise<Project> {
+  async create(project: Partial<Project>, currentUser?: TeamMember): Promise<Project> {
     // Build insert data - only include id if provided (for migration)
     const insertData: any = {
       name: project.name,
@@ -179,11 +180,36 @@ export const projectService = {
     const newProject = dbToProject(projectData);
     newProject.tasks = project.tasks || [];
     newProject.teamMemberIds = project.teamMemberIds || [];
+
+    // Log activity if currentUser is provided
+    if (currentUser) {
+      try {
+        await logActivity({
+          entityType: 'project',
+          entityId: newProject.id,
+          action: 'created',
+          actor: currentUser,
+          description: `Created project: ${newProject.name}`,
+          metadata: {
+            status: newProject.status,
+            clientId: newProject.clientId,
+            startDate: newProject.startDate,
+            endDate: newProject.endDate,
+          }
+        });
+      } catch (error) {
+        console.error('Error logging project creation activity:', error);
+        // Don't throw - project was created successfully
+      }
+    }
+
     return newProject;
   },
 
   // Update an existing project
-  async update(id: string, updates: Partial<Project>): Promise<Project> {
+  async update(id: string, updates: Partial<Project>, currentUser?: TeamMember): Promise<Project> {
+    // Get the old project for change tracking
+    const oldProject = await this.getById(id);
     const updateData: any = {};
 
     if (updates.name !== undefined) updateData.name = updates.name;
@@ -212,11 +238,75 @@ export const projectService = {
       throw error;
     }
 
-    return dbToProject(data);
+    const updatedProject = dbToProject(data);
+
+    // Log activity with changes if currentUser is provided
+    if (currentUser && oldProject) {
+      try {
+        // Calculate changes
+        const changes: Record<string, { old: any; new: any }> = {};
+        const fieldLabels: Record<string, string> = {
+          name: 'Name',
+          description: 'Description',
+          status: 'Status',
+          startDate: 'Start Date',
+          endDate: 'End Date',
+          budget: 'Budget',
+          notes: 'Notes',
+          pinned: 'Pinned',
+          starred: 'Starred',
+          archived: 'Archived',
+        };
+
+        for (const key of Object.keys(fieldLabels)) {
+          if (oldProject[key as keyof Project] !== updatedProject[key as keyof Project]) {
+            const label = fieldLabels[key];
+            changes[label] = {
+              old: oldProject[key as keyof Project],
+              new: updatedProject[key as keyof Project],
+            };
+          }
+        }
+
+        // Special case for status change
+        if (oldProject.status !== updatedProject.status) {
+          await logActivity({
+            entityType: 'project',
+            entityId: id,
+            action: 'status_changed',
+            actor: currentUser,
+            description: `Changed project status from ${oldProject.status} to ${updatedProject.status}`,
+            metadata: {
+              oldStatus: oldProject.status,
+              newStatus: updatedProject.status,
+            }
+          });
+        } else if (Object.keys(changes).length > 0) {
+          await logActivity({
+            entityType: 'project',
+            entityId: id,
+            action: 'updated',
+            actor: currentUser,
+            description: `Updated project: ${updatedProject.name}`,
+            changes,
+            metadata: {
+              fieldsChanged: Object.keys(changes),
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error logging project update activity:', error);
+        // Don't throw - project was updated successfully
+      }
+    }
+
+    return updatedProject;
   },
 
   // Delete a project (also deletes associated tasks)
-  async delete(id: string): Promise<void> {
+  async delete(id: string, currentUser?: TeamMember): Promise<void> {
+    // Get project name before deletion for activity log
+    const project = currentUser ? await this.getById(id) : null;
     // First delete associated tasks
     const { error: tasksError } = await logosSupabase
       .from('lv_tasks')
@@ -237,6 +327,26 @@ export const projectService = {
     if (error) {
       console.error('Error deleting project:', error);
       throw error;
+    }
+
+    // Log activity if currentUser is provided
+    if (currentUser && project) {
+      try {
+        await logActivity({
+          entityType: 'project',
+          entityId: id,
+          action: 'deleted',
+          actor: currentUser,
+          description: `Deleted project: ${project.name}`,
+          metadata: {
+            projectName: project.name,
+            clientId: project.clientId,
+          }
+        });
+      } catch (error) {
+        console.error('Error logging project deletion activity:', error);
+        // Don't throw - project was deleted successfully
+      }
     }
   }
 };

@@ -559,12 +559,22 @@ export enum DocumentCategory {
 export interface Document {
     id: string;
     name: string;
-    category: DocumentCategory;
-    relatedId: string; // Can be clientId or projectId, or teamId for internal
+    category: DocumentCategory | string; // Allow both enum and string for flexibility
+    relatedId?: string; // Optional: Can be clientId or projectId, or teamId for internal
     fileType: 'pdf' | 'docx' | 'xlsx' | 'pptx' | 'image' | 'other';
     size: string; // e.g., "2.5 MB"
     lastModified: string; // ISO String
     uploadedById: string; // TeamMember ID
+
+    // Additional fields for backward compatibility (all optional)
+    file_url?: string; // URL for downloads/viewing
+    created_at?: string; // ISO timestamp
+    updated_at?: string; // ISO timestamp
+    file_type?: string; // Broader file type (not limited to enum)
+    file_size?: number; // File size in bytes
+    uploaded_by_id?: string; // Alternative field name for uploader
+    project_id?: string; // Direct project reference
+    client_id?: string; // Direct client reference
 }
 
 export enum WebpageStatus {
@@ -1805,6 +1815,7 @@ export type Page =
   | 'dashboard'
   | 'organizations'
   | 'contacts'
+  | 'contacts-old'
   | 'clients'
   | 'households'
   | 'projects'
@@ -2015,6 +2026,26 @@ export interface Contact {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+
+  // Pulse Communication App Integration Fields
+  pulse_profile_id?: string | null; // Reference to Pulse relationship_profiles
+  relationship_score?: number | null; // 0-100 AI-calculated relationship strength
+  relationship_trend?: 'rising' | 'stable' | 'falling' | 'new' | 'dormant' | null;
+  communication_frequency?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | null;
+  preferred_channel?: 'email' | 'phone' | 'slack' | 'meeting' | 'sms' | null;
+  last_interaction_date?: string | null;
+  total_interactions?: number | null;
+  pulse_tags?: string[] | null; // AI-extracted topics and tags
+  pulse_notes?: string | null; // AI-generated relationship notes
+  is_favorite?: boolean; // User can mark as favorite
+  is_blocked?: boolean; // Privacy/spam control
+  is_vip?: boolean; // High-priority contact
+
+  // Additional profile fields
+  company?: string | null;
+  job_title?: string | null;
+  linkedin_url?: string | null;
+  avatar_url?: string | null;
 }
 
 export type OrganizationType = 'nonprofit' | 'foundation' | 'corporation' | 'government' | 'other';
@@ -2354,3 +2385,242 @@ export const TIMELINE_EVENT_SOURCE_COLORS: Record<TimelineEventSource, string> =
   communication_log: '#ec4899', // pink
   donation: '#22c55e',        // green
 };
+
+// ============================================
+// TEAM COLLABORATION TYPES
+// ============================================
+
+/**
+ * Entity types that support collaboration features
+ */
+export type CollaborationEntityType = 'task' | 'project' | 'case' | 'client' | 'activity' | 'document';
+
+/**
+ * Unified comment interface for all entities
+ */
+export interface Comment {
+  id: string;
+  entityType: CollaborationEntityType;
+  entityId: string;
+  content: string;
+  contentHtml?: string; // Rich text with @mentions rendered
+  authorId: string;
+  authorName?: string; // Denormalized for display
+  author?: TeamMember; // Populated when fetched
+  parentId?: string | null; // For threaded replies
+  threadDepth?: number;
+  replies?: Comment[]; // Populated for threaded view
+  isInternal?: boolean; // Internal notes not visible to external users
+  isEdited?: boolean;
+  isPinned?: boolean;
+  mentions?: Mention[]; // @mentions in this comment
+  createdAt: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+}
+
+/**
+ * Create/update comment payload
+ */
+export interface CommentInput {
+  entityType: CollaborationEntityType;
+  entityId: string;
+  content: string;
+  parentId?: string | null;
+  isInternal?: boolean;
+}
+
+/**
+ * @mention in a comment or entity
+ */
+export interface Mention {
+  id: string;
+  commentId?: string | null;
+  entityType?: CollaborationEntityType;
+  entityId?: string;
+  mentionedUserId: string;
+  mentionedUser?: TeamMember; // Populated when fetched
+  mentionedById: string;
+  mentionedBy?: TeamMember; // Populated when fetched
+  mentionContext?: string; // Text excerpt around the mention
+  mentionPosition?: number;
+  isRead: boolean;
+  readAt?: string | null;
+  createdAt: string;
+}
+
+/**
+ * Notification types
+ */
+export type NotificationType =
+  | 'mention'           // @mentioned in comment
+  | 'comment'           // New comment on entity you're involved in
+  | 'reply'             // Reply to your comment
+  | 'assignment'        // Assigned to task/project
+  | 'unassignment'      // Removed from task/project
+  | 'status_change'     // Status changed on entity you're following
+  | 'due_date'          // Due date reminder
+  | 'overdue'           // Task/project overdue
+  | 'completion'        // Task/project completed
+  | 'approval_request'  // Approval requested
+  | 'approval_response' // Approval granted/denied
+  | 'system';           // System notifications
+
+/**
+ * Notification priority levels
+ */
+export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+
+/**
+ * Notification item
+ */
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  entityType?: CollaborationEntityType | string;
+  entityId?: string;
+  commentId?: string | null;
+  mentionId?: string | null;
+  actorId?: string | null;
+  actorName?: string | null;
+  actor?: TeamMember; // Populated when fetched
+  title: string;
+  message?: string | null;
+  actionUrl?: string | null;
+  isRead: boolean;
+  readAt?: string | null;
+  isArchived: boolean;
+  priority: NotificationPriority;
+  createdAt: string;
+  expiresAt?: string | null;
+}
+
+/**
+ * Notification preferences for a user
+ */
+export interface NotificationPreferences {
+  id: string;
+  userId: string;
+  // Email notifications
+  emailMentions: boolean;
+  emailComments: boolean;
+  emailAssignments: boolean;
+  emailStatusChanges: boolean;
+  emailDueDates: boolean;
+  emailDigest: boolean;
+  emailDigestTime?: string;
+  // In-app notifications
+  appMentions: boolean;
+  appComments: boolean;
+  appAssignments: boolean;
+  appStatusChanges: boolean;
+  appDueDates: boolean;
+  // Push notifications
+  pushEnabled: boolean;
+  pushMentions: boolean;
+  pushAssignments: boolean;
+  pushUrgentOnly: boolean;
+  // Do not disturb
+  dndEnabled: boolean;
+  dndStart?: string | null;
+  dndEnd?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * Activity log actions
+ */
+export type ActivityAction =
+  | 'created'
+  | 'updated'
+  | 'deleted'
+  | 'commented'
+  | 'mentioned'
+  | 'assigned'
+  | 'unassigned'
+  | 'status_changed'
+  | 'priority_changed'
+  | 'due_date_changed'
+  | 'completed'
+  | 'reopened'
+  | 'archived'
+  | 'restored'
+  | 'pinned'
+  | 'unpinned'
+  | 'watched'
+  | 'unwatched';
+
+/**
+ * Activity log entry
+ */
+export interface ActivityLogEntry {
+  id: string;
+  entityType: CollaborationEntityType | string;
+  entityId: string;
+  action: ActivityAction;
+  actorId?: string | null;
+  actorName?: string | null;
+  actor?: TeamMember;
+  description?: string | null;
+  changes?: Record<string, { old: unknown; new: unknown }>;
+  metadata?: Record<string, unknown>;
+  commentId?: string | null;
+  isInternal: boolean;
+  createdAt: string;
+}
+
+/**
+ * Watch levels for following entities
+ */
+export type WatchLevel = 'all' | 'mentions' | 'status_only' | 'none';
+
+/**
+ * Entity watcher (following/watching)
+ */
+export interface EntityWatcher {
+  id: string;
+  entityType: CollaborationEntityType;
+  entityId: string;
+  userId: string;
+  user?: TeamMember;
+  watchLevel: WatchLevel;
+  createdAt: string;
+}
+
+/**
+ * Parsed @mention from text
+ */
+export interface ParsedMention {
+  username: string;
+  userId?: string;
+  startIndex: number;
+  endIndex: number;
+  matched: boolean;
+}
+
+/**
+ * Collaboration context for an entity
+ */
+export interface CollaborationContext {
+  entityType: CollaborationEntityType;
+  entityId: string;
+  comments: Comment[];
+  commentCount: number;
+  watchers: EntityWatcher[];
+  watcherCount: number;
+  recentActivity: ActivityLogEntry[];
+  currentUserWatching?: EntityWatcher | null;
+}
+
+/**
+ * Notification center state
+ */
+export interface NotificationCenterState {
+  notifications: Notification[];
+  unreadCount: number;
+  isLoading: boolean;
+  hasMore: boolean;
+  error?: string | null;
+}
