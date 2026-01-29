@@ -185,6 +185,25 @@ const App: React.FC = () => {
   });
   const [isLoadingTeamMembers, setIsLoadingTeamMembers] = useState(false);
 
+  // Deduplicate team members array on mount and when it changes
+  useEffect(() => {
+    const uniqueMembers = teamMembers.reduce((acc: TeamMember[], current) => {
+      const duplicate = acc.find(
+        item => item.id === current.id || item.email.toLowerCase() === current.email.toLowerCase()
+      );
+      if (!duplicate) {
+        return [...acc, current];
+      }
+      return acc;
+    }, []);
+
+    // Only update if duplicates were found
+    if (uniqueMembers.length !== teamMembers.length) {
+      console.log(`🔧 Removed ${teamMembers.length - uniqueMembers.length} duplicate team member(s)`);
+      setTeamMembers(uniqueMembers);
+    }
+  }, [teamMembers.length]); // Only run when length changes to avoid infinite loops
+
   // Persist team members to localStorage whenever they change
   useEffect(() => {
     try {
@@ -227,17 +246,8 @@ const App: React.FC = () => {
 const mapAuthUserToTeamMember = useCallback((user: SupabaseUser | null): TeamMember | null => {
   if (!user) return null;
 
-  // First, try to find existing team member by email or ID
-  const existingMember = teamMembers.find(
-    (tm) => tm.email.toLowerCase() === user.email?.toLowerCase() || tm.id === user.id
-  );
-
-  if (existingMember) {
-    return existingMember;
-  }
-
-  // If not found, create a new team member from auth user metadata
-  const newMember: TeamMember = {
+  // Create team member from auth user metadata
+  const memberData: TeamMember = {
     id: user.id,
     name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
     email: user.email || '',
@@ -248,18 +258,30 @@ const mapAuthUserToTeamMember = useCallback((user: SupabaseUser | null): TeamMem
     lastActiveAt: new Date().toISOString()
   };
 
-  // Add the new team member to the list (only if not already there)
+  // Track what we return
+  let resultMember: TeamMember = memberData;
+
+  // Add or update team member (using functional update to avoid stale closures)
   setTeamMembers(prev => {
-    // Double-check to avoid race conditions
-    const alreadyExists = prev.some(tm => tm.id === newMember.id || tm.email.toLowerCase() === newMember.email.toLowerCase());
-    if (alreadyExists) {
-      return prev;
+    // Check if member already exists by ID or email
+    const existingIndex = prev.findIndex(
+      tm => tm.id === memberData.id || tm.email.toLowerCase() === memberData.email.toLowerCase()
+    );
+
+    if (existingIndex >= 0) {
+      // Member exists - update it and return the updated member
+      const updated = [...prev];
+      resultMember = { ...prev[existingIndex], ...memberData };
+      updated[existingIndex] = resultMember;
+      return updated;
     }
-    return [...prev, newMember];
+
+    // Member doesn't exist - add it
+    return [...prev, memberData];
   });
 
-  return newMember;
-}, [teamMembers]);
+  return resultMember;
+}, []); // Remove teamMembers dependency to prevent stale closures
 
 // Load all data from Supabase or mock data
 async function loadAllData() {
