@@ -658,7 +658,7 @@ export const TeamPresenceBar: React.FC<TeamPresenceBarProps> = ({
           </p>
           <div className="space-y-2">
             {onlineMembers.map(member => (
-              <div key={member.id} className="flex items-center gap-3">
+              <div key={`${member.id}-online`} className="flex items-center gap-3">
                 <div className="relative">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold">
                     {member.name.split(' ').map(n => n[0]).join('')}
@@ -687,7 +687,7 @@ export const TeamPresenceBar: React.FC<TeamPresenceBarProps> = ({
           </p>
           <div className="space-y-2">
             {offlineMembers.map(member => (
-              <div key={member.id} className="flex items-center gap-3 opacity-60">
+              <div key={`${member.id}-offline`} className="flex items-center gap-3 opacity-60">
                 <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-400 text-xs font-semibold">
                   {member.name.split(' ').map(n => n[0]).join('')}
                 </div>

@@ -43,7 +43,7 @@ interface ActivityFeedProps {
 
 // Activity action icons and labels
 const actionConfig: Record<ActivityAction, { icon: React.ReactNode; color: string; label: string }> = {
-  created: { icon: <Activity className="w-4 h-4" />, color: 'var(--aurora-green)', label: 'Created' },
+  created: { icon: <CheckCircle className="w-4 h-4" />, color: 'var(--aurora-green)', label: 'Created' },
   updated: { icon: <Edit className="w-4 h-4" />, color: 'var(--aurora-cyan)', label: 'Updated' },
   deleted: { icon: <Trash2 className="w-4 h-4" />, color: '#ef4444', label: 'Deleted' },
   commented: { icon: <MessageSquare className="w-4 h-4" />, color: 'var(--aurora-teal)', label: 'Commented' },
@@ -196,7 +196,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Activity className="w-5 h-5" />
+            <CheckCircle className="w-5 h-5" />
             {title}
           </CardTitle>
           
@@ -273,7 +273,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
           </div>
         ) : activities.length === 0 ? (
           <div className="text-center py-8" style={{ color: 'var(--cmf-text-muted)' }}>
-            <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+            <CheckCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p>No activity yet</p>
           </div>
         ) : (

@@ -11,12 +11,13 @@
 
 import { supabase } from './supabaseClient';
 import { realtimeService } from './realtimeService';
-import { 
-  parseMentions, 
-  extractMentionedUserIds, 
+import {
+  parseMentions,
+  extractMentionedUserIds,
   renderMentionsAsHtml,
-  getMentionContext 
+  getMentionContext
 } from '../utils/mentionUtils';
+import { sanitizeUserId } from '../utils/uuidUtils';
 import type {
   Comment,
   CommentInput,
@@ -466,7 +467,7 @@ export async function getNotifications(
       *,
       actor:team_members!actor_id(id, name, email, role)
     `)
-    .eq('user_id', userId)
+    .eq('user_id', sanitizeUserId(userId))
     .eq('is_archived', false)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -496,7 +497,7 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
   const { count, error } = await supabase
     .from('notifications')
     .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
+    .eq('user_id', sanitizeUserId(userId))
     .eq('is_read', false)
     .eq('is_archived', false);
 
@@ -528,7 +529,7 @@ export async function markNotificationRead(notificationId: string): Promise<void
  */
 export async function markAllNotificationsRead(userId: string): Promise<number> {
   const { data, error } = await supabase
-    .rpc('mark_all_notifications_read', { p_user_id: userId });
+    .rpc('mark_all_notifications_read', { p_user_id: sanitizeUserId(userId) });
 
   if (error) {
     console.error('Error marking all notifications read:', error);
@@ -889,14 +890,15 @@ export function subscribeToNotifications(
   userId: string,
   callback: (notification: Notification) => void
 ): () => void {
+  const sanitizedUserId = sanitizeUserId(userId);
   return realtimeService.subscribeToInserts(
     'notifications',
     (payload) => {
-      if (payload.user_id === userId) {
+      if (payload.user_id === sanitizedUserId) {
         callback(transformNotification(payload));
       }
     },
-    { column: 'user_id', value: userId }
+    { column: 'user_id', value: sanitizedUserId }
   );
 }
 
