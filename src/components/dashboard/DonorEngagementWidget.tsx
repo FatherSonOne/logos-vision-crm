@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, TrendingUp, TrendingDown, AlertTriangle, Star, Activity } from 'lucide-react';
+import { Users, TrendingUp, TrendingDown, AlertTriangle, Star } from 'lucide-react';
 import { engagementService } from '../../services/engagementService';
 import type { EngagementScore, EngagementStats } from '../../types';
 

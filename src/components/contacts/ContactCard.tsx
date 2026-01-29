@@ -1,7 +1,7 @@
 import React from 'react';
 import { RelationshipScoreCircle } from './RelationshipScoreCircle';
 import { TrendIndicator } from './TrendIndicator';
-import { MessageSquare, Activity } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 
 interface Contact {
   id: string;
