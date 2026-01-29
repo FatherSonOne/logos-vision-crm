@@ -29,7 +29,7 @@ import {
   Quote,
 } from 'lucide-react';
 import type { Donation, Volunteer, Client } from '../types';
-import { DonorJourneyTracker } from '../../components/DonorJourneyTracker';
+import { DonorJourneyTracker } from '@/components/DonorJourneyTracker';
 
 // ============================================================================
 // TYPES & INTERFACES

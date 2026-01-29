@@ -24,8 +24,8 @@ const ProjectRiskRadarWidget = lazy(() => import('./dashboard/ProjectRiskRadarWi
 const ResourceAllocatorWidget = lazy(() => import('./dashboard/ResourceAllocatorWidget').then(m => ({ default: m.ResourceAllocatorWidget })));
 
 // New Tier 1 & 2 Components
-import { DashboardCustomizer, useDashboardPreferences } from '../../components/DashboardCustomizer';
-import { ActivityFeed as CollaborationActivityFeed, TeamPresenceBar } from '../../components/CollaborationFeatures';
+import { DashboardCustomizer, useDashboardPreferences } from '@/components/DashboardCustomizer';
+import { ActivityFeed as CollaborationActivityFeed, TeamPresenceBar } from '@/components/CollaborationFeatures';
 import { EnhancedDashboardCustomizer } from './EnhancedDashboardCustomizer';
 
 // Dashboard Role Types - Extended with specialized roles

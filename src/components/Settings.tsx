@@ -7,7 +7,7 @@ import {
 import type { ThemeMode } from '../theme/theme';
 import { getStoredThemeMode, setThemeMode, resolveTheme } from '../theme/theme';
 import { getUserSettings, saveUserSettings, defaultSettings, type UserSettings } from '../services/settingsService';
-import { DataImportExport } from '../../components/DataImportExport';
+import { DataImportExport } from '@/components/DataImportExport';
 import { PulseIntegrationSettings } from './PulseIntegrationSettings';
 import type { TeamMember } from '../types';
 

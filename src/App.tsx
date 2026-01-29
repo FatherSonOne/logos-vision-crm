@@ -96,7 +96,7 @@ const HouseholdModal = lazy(() => import('./components/households').then(m => ({
 const PledgeList = lazy(() => import('./components/pledges').then(m => ({ default: m.PledgeList })));
 const PledgeModal = lazy(() => import('./components/pledges').then(m => ({ default: m.PledgeModal })));
 const PledgeDetail = lazy(() => import('./components/pledges').then(m => ({ default: m.PledgeDetail })));
-import { OnboardingFlow, useOnboarding } from '../components/OnboardingFlow';
+import { OnboardingFlow, useOnboarding } from '@/components/OnboardingFlow';
 import {
   BottomNav,
   FloatingActionButton,
@@ -106,7 +106,7 @@ import {
   DonationsIcon as MobileDonationsIcon,
   TasksIcon as MobileTasksIcon,
   MoreIcon as MobileMoreIcon
-} from '../components/MobileOptimized';
+} from '@/components/MobileOptimized';
 import { getTourStepsForPage } from './components/ui/PageTourSteps';
 import { KeyboardShortcutsPanel, useKeyboardShortcuts } from './components/KeyboardShortcutsPanel';
 import { QuickAddButton, QuickAction } from './components/quickadd/QuickAddButton';
@@ -227,9 +227,9 @@ const App: React.FC = () => {
 const mapAuthUserToTeamMember = useCallback((user: SupabaseUser | null): TeamMember | null => {
   if (!user) return null;
 
-  // First, try to find existing team member by email
+  // First, try to find existing team member by email or ID
   const existingMember = teamMembers.find(
-    (tm) => tm.email.toLowerCase() === user.email?.toLowerCase()
+    (tm) => tm.email.toLowerCase() === user.email?.toLowerCase() || tm.id === user.id
   );
 
   if (existingMember) {
@@ -238,7 +238,7 @@ const mapAuthUserToTeamMember = useCallback((user: SupabaseUser | null): TeamMem
 
   // If not found, create a new team member from auth user metadata
   const newMember: TeamMember = {
-    id: `auth-${user.id}`,
+    id: user.id,
     name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
     email: user.email || '',
     role: user.user_metadata?.role || 'Team Member',
@@ -248,8 +248,15 @@ const mapAuthUserToTeamMember = useCallback((user: SupabaseUser | null): TeamMem
     lastActiveAt: new Date().toISOString()
   };
 
-  // Add the new team member to the list
-  setTeamMembers(prev => [...prev, newMember]);
+  // Add the new team member to the list (only if not already there)
+  setTeamMembers(prev => {
+    // Double-check to avoid race conditions
+    const alreadyExists = prev.some(tm => tm.id === newMember.id || tm.email.toLowerCase() === newMember.email.toLowerCase());
+    if (alreadyExists) {
+      return prev;
+    }
+    return [...prev, newMember];
+  });
 
   return newMember;
 }, [teamMembers]);

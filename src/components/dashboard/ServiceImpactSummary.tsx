@@ -31,19 +31,20 @@ export const ServiceImpactSummary: React.FC = () => {
       // Clients served this month (distinct clients with activities)
       const { data: activities } = await supabase
         .from('activities')
-        .select('contact_id')
-        .gte('created_at', firstDayStr);
+        .select('client_id')
+        .gte('activity_date', firstDayStr);
 
-      const uniqueClients = new Set(activities?.map(a => a.contact_id).filter(Boolean) || []);
+      const uniqueClients = new Set(activities?.map(a => a.client_id).filter(Boolean) || []);
 
-      // Service hours from completed tasks this month
-      const { data: tasks } = await supabase
+      // Count completed tasks this month (service hours)
+      const { count: completedTasksCount } = await supabase
         .from('tasks')
-        .select('estimated_hours')
+        .select('*', { count: 'exact', head: true })
         .eq('status', 'Done')
         .gte('updated_at', firstDayStr);
 
-      const totalHours = tasks?.reduce((sum, t) => sum + (t.estimated_hours || 0), 0) || 0;
+      // Estimate 2 hours per completed task as a proxy for service hours
+      const totalHours = (completedTasksCount || 0) * 2;
 
       // Active projects
       const { count: activeCount } = await supabase
