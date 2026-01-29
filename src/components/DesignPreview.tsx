@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Shield, Cpu, Activity, Layout, HelpCircle, Layers, CheckCircle, Info, Sparkles, Eye, Download, Palette, Type, Monitor, Smartphone, Tablet, Maximize2 } from 'lucide-react';
+import { Shield, Cpu, Layout, HelpCircle, Layers, CheckCircle, Info, Sparkles, Eye, Download, Palette, Type, Monitor, Smartphone, Tablet, Maximize2 } from 'lucide-react';
 import { LogoSelector, LogoPreviewPanel, Logo, LogoVariant, logoVariants, aurora } from './Logo';
 import { useLogo } from '../contexts/LogoContext';
 import { useFont, type FontFamily, type FontSize, type FontConfig } from '../contexts/FontContext';
