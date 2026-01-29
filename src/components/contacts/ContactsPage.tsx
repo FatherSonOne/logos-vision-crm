@@ -4,6 +4,8 @@ import { ContactStoryView } from './ContactStoryView';
 import { ContactFilters } from './ContactFilters';
 import { ContactSearch } from './ContactSearch';
 import { PrioritiesFeedView } from './PrioritiesFeedView';
+import { PulseSyncButton } from './PulseSyncButton';
+import { AutoSyncSettings } from './AutoSyncSettings';
 import { entityService, type EntityType, type ContactWithEntityType } from '../../services/entityService';
 import { contactService } from '../../services/contactService';
 import { pulseContactService } from '../../services/pulseContactService';
@@ -225,6 +227,7 @@ export function ContactsPage() {
                 <option value="all">All Entities</option>
               </select>
               <ContactFilters filters={filters} onChange={setFilters} />
+              <PulseSyncButton />
               <button
                 type="button"
                 className="btn btn-primary whitespace-nowrap"
@@ -235,6 +238,11 @@ export function ContactsPage() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Auto-Sync Settings */}
+        <div className="mb-4">
+          <AutoSyncSettings />
         </div>
 
         {/* Tab Navigation */}

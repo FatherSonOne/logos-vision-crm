@@ -32,6 +32,9 @@ dist-ssr
 
 .vercel
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # Backup files
 *.tar.gz
 *.zip
