@@ -6,8 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Activity,
+import {
   MessageSquare,
   AtSign,
   UserPlus,
