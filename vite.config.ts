@@ -52,10 +52,6 @@ export default defineConfig(({ mode }) => {
               if (id.includes('supabase')) {
                 return 'supabase';
               }
-              // Icons
-              if (id.includes('lucide-react')) {
-                return 'icons';
-              }
               // Google Maps
               if (id.includes('@react-google-maps')) {
                 return 'maps';
