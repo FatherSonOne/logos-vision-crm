@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
     },
     optimizeDeps: {
-      include: ['lucide-react'],
+      exclude: ['lucide-react'], // Prevent over-optimization
     },
     plugins: [react()],
     define: {
@@ -36,16 +36,13 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             // Vendor chunks
             if (id.includes('node_modules')) {
-              // React core (exclude lucide-react from this check)
-              if (id.includes('react-dom')) {
+              // React core + lucide-react (bundle together to prevent init order issues)
+              if (id.includes('react-dom') || id.includes('react/')) {
                 return 'react-vendor';
               }
-              // Skip lucide-react - let Vite handle it automatically
+              // Bundle lucide-react with vendor to ensure React is initialized first
               if (id.includes('lucide-react')) {
-                return undefined; // Don't manually chunk it
-              }
-              if (id.includes('react') && !id.includes('lucide')) {
-                return 'react-vendor';
+                return 'vendor';
               }
               // Router
               if (id.includes('react-router')) {
@@ -111,13 +108,11 @@ export default defineConfig(({ mode }) => {
         }
       },
       chunkSizeWarningLimit: 600,
-      // Enable minification
-      minify: 'terser',
-      terserOptions: {
-        compress: {
-          drop_console: true, // Remove console.logs in production
-          drop_debugger: true,
-        },
+      // Use esbuild minification (faster and avoids module init issues)
+      minify: 'esbuild',
+      esbuild: {
+        drop: ['console', 'debugger'], // Remove console.logs and debugger in production
+        keepNames: false,
       },
       // Optimize CSS
       cssCodeSplit: true,
