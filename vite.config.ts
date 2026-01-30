@@ -11,6 +11,9 @@ export default defineConfig(({ mode }) => {
       port: 5176,
       host: '0.0.0.0',
     },
+    optimizeDeps: {
+      include: ['lucide-react'],
+    },
     plugins: [react()],
     define: {
       // Make API keys available via import.meta.env
@@ -32,6 +35,10 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             // Vendor chunks
             if (id.includes('node_modules')) {
+              // Icons - must come BEFORE react check to avoid lucide-react going into react-vendor
+              if (id.includes('lucide-react')) {
+                return 'vendor'; // Put lucide-react in general vendor, not react-vendor
+              }
               // React core
               if (id.includes('react') || id.includes('react-dom')) {
                 return 'react-vendor';
