@@ -35,12 +35,15 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             // Vendor chunks
             if (id.includes('node_modules')) {
-              // Icons - must come BEFORE react check to avoid lucide-react going into react-vendor
-              if (id.includes('lucide-react')) {
-                return 'vendor'; // Put lucide-react in general vendor, not react-vendor
+              // React core (exclude lucide-react from this check)
+              if (id.includes('react-dom')) {
+                return 'react-vendor';
               }
-              // React core
-              if (id.includes('react') || id.includes('react-dom')) {
+              // Skip lucide-react - let Vite handle it automatically
+              if (id.includes('lucide-react')) {
+                return undefined; // Don't manually chunk it
+              }
+              if (id.includes('react') && !id.includes('lucide')) {
                 return 'react-vendor';
               }
               // Router
