@@ -32,6 +32,7 @@ export default defineConfig(({ mode }) => {
       // Optimize chunks
       rollupOptions: {
         output: {
+          // Ensure react-vendor loads before other chunks
           manualChunks: (id) => {
             // Vendor chunks
             if (id.includes('node_modules')) {
