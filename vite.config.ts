@@ -36,15 +36,16 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             // Vendor chunks
             if (id.includes('node_modules')) {
-              // React core + lucide-react (bundle together to prevent init order issues)
-              if (id.includes('react-dom') || id.includes('react/')) {
+              // React core ecosystem - must load first (includes react, react-dom, scheduler, jsx-runtime)
+              if (id.includes('/react-dom/') || id.includes('/react/') || id.includes('scheduler') ||
+                  id.match(/\/react\/[^\/]*\.js$/)) {
                 return 'react-vendor';
               }
-              // Bundle lucide-react with vendor to ensure React is initialized first
+              // lucide-react in separate chunk that loads after React
               if (id.includes('lucide-react')) {
-                return 'vendor';
+                return 'lucide-icons';
               }
-              // Router
+              // Router (depends on React, so separate from react-vendor)
               if (id.includes('react-router')) {
                 return 'router';
               }

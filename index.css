@@ -1,14 +1,14 @@
+/* Main CSS - Logos Vision CRM */
+/* Import Design System Tokens - Must come before @tailwind */
+@import './src/styles/design-tokens.css';
+
+/* Import Contacts Design System - Must come before @tailwind */
+@import './src/styles/contacts.css';
+
 /* Tailwind CSS Base, Components, and Utilities */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Main CSS - Logos Vision CRM */
-/* Import Design System Tokens */
-@import './src/styles/design-tokens.css';
-
-/* Import Contacts Design System */
-@import './src/styles/contacts.css';
 
 /* Note: Most styles use Tailwind CSS utilities inline for flexibility */
 
