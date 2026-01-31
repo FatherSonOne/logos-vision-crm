@@ -201,13 +201,14 @@ interface TaskViewProps {
   onSelectTask: (projectId: string) => void;
   tasks?: ExtendedTask[]; // Optional: shared tasks from parent
   onTasksUpdate?: (tasks: ExtendedTask[]) => void; // Callback to update parent tasks
+  isAuthenticated?: boolean; // Whether user is authenticated (for realtime subscriptions)
 }
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
-export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, currentUser, onSelectTask, tasks: propTasks, onTasksUpdate }) => {
+export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, currentUser, onSelectTask, tasks: propTasks, onTasksUpdate, isAuthenticated = false }) => {
   // Core state - manage tasks internally and sync with parent if callback provided
   const [tasks, setTasksState] = useState<ExtendedTask[]>([]);
 
@@ -324,8 +325,13 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, curre
     }
   }, [tasks, loadMetrics]);
 
-  // Real-time subscriptions
+  // Real-time subscriptions (only when authenticated)
   useEffect(() => {
+    // Don't subscribe to realtime if not authenticated
+    if (!isAuthenticated) {
+      return;
+    }
+
     const subscription = supabase
       .channel('tasks_changes')
       .on('postgres_changes', {
@@ -341,7 +347,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ projects, teamMembers, curre
     return () => {
       subscription.unsubscribe();
     };
-  }, [loadTasks]);
+  }, [loadTasks, isAuthenticated]);
 
   // ============================================================================
   // CRUD OPERATIONS

@@ -2068,6 +2068,7 @@ useEffect(() => {
           onSelectTask={handleSelectProject}
           tasks={tasks}
           onTasksUpdate={handleTasksUpdate}
+          isAuthenticated={isAuthenticated}
         />;
       case 'form-generator':
         return <FormGenerator clients={clients} />;
