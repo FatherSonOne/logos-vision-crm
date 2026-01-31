@@ -2350,7 +2350,9 @@ useEffect(() => {
             style={{ backgroundColor: 'var(--cmf-bg)' }}
           >
               <div key={currentPage} className="page-content-wrapper">
-                  {renderContent()}
+                  <Suspense fallback={<LoadingState message="Loading page..." />}>
+                      {renderContent()}
+                  </Suspense>
               </div>
           </main>
           
